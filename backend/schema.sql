@@ -93,6 +93,8 @@ create table battles (
   opponent_rounds_won int not null default 0,
   xp_reward int default 0,
   popularity_reward int default 0,
+  themes text[],                               -- темы 3 раундов
+  current_hand int[],                          -- карточки, выданные на текущий раунд
   created_at timestamptz not null default now(),
   finished_at timestamptz
 );
