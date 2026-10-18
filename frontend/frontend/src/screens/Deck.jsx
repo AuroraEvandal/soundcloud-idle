@@ -141,6 +141,7 @@ function Packs() {
             <CardView card={result.card} compact />
           ) : (
             <div className={`row bar rarity-row rarity-${result.item.rarity}`}>
+              {result.item.thumb && <img className="thumb" src={result.item.thumb} alt="" />}
               <div className="row-main">
                 {result.item.name}
                 <div className="muted small-t">

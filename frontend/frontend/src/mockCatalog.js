@@ -22,22 +22,28 @@ export const EQUIPMENT = [
 
 // slot: hat | hoodie | pants | shoe | chain (как в слотах гардероба)
 // price: null значит «в магазине не продаётся, только из паков»
-// image: путь к PNG-слою для манекена (например '/clothes/cap.png'), пока null
+// image: PNG-слой 512x1024 для манекена, thumb: маленькая иконка для списков (public/clothes/)
+// Бонусы специально совсем небольшие. Все цифры временные, их меняет автор игры.
+const C = (file) => ({ image: `/clothes/${file}.png`, thumb: `/clothes/${file}_thumb.png` })
 export const CLOTHING = [
-  { id: 1, slot: 'hat', name: 'Винтажная бейсболка', rarity: 'common', price: 500, image: null,
-    description: 'Выцветшая кепка со двора.', bonus: { type: 'income_pct', value: 3 } },
-  { id: 2, slot: 'hat', name: 'Чёрная шапка', rarity: 'rare', price: null, image: null,
-    description: 'Тёплая шапка без надписей.', bonus: { type: 'popularity_pct', value: 10 } },
-  { id: 3, slot: 'hoodie', name: 'Чёрное худи', rarity: 'common', price: 800, image: null,
-    description: 'Базовое худи на каждый день.', bonus: { type: 'popularity_pct', value: 5 } },
-  { id: 4, slot: 'pants', name: 'Карго', rarity: 'common', price: 600, image: null,
-    description: 'Широкие штаны с карманами.', bonus: { type: 'charisma', value: 1 } },
-  { id: 5, slot: 'shoe', name: 'Белые кроссовки', rarity: 'common', price: 700, image: null,
-    description: 'Чистые до первой лужи.', bonus: { type: 'income_pct', value: 3 } },
-  { id: 6, slot: 'chain', name: 'Цепь-звено', rarity: 'rare', price: 2500, image: null,
-    description: 'Тяжёлая цепь на шею.', bonus: { type: 'income_pct', value: 10 } },
-  { id: 7, slot: 'chain', name: 'Золотая цепь', rarity: 'epic', price: null, image: null,
-    description: 'Выпадает редко.', bonus: { type: 'income_pct', value: 20 } },
+  { id: 1, slot: 'hat', name: 'Кепка «Бутта»', rarity: 'common', price: 300, ...C('cap1'),
+    description: 'Белая кепка с готическим логотипом.', bonus: { type: 'income_pct', value: 3 } },
+  { id: 2, slot: 'hoodie', name: 'Свитшот «ВРАГ»', rarity: 'common', price: 450, ...C('hoodie1'),
+    description: 'Чёрный свитшот с красной надписью.', bonus: { type: 'popularity_pct', value: 7 } },
+  { id: 3, slot: 'hoodie', name: 'Худи-маска', rarity: 'rare', price: 1500, ...C('hoodie3'),
+    description: 'Чёрное худи на молнии с глухим капюшоном.', bonus: { type: 'income_pct', value: 5 } },
+  { id: 4, slot: 'hoodie', name: 'Серое пальто', rarity: 'rare', price: 1800, ...C('coat1'),
+    description: 'Длинное двубортное пальто.', bonus: { type: 'popularity_pct', value: 7 } },
+  { id: 5, slot: 'pants', name: 'Джинсы с черепами', rarity: 'common', price: 500, ...C('jeans1'),
+    description: 'Голубые джинсы с принтом из черепов.', bonus: { type: 'income_pct', value: 3 } },
+  { id: 6, slot: 'pants', name: 'Чёрные клёши', rarity: 'rare', price: 1400, ...C('jeans2'),
+    description: 'Расклешённые штаны с блеском потёртой кожи.', bonus: { type: 'popularity_pct', value: 7 } },
+  { id: 7, slot: 'shoe', name: 'Красные кроссовки', rarity: 'common', price: 600, ...C('sneakers1'),
+    description: 'Массивные красные кроссовки.', bonus: { type: 'popularity_pct', value: 7 } },
+  { id: 8, slot: 'shoe', name: 'Тяжёлые ботинки', rarity: 'rare', price: 1600, ...C('boots1'),
+    description: 'Чёрные ботинки с пряжками и заклёпками.', bonus: { type: 'income_pct', value: 5 } },
+  { id: 9, slot: 'chain', name: 'Клетчатый шарф', rarity: 'epic', price: null, ...C('scarf1'),
+    description: 'Шарф с бахромой. Выпадает только из паков.', bonus: { type: 'income_pct', value: 8 } },
 ]
 
 export const PACKS = [{ id: 1, name: 'Базовый пак', price: 200, clothing_chance: 0.07 }]

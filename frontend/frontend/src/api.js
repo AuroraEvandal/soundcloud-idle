@@ -548,6 +548,7 @@ const clView = (c) => ({
   rarity: c.rarity,
   price: c.price,
   image: c.image,
+  thumb: c.thumb,
   description: c.description,
   bonus: c.bonus,
   owned: db.studio.clothing.includes(c.id),
@@ -600,7 +601,7 @@ const mock2 = {
       const p = db.player
       const streams = Math.round(beat.base_streams * (1 + p.popularity / 200) * (1 + pctOf('income_pct') / 100))
       const coins = Math.round(streams / 10)
-      const popularity_change = Math.max(1, Math.round((streams / 100) * (1 + pctOf('popularity_pct') / 100)))
+      const popularity_change = Math.max(1, Math.round(streams / 100))
       p.streams += streams
       p.coins += coins
       p.popularity += popularity_change

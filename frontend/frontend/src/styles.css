@@ -1210,8 +1210,24 @@ button:disabled {
 }
 .mannequin {
   position: relative;
-  width: 120px;
-  height: 240px;
+  width: 170px;
+  height: 340px;
+}
+.thumb {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.eq-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.mannequin .layer {
+  image-rendering: pixelated;
 }
 .mannequin .layer {
   position: absolute;

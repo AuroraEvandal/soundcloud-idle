@@ -21,7 +21,7 @@
 `"bonus": { "type": "income_pct" | "popularity_pct" | "charisma", "value": 10 }`
 
 - `income_pct`: +N% к доходу от сниппетов.
-- `popularity_pct`: +N% к росту популярности (сниппеты и победы в батлах).
+- `popularity_pct`: +N% к популярности, получаемой за победы в батлах (бонус округляется, поэтому значения около 7% и выше).
 - `charisma`: +N к харизме (в расчёт батла пока не входит, решить отдельно).
 
 ## Функции
@@ -66,7 +66,7 @@ popularity += max(1, round(streams / 100 * (1 + popularity_pct / 100)))
   "player": {},
   "equipment": [{ "id": 1, "name": "Наушники", "price": 500, "bonus": {}, "owned": false }],
   "clothing": [{ "id": 1, "slot": "hat", "name": "Винтажная бейсболка", "rarity": "common", "price": 500,
-                 "image": "https://.../cap.png", "description": "...", "bonus": {}, "owned": false }],
+                 "image": "https://.../cap1.png", "thumb": "https://.../cap1_thumb.png", "description": "...", "bonus": {}, "owned": false }],
   "packs": [{ "id": 1, "name": "Базовый пак", "price": 200 }]
 }
 ```
@@ -115,4 +115,4 @@ popularity += max(1, round(streams / 100 * (1 + popularity_pct / 100)))
 - `player_cards` уже есть: стартовая колода при создании игрока, дальше пополняется паками.
 - `packs(id, name, price, clothing_chance)`
 
-Картинки одежды: PNG с прозрачным фоном, один размер для всех (например 512×1024), один ракурс, по слою на слот. Хранить в Supabase Storage, в БД ссылка.
+Картинки одежды: `image` (слой 512×1024) и `thumb` (иконка 96×96). PNG с прозрачным фоном, один размер для всех (например 512×1024), один ракурс, по слою на слот. Хранить в Supabase Storage, в БД ссылка.

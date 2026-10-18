@@ -17,9 +17,13 @@ const SLOTS = [
   ['chain', 'Цепь', 'chain'],
 ]
 
+// Порядок слоёв на манекене снизу вверх
+const Z = ['pants', 'shoe', 'hoodie', 'chain', 'hat']
+
 function ItemRow({ item, children }) {
   return (
     <div className={`row bar rarity-row rarity-${item.rarity}`}>
+      {item.thumb && <img className="thumb" src={item.thumb} alt="" />}
       <div className="row-main">
         {item.name}
         <div className="muted small-t">
@@ -108,7 +112,7 @@ export default function Store({ onClose }) {
                 <path d="M14 34h32l4 40H10Z" />
                 <path d="M16 74h12l-2 40H14ZM32 74h12l2 40H34Z" />
               </svg>
-              {SLOTS.map(([s]) => {
+              {Z.map((s) => {
                 const it = byId(wardrobe.outfit[s])
                 return it?.image ? <img key={s} className="layer" src={it.image} alt={it.name} /> : null
               })}
@@ -118,7 +122,7 @@ export default function Store({ onClose }) {
                 const it = byId(wardrobe.outfit[s])
                 return (
                   <button key={s} className={'eq' + (slot === s ? ' active' : '') + (it ? ' filled' : '')} onClick={() => setSlot(s)}>
-                    <Icon name={icon} size={30} color={it ? '#fff' : '#a0a0a0'} />
+                    {it?.thumb ? <img className="eq-thumb" src={it.thumb} alt="" /> : <Icon name={icon} size={30} color="#a0a0a0" />}
                     <span>{label}</span>
                   </button>
                 )
