@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../GameContext'
-import { startBattle, submitRound, getHand } from '../api'
+import { startBattle, submitRound, getHand, getWardrobe } from '../api'
 import { SLOTS, CRITERIA } from '../constants'
 import { errorInfo } from '../errors'
 import { readBattleId, saveBattleId, clearBattleId } from '../storage'
@@ -10,6 +10,20 @@ import ErrorBox from '../components/ErrorBox'
 import Icon from '../components/Icon'
 
 const EMPTY = { setup: null, development: null, boost: null, punch: null }
+
+// Слот -> путь к PNG-слою. Игрок: из гардероба (надетое). Соперник: из ответа start-battle.
+const playerLook = (w) =>
+  Object.fromEntries(
+    Object.entries(w?.outfit || {})
+      .map(([slot, id]) => [slot, w.items.find((i) => i.id === id)?.image])
+      .filter(([, img]) => img),
+  )
+const opponentLook = (outfit) =>
+  Object.fromEntries(
+    Object.entries(outfit || {})
+      .filter(([, it]) => it?.image)
+      .map(([slot, it]) => [slot, it.image]),
+  )
 const fmt1 = (n) => Number(n).toFixed(1)
 
 function Lines({ title, side }) {
@@ -47,6 +61,7 @@ export default function Battle() {
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const [look, setLook] = useState({})
   const busyRef = useRef(false)
 
   // Восстановление после перезапуска: проверяем, жив ли сохранённый battleId.
@@ -103,7 +118,9 @@ export default function Battle() {
     setError(null)
     setNote('')
     try {
-      const r = await startBattle(opp.id)
+      // Одежда на бойце: берём то, что надето в гардеробе прямо сейчас. Если не загрузилась, рисуем без неё.
+      const [r, w] = await Promise.all([startBattle(opp.id), getWardrobe().catch(() => null)])
+      setLook(playerLook(w))
       saveBattleId(r.battle.id)
       setBattle(r.battle)
       setRound(r.round)
@@ -221,6 +238,8 @@ export default function Battle() {
       <Arena
         playerName={nick}
         opponentName={battle?.opponent?.name}
+        playerLook={look}
+        opponentLook={opponentLook(battle?.opponent?.outfit)}
         playerState={pState}
         opponentState={oState}
         shake={shake}

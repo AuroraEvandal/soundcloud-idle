@@ -25,3 +25,6 @@ export const RARITY = {
   rare: 'Редкая',
   epic: 'Эпическая',
 }
+
+// Порядок слоёв одежды на фигуре снизу вверх (одинаков в гардеробе и в арене батла)
+export const LAYER_ORDER = ['pants', 'shoe', 'hoodie', 'chain', 'hat']

@@ -616,8 +616,7 @@ button:disabled {
 .arena {
   position: relative;
   flex: none;
-  height: 38%;
-  min-height: 170px;
+  height: clamp(180px, 30dvh, 270px);
   background: var(--card);
   overflow: hidden;
 }
@@ -654,7 +653,7 @@ button:disabled {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 14%;
+  bottom: 12%;
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
@@ -666,17 +665,37 @@ button:disabled {
   gap: 4px;
   animation: bob 0.8s steps(2) infinite;
 }
+.fighter:last-child {
+  animation-delay: 0.4s;
+}
 .fighter-name {
   font-size: 11px;
-  max-width: 120px;
+  max-width: 130px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sprite {
-  width: 72px;
-  height: 96px;
+.fighter-name.mine {
+  color: var(--accent);
+  font-weight: 700;
+}
+.fig {
+  position: relative;
+  height: clamp(130px, calc(30dvh - 60px), 200px);
+  aspect-ratio: 1 / 2;
+}
+.fig-body,
+.fig-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.fig-layer {
+  object-fit: contain;
   image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
 }
 @keyframes bob {
   50% {
@@ -713,6 +732,7 @@ button:disabled {
 .controls {
   flex: 1;
   min-height: 0;
+  overflow-y: auto; /* на маленьких экранах управление прокручивается */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -769,8 +789,8 @@ button:disabled {
   color: var(--accent);
 }
 .hand {
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 140px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -816,6 +836,8 @@ button:disabled {
 }
 .cta {
   flex: none;
+  position: sticky;
+  bottom: 0;
   width: 100%;
   margin-bottom: 4px;
 }

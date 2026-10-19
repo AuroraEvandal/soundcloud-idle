@@ -264,6 +264,25 @@ function shuffle(arr) {
   return a
 }
 
+// Случайная одежда соперника из всей библиотеки. Только внешний вид: бонусов у неё нет,
+// в расчёты она не входит (pctOf смотрит только на одежду игрока).
+function randomOutfit() {
+  const slots = ['hat', 'hoodie', 'pants', 'shoe', 'chain']
+  const look = ({ id, name, image }) => ({ id, name, image }) // только внешний вид, без бонуса
+  const pick = (slot) => {
+    const list = CLOTHING.filter((c) => c.slot === slot)
+    return list.length ? look(list[rndInt(0, list.length - 1)]) : null
+  }
+  const out = {}
+  for (const slot of slots) out[slot] = Math.random() < 0.8 ? pick(slot) : null
+  // соперник никогда не выходит совсем раздетым: минимум три вещи
+  for (const slot of shuffle(slots)) {
+    if (Object.values(out).filter(Boolean).length >= 3) break
+    if (!out[slot]) out[slot] = pick(slot)
+  }
+  return out
+}
+
 // Рука: 4-6 случайных карточек на каждый слот из карточек игрока
 function makeHand() {
   const hand = {}
@@ -391,6 +410,7 @@ const mock = {
       status: 'active',
       opp,
       themes: shuffle(THEMES),
+      outfit: randomOutfit(),
       round: 1,
       pw: 0,
       ow: 0,
@@ -403,7 +423,7 @@ const mock = {
       battle: {
         id,
         status: 'active',
-        opponent: { id: opp.id, name: opp.name, style: opp.style, level: opp.level },
+        opponent: { id: opp.id, name: opp.name, style: opp.style, level: opp.level, outfit: clone(b.outfit) },
         player_rounds_won: 0,
         opponent_rounds_won: 0,
       },
