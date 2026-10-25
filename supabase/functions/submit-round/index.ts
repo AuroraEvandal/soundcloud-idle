@@ -1,5 +1,5 @@
 import { authPlayer, db, GameError, handle, requestId, rpcError } from '../_shared/common.ts'
-import { scoreRound } from '../_shared/scoring.ts'
+import { scoreRound, type ThemeRelations } from '../_shared/scoring.ts'
 
 Deno.serve((req) => handle(req, async (body) => {
   const { player } = await authPlayer(body)
@@ -51,10 +51,17 @@ Deno.serve((req) => handle(req, async (body) => {
   const owned = await db.from('player_cards').select('card_id').eq('player_id', player.id).in('card_id', cardIds)
   if (owned.error) throw owned.error
   if (owned.data.length !== 4) throw new GameError('CARD_NOT_OWNED', 403)
-  if (Number(player.ai_requests_today) >= 20) throw new GameError('DAILY_LIMIT', 429)
+
+  const relationsQuery = await db.from('theme_relations').select('theme_a,theme_b,strength')
+  if (relationsQuery.error) throw relationsQuery.error
+  // Пары в таблице уже в алфавитном порядке (theme_a < theme_b); scoring сортирует ключ так же.
+  const relations: ThemeRelations = {}
+  for (const row of relationsQuery.data as { theme_a: string; theme_b: string; strength: number }[]) {
+    relations[`${row.theme_a}|${row.theme_b}`] = Number(row.strength)
+  }
 
   const theme = battle.themes[roundNumber - 1]
-  const scoredRound = await scoreRound(cards as Record<string, unknown>[], theme, Number((Array.isArray(battle.opponents) ? battle.opponents[0] : battle.opponents)?.level || 1))
+  const scoredRound = await scoreRound(cards as Record<string, unknown>[], theme, Number((Array.isArray(battle.opponents) ? battle.opponents[0] : battle.opponents)?.level || 1), relations)
   const scored = { round: { number: roundNumber, ...scoredRound.round } }
   const result = await db.rpc('submit_round_atomic', {
     p_player_id: player.id,

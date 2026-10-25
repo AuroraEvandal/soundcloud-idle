@@ -84,7 +84,6 @@ export function playerView(p: Record<string, unknown>) {
     popularity: p.popularity,
     coins: p.coins,
     skills: { rhyme: p.skill_rhyme, flow: p.skill_flow, punch: p.skill_punch, charisma: p.skill_charisma },
-    ai_requests_left: Math.max(0, 20 - Number(p.ai_requests_today || 0)),
   }
 }
 

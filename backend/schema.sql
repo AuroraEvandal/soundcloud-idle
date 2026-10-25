@@ -39,7 +39,7 @@ create table players (
   skill_flow int not null default 1,
   skill_punch int not null default 1,
   skill_charisma int not null default 1,
-  ai_requests_today int not null default 0,    -- счётчик для лимита ИИ-оценок
+  ai_requests_today int not null default 0,    -- не используется: осталось от ИИ-судьи, лимита оценок в MVP нет
   ai_requests_date date not null default current_date,
   created_at timestamptz not null default now()
 );
@@ -127,6 +127,50 @@ create table rounds (
 );
 
 
+-- 9. ОДЕЖДА (каталог всей косметики)
+create table clothing (
+  id serial primary key,
+  slot text not null check (slot in ('hat', 'hoodie', 'pants', 'shoe', 'chain')),
+  name text not null,
+  rarity text not null default 'common' check (rarity in ('common', 'rare', 'epic')),
+  price int,                                    -- null = не продаётся, только из паков
+  image_url text not null,                      -- PNG-слой 512x1024 для манекена
+  thumb_url text not null,                      -- иконка 96x96 для списков
+  description text,
+  bonus_type text check (bonus_type in ('income_pct', 'popularity_pct', 'charisma')),
+  bonus_value int not null default 0
+);
+
+
+-- 10. КУПЛЕННАЯ ОДЕЖДА (что лежит в гардеробе игрока)
+create table player_clothing (
+  player_id uuid references players(id) on delete cascade,
+  clothing_id int references clothing(id) on delete cascade,
+  acquired_at timestamptz not null default now(),
+  primary key (player_id, clothing_id)
+);
+
+
+-- 11. НАДЕТАЯ ОДЕЖДА (один ряд на слот; clothing_id null = слот пуст)
+create table player_outfit (
+  player_id uuid not null references players(id) on delete cascade,
+  slot text not null check (slot in ('hat', 'hoodie', 'pants', 'shoe', 'chain')),
+  clothing_id int references clothing(id) on delete set null,
+  primary key (player_id, slot)
+);
+
+
+-- 12. СВЯЗИ ТЕМ (насколько две темы близки; заполняет автор игры)
+-- Пара хранится один раз: theme_a по алфавиту раньше theme_b.
+-- Правила чтения: одинаковые темы = 10, пары нет в таблице = 5 (нейтрально).
+create table theme_relations (
+  theme_a text not null check (theme_a < theme_b),
+  theme_b text not null,
+  strength numeric(3,1) not null check (strength between 0 and 10),
+  primary key (theme_a, theme_b)
+);
+
+
 -- =====================================================
 -- БЕЗОПАСНОСТЬ
 -- Включаем RLS на всех таблицах. Без политик это значит:
@@ -141,6 +185,10 @@ alter table player_cards enable row level security;
 alter table opponent_lines enable row level security;
 alter table battles enable row level security;
 alter table rounds enable row level security;
+alter table clothing enable row level security;
+alter table player_clothing enable row level security;
+alter table player_outfit enable row level security;
+alter table theme_relations enable row level security;
 
 
 -- =====================================================
@@ -152,11 +200,12 @@ values ('Двор', 0, 1);
 insert into opponents (location_id, name, style, level)
 values (1, 'МС Подвал', 'Дворовый, грубоватый, любит приземлённые образы', 1);
 
-insert into cards (text, slot, theme, rarity, syllables, rhyme_group, rhyme_syllables, bonus_type, bonus_value) values
-('Ты в бою как нищий — пустой кошелёк', 'setup', 'деньги', 'common', 11, 'ок', 1, null, 0),
-('А я на сцене — ты просто игрок', 'development', 'деньги', 'common', 10, 'ок', 1, null, 0),
-('Ты копишь на кроссы, я кручу бабки', 'boost', 'деньги', 'common', 11, 'апки', 2, null, 0),
-('Твой флоу, бро, — домашние тапки', 'punch', 'ирония', 'rare', 10, 'апки', 2, 'flat_points', 3);
+-- id совпадают с backend/seed.sql, чтобы сид обновлял эти же строки, а не создавал дубли
+insert into cards (id, text, slot, theme, rarity, syllables, rhyme_group, rhyme_syllables, bonus_type, bonus_value) values
+(140, 'Ты в бою как нищий — пустой кошелёк', 'setup', 'деньги', 'common', 11, 'ок', 1, null, 0),
+(141, 'А я на сцене — ты просто игрок', 'development', 'деньги', 'common', 10, 'ок', 1, null, 0),
+(143, 'Ты копишь на кроссы, я кручу бабки', 'boost', 'деньги', 'common', 11, 'апки', 2, null, 0),
+(142, 'Твой флоу, бро, — домашние тапки', 'punch', 'ирония', 'rare', 10, 'апки', 2, 'flat_points', 3);
 
 create unique index battles_start_request_id_idx
   on battles (player_id, start_request_id) where start_request_id is not null;

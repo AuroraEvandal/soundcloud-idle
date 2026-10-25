@@ -35,7 +35,7 @@ with starter(id, text, slot, theme, rarity, bonus_value) as (values
 )
 insert into public.cards (id, text, slot, theme, rarity, syllables, rhyme_group, rhyme_syllables, bonus_type, bonus_value)
 select id, text, slot, theme, rarity,
-  length(text) - length(regexp_replace(lower(text), '[^аеёиоуыэюя]', '', 'g')),
+  length(regexp_replace(text, '[^аеёиоуыэюяАЕЁИОУЫЭЮЯ]', '', 'g')),
   right(regexp_replace(lower(text), '[^а-яё]', '', 'g'), 2), 1,
   case when bonus_value > 0 then 'flat_points' else null end, bonus_value
 from starter
@@ -51,3 +51,51 @@ on conflict (id) do update set
   bonus_value = excluded.bonus_value;
 
 select setval(pg_get_serial_sequence('public.cards', 'id'), greatest((select max(id) from public.cards), 1), true);
+
+-- Каталог одежды (косметика). Совпадает с мок-каталогом фронта (src/mockCatalog.js):
+-- те же id и предметы, чтобы мок и сервер выдавали одинаковую вещь по id.
+-- image_url/thumb_url пока пути к PNG во фронтенде (public/clothes); когда картинки
+-- переедут в Supabase Storage, здесь появятся полные ссылки.
+with starter(id, slot, name, rarity, price, file, description, bonus_type, bonus_value) as (values
+  (1, 'hat', 'Кепка «Бутта»', 'common', 300, 'cap1', 'Белая кепка с готическим логотипом.', 'income_pct', 3),
+  (2, 'hoodie', 'Свитшот «ВРАГ»', 'common', 450, 'hoodie1', 'Чёрный свитшот с красной надписью.', 'popularity_pct', 7),
+  (3, 'hoodie', 'Худи-маска', 'rare', 1500, 'hoodie3', 'Чёрное худи на молнии с глухим капюшоном.', 'income_pct', 5),
+  (4, 'hoodie', 'Серое пальто', 'rare', 1800, 'coat1', 'Длинное двубортное пальто.', 'popularity_pct', 7),
+  (5, 'pants', 'Джинсы с черепами', 'common', 500, 'jeans1', 'Голубые джинсы с принтом из черепов.', 'income_pct', 3),
+  (6, 'pants', 'Чёрные клёши', 'rare', 1400, 'jeans2', 'Расклешённые штаны с блеском потёртой кожи.', 'popularity_pct', 7),
+  (7, 'shoe', 'Красные кроссовки', 'common', 600, 'sneakers1', 'Массивные красные кроссовки.', 'popularity_pct', 7),
+  (8, 'shoe', 'Тяжёлые ботинки', 'rare', 1600, 'boots1', 'Чёрные ботинки с пряжками и заклёпками.', 'income_pct', 5),
+  (9, 'chain', 'Клетчатый шарф', 'epic', null, 'scarf1', 'Шарф с бахромой. Выпадает только из паков.', 'income_pct', 8)
+)
+insert into public.clothing (id, slot, name, rarity, price, image_url, thumb_url, description, bonus_type, bonus_value)
+select id, slot, name, rarity, price,
+  '/clothes/' || file || '.png',
+  '/clothes/' || file || '_thumb.png',
+  description, bonus_type, bonus_value
+from starter
+on conflict (id) do update set
+  slot = excluded.slot,
+  name = excluded.name,
+  rarity = excluded.rarity,
+  price = excluded.price,
+  image_url = excluded.image_url,
+  thumb_url = excluded.thumb_url,
+  description = excluded.description,
+  bonus_type = excluded.bonus_type,
+  bonus_value = excluded.bonus_value;
+
+select setval(pg_get_serial_sequence('public.clothing', 'id'), greatest((select max(id) from public.clothing), 1), true);
+
+-- =====================================================
+-- СВЯЗИ ТЕМ (theme_relations)
+-- Автор игры заполняет сам: насколько две темы близки по смыслу, 0..10.
+-- Пара пишется один раз, тема_а по алфавиту раньше тема_б (иначе БД отклонит).
+-- Пока пары нет в таблице, оценка «смысл» считает её нейтральной (5).
+-- Пример (раскомментируй и поменяй числа на свои):
+--
+-- insert into public.theme_relations (theme_a, theme_b, strength) values
+--   ('деньги', 'ирония', 6),
+--   ('деньги', 'улица', 8),
+--   ('ирония', 'улица', 7)
+-- on conflict (theme_a, theme_b) do update set strength = excluded.strength;
+-- =====================================================
