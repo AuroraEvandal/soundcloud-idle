@@ -3,6 +3,7 @@
 // - панч: из свойств карточки в слоте «панч» (редкость + бонус);
 // - смысл: из таблицы связей тем theme_relations (заполняет автор игры).
 import { GameError } from './common.ts'
+import { rhymeScore } from './rhyme.ts'
 
 const clamp = (x: number, min = 0, max = 10) => Math.max(min, Math.min(max, x))
 const half = (x: number) => Math.round(x * 2) / 2
@@ -25,16 +26,8 @@ const botLines: Record<string, string[]> = {
   ирония: ['Ты хотел быть грозным — вышел тихий звук', 'Твой альбом — инструкция, как уснуть вокруг', 'Ты назвал себя легендой у друзей', 'Даже эхо не пришло послушать ей'],
 }
 
-function rhymeScore(cards: Record<string, unknown>[]) {
-  let score = 4
-  for (const [a, b] of [[0, 1], [2, 3]]) {
-    const ra = String(cards[a].rhyme_group || '').toLowerCase()
-    const rb = String(cards[b].rhyme_group || '').toLowerCase()
-    if (ra && rb && ra === rb) score += 3
-    else if (ra && rb && ra.slice(-1) === rb.slice(-1)) score += 1.5
-  }
-  return half(clamp(score))
-}
+// Рифма считается в rhyme.ts (отдельный файл без зависимостей — тестируется
+// командой: node supabase/tests/rhyme.test.mjs).
 
 function flowScore(cards: Record<string, unknown>[]) {
   const syllables = cards.map((c) => Number(c.syllables || 0))
