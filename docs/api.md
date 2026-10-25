@@ -32,6 +32,10 @@
 | `CARD_NOT_OWNED` | У игрока нет такой карточки |
 | `OPPONENT_LOCKED` | Соперник ещё не открыт (мало популярности) |
 | `DAILY_LIMIT` | Исчерпан дневной лимит ИИ-оценок |
+| `IDEMPOTENCY_CONFLICT` | `requestId` уже использован с другим содержимым запроса |
+| `BATTLE_IN_PROGRESS` | У игрока уже есть активный батл с другим соперником |
+| `CARD_POOL_TOO_SMALL` | Для одного из слотов у игрока меньше 4 доступных карточек |
+| `JUDGE_UNAVAILABLE` | Судья временно недоступен; раунд не был записан |
 | `INTERNAL` | Ошибка сервера, можно повторить |
 
 ---
@@ -63,6 +67,8 @@
   }
 }
 ```
+
+`login` создаёт игрока один раз и выдаёт стартовые карточки. Повторный вызов не сбрасывает прогресс.
 
 ---
 
@@ -111,6 +117,15 @@
 **Ответ**
 ```json
 {
+  "battle": {
+    "id": "9f8e7d6c-...",
+    "status": "active",
+    "opponent": { "id": 1, "name": "МС Подвал", "style": "Дворовый, грубоватый", "level": 1 },
+    "player_rounds_won": 0,
+    "opponent_rounds_won": 0
+  },
+  "round": { "number": 1, "theme": "деньги" },
+  "last_result": null,
   "cards": {
     "setup": [
       { "id": 140, "text": "Ты в бою как нищий — пустой кошелёк", "theme": "деньги", "rarity": "common", "syllables": 11 }
@@ -128,6 +143,8 @@
 }
 ```
 
+Также возвращаются `round` (текущий раунд и тема), `battle` (соперник и счёт) и `last_result` (последний отправленный раунд, если он есть; `null`, если ещё нет). Если игрок закрыл приложение после отправки раунда, фронт показывает сохранённый результат и позволяет продолжить. После завершения батла `round` и `cards` равны `null`, а `last_result` содержит финальный результат.
+
 Слоты: `setup` (завязка), `development` (развитие), `boost` (усиление), `punch` (панч).
 
 ---
@@ -138,8 +155,10 @@
 
 **Запрос**
 ```json
-{ "initData": "...", "opponentId": 1 }
+{ "initData": "...", "opponentId": 1, "requestId": "UUID" }
 ```
+
+`requestId` генерируется фронтом один раз на попытку начать батл и повторяется при сетевом повторе. Повтор с тем же ID возвращает тот же батл, а не создаёт второй.
 
 **Ответ**
 ```json
@@ -156,7 +175,9 @@
 }
 ```
 
-Ошибки: `OPPONENT_LOCKED`.
+Одновременно у игрока может быть только один активный батл. Повторный старт с тем же соперником вернёт его состояние; запрос с другим соперником получит `BATTLE_IN_PROGRESS`.
+
+Ошибки: `OPPONENT_LOCKED`, `BATTLE_IN_PROGRESS`, `CARD_POOL_TOO_SMALL`.
 
 ---
 
@@ -172,9 +193,12 @@
   "initData": "...",
   "battleId": "9f8e7d6c-...",
   "roundNumber": 1,
+  "requestId": "UUID",
   "cardIds": [140, 141, 143, 142]
 }
 ```
+
+`requestId` генерируется фронтом один раз для отправляемой строки и сохраняется при сетевых повторах. Повтор того же запроса возвращает сохранённый ответ без повторной оценки и наград. Повторный номер раунда с другим содержимым возвращает `ROUND_ALREADY_SUBMITTED`.
 
 **Ответ (батл продолжается)**
 ```json
@@ -229,7 +253,7 @@
 }
 ```
 
-Ошибки: `BATTLE_NOT_FOUND`, `BATTLE_FINISHED`, `ROUND_ALREADY_SUBMITTED`, `INVALID_ROUND`, `INVALID_CARDS`, `CARD_NOT_OWNED`, `DAILY_LIMIT`.
+Ошибки: `BATTLE_NOT_FOUND`, `BATTLE_FINISHED`, `ROUND_ALREADY_SUBMITTED`, `INVALID_ROUND`, `INVALID_CARDS`, `CARD_NOT_OWNED`, `DAILY_LIMIT`, `IDEMPOTENCY_CONFLICT`, `JUDGE_UNAVAILABLE`.
 
 ---
 

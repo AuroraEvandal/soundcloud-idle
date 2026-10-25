@@ -73,10 +73,12 @@ function Packs() {
   const [packs, setPacks] = useState([])
   const [error, setError] = useState(null)
   const [spin, setSpin] = useState(false)
+  const [opening, setOpening] = useState(false)
   const [go, setGo] = useState(false)
   const [drop, setDrop] = useState(null)
   const [result, setResult] = useState(null)
   const box = useRef(null)
+  const openingRef = useRef(false)
   const pack = packs[0]
 
   useEffect(() => {
@@ -86,7 +88,9 @@ function Packs() {
   }, [])
 
   async function open() {
-    if (spin || !pack) return
+    if (openingRef.current || spin || !pack) return
+    openingRef.current = true
+    setOpening(true)
     setError(null)
     setResult(null)
     try {
@@ -102,6 +106,9 @@ function Packs() {
       }, 3400)
     } catch (e) {
       setError(errorInfo(e))
+    } finally {
+      openingRef.current = false
+      setOpening(false)
     }
   }
 
@@ -153,8 +160,8 @@ function Packs() {
           {result.duplicate && <div className="muted small-t">Такая карточка уже была: +₽{result.refund}</div>}
         </div>
       )}
-      <button className="btn wide" onClick={open} disabled={spin || !pack || (player?.coins ?? 0) < (pack?.price ?? 0)}>
-        ОТКРЫТЬ ПАК{pack ? ` · ₽${pack.price}` : ''}
+      <button className="btn wide" onClick={open} disabled={opening || spin || !pack || (player?.coins ?? 0) < (pack?.price ?? 0)}>
+        {opening ? 'ОТКРЫВАЕМ…' : `ОТКРЫТЬ ПАК${pack ? ` · ₽${pack.price}` : ''}`}
       </button>
       {pack && (player?.coins ?? 0) < pack.price && <div className="muted small-t">Не хватает монет</div>}
     </div>

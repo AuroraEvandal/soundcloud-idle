@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGame } from '../GameContext'
 import { getShop, getWardrobe, buyItem, equipItem } from '../api'
 import { errorInfo } from '../errors'
@@ -44,6 +44,7 @@ export default function Store({ onClose }) {
   const [slot, setSlot] = useState('hat')
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
 
   const load = useCallback(async () => {
     try {
@@ -61,7 +62,8 @@ export default function Store({ onClose }) {
   }, [load])
 
   async function act(fn) {
-    if (busy) return
+    if (busyRef.current) return
+    busyRef.current = true
     setBusy(true)
     setError(null)
     try {
@@ -69,6 +71,7 @@ export default function Store({ onClose }) {
     } catch (e) {
       setError(errorInfo(e))
     } finally {
+      busyRef.current = false
       setBusy(false)
     }
   }

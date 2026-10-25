@@ -74,11 +74,11 @@ button:disabled {
 .statusbar {
   position: relative;
   flex: none;
-  height: 48px;
+  height: calc(48px + env(safe-area-inset-top, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 24px 0;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) 24px 0;
   background: var(--bg);
   z-index: 5;
 }
@@ -156,7 +156,7 @@ button:disabled {
   border-radius: 2px;
   background: #fff;
   opacity: 0.6;
-  margin: 8px auto 8px;
+  margin: 8px auto calc(8px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---------- Рабочий стол ---------- */

@@ -1,0 +1,14 @@
+[functions.login]
+verify_jwt = false
+
+[functions.get-profile]
+verify_jwt = false
+
+[functions.get-hand]
+verify_jwt = false
+
+[functions.start-battle]
+verify_jwt = false
+
+[functions.submit-round]
+verify_jwt = false

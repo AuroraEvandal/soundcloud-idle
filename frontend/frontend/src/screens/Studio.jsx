@@ -18,6 +18,7 @@ export default function Studio({ onClose }) {
   const [error, setError] = useState(null)
   const [tap, setTap] = useState(false)
   const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
   const pending = useRef(0)
   const inflight = useRef(false)
   const timer = useRef(null)
@@ -56,7 +57,14 @@ export default function Studio({ onClose }) {
     }
   }, [load, notify, setPlayer])
 
-  useEffect(() => () => clearTimeout(timer.current), [])
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current)
+      // Не теряем тапы, если игрок уходит со страницы раньше debounce-таймера.
+      if (pending.current) flush()
+    },
+    [flush],
+  )
 
   function onTap() {
     if (!studio || studio.energy <= 0) {
@@ -71,7 +79,8 @@ export default function Studio({ onClose }) {
   }
 
   async function act(fn) {
-    if (busy) return
+    if (busyRef.current) return
+    busyRef.current = true
     setBusy(true)
     setError(null)
     try {
@@ -79,6 +88,7 @@ export default function Studio({ onClose }) {
     } catch (e) {
       setError(errorInfo(e))
     } finally {
+      busyRef.current = false
       setBusy(false)
     }
   }

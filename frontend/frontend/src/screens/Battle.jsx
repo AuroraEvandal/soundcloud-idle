@@ -60,22 +60,54 @@ export default function Battle() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [restoring, setRestoring] = useState(false)
   const [note, setNote] = useState('')
   const [look, setLook] = useState({})
   const busyRef = useRef(false)
 
-  // Восстановление после перезапуска: проверяем, жив ли сохранённый battleId.
-  // Известная дыра API: get-hand не возвращает номер раунда и тему, поэтому продолжить
-  // раунд нельзя. Сообщаем игроку и сбрасываем (см. frontend-AGENTS.md, раздел 10).
+  async function restoreBattle(id) {
+    setRestoring(true)
+    setError(null)
+    try {
+      const state = await getHand(id)
+      // Не подменяем состояние, если игрок уже успел начать другой батл.
+      if (readBattleId() !== id) return
+      if (!state.battle) {
+        clearBattleId()
+        setNote('Незавершённый батл не удалось восстановить. Начни новый')
+        return
+      }
+      setBattle(state.battle)
+      setHand(state.cards)
+      setLook({})
+      if (state.last_result) {
+        setRound(state.last_result.round)
+        setResult(state.last_result)
+        setPhase('result')
+      } else {
+        setRound(state.round)
+        setResult(null)
+        setPhase('build')
+      }
+    } catch (e) {
+      if (readBattleId() !== id) return
+      const info = errorInfo(e)
+      if (info.code === 'BATTLE_NOT_FOUND') {
+        clearBattleId()
+        setNote('Незавершённый батл не найден. Начни новый')
+      } else {
+        setError({ ...info, retry: () => restoreBattle(id) })
+      }
+    } finally {
+      setRestoring(false)
+    }
+  }
+
   useEffect(() => {
     const id = readBattleId()
-    if (!id) return
-    getHand(id)
-      .then(() => {
-        clearBattleId()
-        setNote('Незавершённый батл не удалось продолжить. Начни новый')
-      })
-      .catch(() => clearBattleId())
+    if (id) restoreBattle(id)
+    // Восстановление запускается один раз при создании экрана.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const unlocked = (profile?.opponents || []).filter((o) => o.unlocked).length
@@ -98,12 +130,28 @@ export default function Battle() {
     }
     setError({ ...info, retry: info.action === 'retry' ? retry : null })
     if (info.action === 'resync' && battle) {
-      getHand(battle.id)
-        .then((r) => {
+      const resync = async () => {
+        try {
+          const r = await getHand(battle.id)
+          if (r.battle) setBattle(r.battle)
+          if (r.last_result) {
+            setRound(r.last_result.round)
+            setResult(r.last_result)
+            setHand(r.cards)
+            setPhase('result')
+            setError(null)
+            return
+          }
+          setRound(r.round)
           setHand(r.cards)
           setPicks(EMPTY)
-        })
-        .catch(() => {})
+          setError(null)
+        } catch (e) {
+          const recoveryError = errorInfo(e)
+          setError({ ...recoveryError, retry: resync })
+        }
+      }
+      resync()
     }
   }
 
@@ -128,7 +176,13 @@ export default function Battle() {
       setPicks(EMPTY)
       setActive('setup')
       setResult(null)
-      setPhase('build')
+      if (r.last_result) {
+        setRound(r.last_result.round)
+        setResult(r.last_result)
+        setPhase('result')
+      } else {
+        setPhase('build')
+      }
     } catch (e) {
       fail(e, () => begin(opp), { required: opp.required_popularity })
     } finally {
@@ -193,6 +247,7 @@ export default function Battle() {
           Открыто: {unlocked} из {profile?.opponents?.length || 0}
         </div>
         {note && <div className="note">{note}</div>}
+        {restoring && <div className="note">Восстанавливаю незавершённый батл…</div>}
         <ErrorBox message={error?.message} onRetry={error?.retry} onHome={() => setError(null)} />
         {outOfAi && <div className="note">Лимит оценок на сегодня исчерпан. Возвращайся завтра</div>}
         <div className="list">
@@ -201,7 +256,7 @@ export default function Battle() {
               key={o.id}
               className={'opp' + (o.unlocked ? '' : ' locked')}
               onClick={() => begin(o)}
-              disabled={busy || (o.unlocked && outOfAi)}
+              disabled={busy || restoring || (o.unlocked && outOfAi)}
             >
               <div className="opp-lvl">{o.level}</div>
               <div className="opp-main">

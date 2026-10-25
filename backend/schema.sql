@@ -93,6 +93,8 @@ create table battles (
   opponent_rounds_won int not null default 0,
   xp_reward int default 0,
   popularity_reward int default 0,
+  start_request_id uuid,
+  current_round int not null default 1,
   themes text[],                               -- темы 3 раундов
   current_hand int[],                          -- карточки, выданные на текущий раунд
   created_at timestamptz not null default now(),
@@ -118,6 +120,8 @@ create table rounds (
   player_points int,
   opponent_points int,
   winner text check (winner in ('player', 'opponent', 'draw')),
+  request_id uuid,
+  result_payload jsonb,
   created_at timestamptz not null default now(),
   unique (battle_id, round_number)
 );
@@ -153,3 +157,8 @@ insert into cards (text, slot, theme, rarity, syllables, rhyme_group, rhyme_syll
 ('А я на сцене — ты просто игрок', 'development', 'деньги', 'common', 10, 'ок', 1, null, 0),
 ('Ты копишь на кроссы, я кручу бабки', 'boost', 'деньги', 'common', 11, 'апки', 2, null, 0),
 ('Твой флоу, бро, — домашние тапки', 'punch', 'ирония', 'rare', 10, 'апки', 2, 'flat_points', 3);
+
+create unique index battles_start_request_id_idx
+  on battles (player_id, start_request_id) where start_request_id is not null;
+create unique index rounds_request_id_idx
+  on rounds (request_id) where request_id is not null;

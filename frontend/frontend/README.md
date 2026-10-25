@@ -5,14 +5,16 @@ Telegram Mini App, симулятор рэпера. Vite + React (обычный
 
 ## Запуск
 
-Нужен Node.js 20.19+ (или 22.12+).
+Нужен Node.js 22.12 или новее. Та же версия указана в `.nvmrc` и `package.json`.
 
 ```
-cd frontend
+cd frontend/frontend
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # проверка сборки
 ```
+
+Для Vercel установите Root Directory в `frontend/frontend`.
 
 Игра работает без ключей и вне Telegram: все запросы идут на фейковый сервер внутри `src/api.js`.
 

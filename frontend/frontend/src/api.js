@@ -38,6 +38,23 @@ const rnd = (a, b) => a + Math.random() * (b - a)
 const rndInt = (a, b) => Math.floor(rnd(a, b + 1))
 const clone = (x) => (x == null ? x : JSON.parse(JSON.stringify(x)))
 const useMock = (name) => MOCK[name] || !supabase
+const pendingRequestIds = new Map()
+
+// Сохраняем один ID на операцию, пока не получим определённый ответ.
+// После сетевого сбоя тот же ID позволяет серверу вернуть сохранённый результат.
+async function callIdempotent(name, body) {
+  const key = `${name}:${JSON.stringify(body)}`
+  const requestId = pendingRequestIds.get(key) || crypto.randomUUID()
+  pendingRequestIds.set(key, requestId)
+  try {
+    const result = await call(name, { ...body, requestId })
+    pendingRequestIds.delete(key)
+    return result
+  } catch (error) {
+    if (!error?.network) pendingRequestIds.delete(key)
+    throw error
+  }
+}
 
 // Общий вызов серверной функции. initData добавляется в каждый запрос.
 async function call(name, body) {
@@ -98,7 +115,7 @@ export async function startBattle(opponentId) {
     await wait(rndInt(400, 600))
     return mock.startBattle(opponentId)
   }
-  return call('start-battle', { opponentId })
+  return callIdempotent('start-battle', { opponentId })
 }
 
 // cardIds строго в порядке слотов: [setup, development, boost, punch]
@@ -107,7 +124,7 @@ export async function submitRound(battleId, roundNumber, cardIds) {
     await wait(rndInt(900, 1500)) // «Судья думает…»
     return mock.submitRound(battleId, roundNumber, cardIds)
   }
-  return call('submit-round', { battleId, roundNumber, cardIds })
+  return callIdempotent('submit-round', { battleId, roundNumber, cardIds })
 }
 
 // ---------------------------------------------------------------------------
