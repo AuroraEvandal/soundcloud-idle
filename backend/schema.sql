@@ -65,6 +65,7 @@ create table player_cards (
   player_id uuid references players(id) on delete cascade,
   card_id int references cards(id) on delete cascade,
   acquired_at timestamptz not null default now(),
+  uses_left int not null default 3,              -- сколько боёв осталось до сгорания (0 = сгорела)
   primary key (player_id, card_id)
 );
 

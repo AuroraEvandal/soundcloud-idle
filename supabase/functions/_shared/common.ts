@@ -107,9 +107,9 @@ export async function handle(req: Request, action: (body: Record<string, unknown
     const known = new Set([
       'INVALID_INIT_DATA', 'PLAYER_NOT_FOUND', 'BATTLE_NOT_FOUND', 'BATTLE_FINISHED',
       'ROUND_ALREADY_SUBMITTED', 'INVALID_ROUND', 'INVALID_CARDS', 'CARD_NOT_OWNED',
-      'OPPONENT_LOCKED', 'DAILY_LIMIT', 'IDEMPOTENCY_CONFLICT', 'CARD_POOL_TOO_SMALL',
-      'JUDGE_UNAVAILABLE', 'INVALID_REQUEST_ID', 'INVALID_REQUEST', 'OPPONENT_NOT_FOUND',
-      'THEMES_NOT_CONFIGURED', 'INVALID_ROUND_RESULT', 'BATTLE_IN_PROGRESS',
+      'CARD_BURNED', 'OPPONENT_LOCKED', 'DAILY_LIMIT', 'IDEMPOTENCY_CONFLICT',
+      'CARD_POOL_TOO_SMALL', 'JUDGE_UNAVAILABLE', 'INVALID_REQUEST_ID', 'INVALID_REQUEST',
+      'OPPONENT_NOT_FOUND', 'THEMES_NOT_CONFIGURED', 'INVALID_ROUND_RESULT', 'BATTLE_IN_PROGRESS',
     ])
     const safeCode = known.has(code) ? code : 'INTERNAL'
     const status = error instanceof GameError ? error.status : safeCode === 'INTERNAL' ? 500 : 400
@@ -138,6 +138,7 @@ export function mapCard(c: Record<string, unknown>) {
     theme: c.theme,
     rarity: c.rarity,
     syllables: c.syllables,
+    ...(c.uses_left != null ? { uses_left: c.uses_left } : {}),
     ...(c.bonus_type ? { bonus: { type: c.bonus_type, value: c.bonus_value } } : {}),
   }
 }

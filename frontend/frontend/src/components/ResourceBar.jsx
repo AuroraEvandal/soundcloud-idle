@@ -16,8 +16,6 @@ export default function ResourceBar() {
       <span>{short(player.streams || 0)} Strms</span>
       <i />
       <span>{fmt(player.popularity)} Fans</span>
-      <i />
-      <span>⚡{player.ai_requests_left}</span>
     </div>
   )
 }

@@ -49,7 +49,7 @@ function Lines({ title, side }) {
 }
 
 export default function Battle() {
-  const { nick, player, profile, setPlayer, refreshProfile, relogin } = useGame()
+  const { nick, player, profile, refreshProfile, relogin } = useGame()
   // list | build | judging | result | final
   const [phase, setPhase] = useState('list')
   const [battle, setBattle] = useState(null)
@@ -111,7 +111,6 @@ export default function Battle() {
   }, [])
 
   const unlocked = (profile?.opponents || []).filter((o) => o.unlocked).length
-  const outOfAi = (player?.ai_requests_left ?? 1) <= 0
 
   function toList() {
     clearBattleId()
@@ -211,7 +210,6 @@ export default function Battle() {
       const ids = SLOTS.map(([s]) => picks[s].id) // строго по порядку слотов
       const r = await submitRound(battle.id, round.number, ids)
       setResult(r)
-      setPlayer((p) => ({ ...p, ai_requests_left: r.ai_requests_left }))
       setPhase('result')
     } catch (e) {
       setPhase('build')
@@ -249,14 +247,13 @@ export default function Battle() {
         {note && <div className="note">{note}</div>}
         {restoring && <div className="note">Восстанавливаю незавершённый батл…</div>}
         <ErrorBox message={error?.message} onRetry={error?.retry} onHome={() => setError(null)} />
-        {outOfAi && <div className="note">Лимит оценок на сегодня исчерпан. Возвращайся завтра</div>}
         <div className="list">
           {(profile?.opponents || []).map((o) => (
             <button
               key={o.id}
               className={'opp' + (o.unlocked ? '' : ' locked')}
               onClick={() => begin(o)}
-              disabled={busy || restoring || (o.unlocked && outOfAi)}
+              disabled={busy || restoring}
             >
               <div className="opp-lvl">{o.level}</div>
               <div className="opp-main">
@@ -308,7 +305,6 @@ export default function Battle() {
           <span className="score">
             {score.p} : {score.o}
           </span>
-          <span>⚡{player?.ai_requests_left}</span>
         </div>
 
         {(phase === 'build' || phase === 'judging') && (

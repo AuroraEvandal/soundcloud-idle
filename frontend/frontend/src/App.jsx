@@ -2,11 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { GameContext } from './GameContext'
 import { login, getProfile } from './api'
 import { errorInfo } from './errors'
-import { readNick, saveNick, clearNick } from './storage'
 import StatusBar from './components/StatusBar'
 import ResourceBar from './components/ResourceBar'
 import Dock from './components/Dock'
-import Login from './screens/Login'
 import Home from './screens/Home'
 import SoundWave from './screens/SoundWave'
 import Studio from './screens/Studio'
@@ -24,23 +22,17 @@ const SCREENS = {
   store: Store,
 }
 
-function tgName() {
-  const u = window.Telegram?.WebApp?.initDataUnsafe?.user
-  return u?.username || u?.first_name || ''
-}
-
 export default function App() {
-  const [nick, setNick] = useState(() => readNick())
+  // Ник не спрашиваем у игрока: он приходит с сервера из Telegram (docs/api.md, login)
+  const [nick, setNick] = useState('')
   const [player, setPlayer] = useState(null)
   const [profile, setProfile] = useState(null)
-  const [status, setStatus] = useState(readNick() ? 'loading' : 'auth') // auth | loading | ready | error | stop
+  const [status, setStatus] = useState('loading') // loading | ready | error | stop
   const [error, setError] = useState('')
   const [screen, setScreen] = useState('home')
   const [island, setIsland] = useState('')
   const [unread, setUnread] = useState(0)
   const islandTimer = useRef(null)
-  const nickRef = useRef(nick)
-  nickRef.current = nick
 
   const notify = useCallback((text) => {
     setIsland(text)
@@ -52,19 +44,21 @@ export default function App() {
     const p = await getProfile()
     setProfile(p)
     setPlayer(p.player)
+    setNick(p.player.username)
     return p
   }, [])
 
   const boot = useCallback(
-    async (name, isNew = false) => {
+    async () => {
       setStatus('loading')
       setError('')
       try {
-        const res = await login(name)
+        const res = await login()
         setPlayer(res.player)
+        setNick(res.player.username)
         await refreshProfile()
         setStatus('ready')
-        if (isNew || res.is_new) {
+        if (res.is_new) {
           setUnread(1)
           setTimeout(() => notify('Менеджер Адам: новое сообщение'), 700)
         }
@@ -83,34 +77,17 @@ export default function App() {
   )
 
   useEffect(() => {
-    if (nick) boot(nick)
+    boot()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function submitNick(value) {
-    saveNick(value)
-    setNick(value)
-    boot(value, true)
-  }
+  const relogin = useCallback(() => boot(), [boot])
 
-  function logout() {
-    clearNick()
-    setNick('')
-    setPlayer(null)
-    setProfile(null)
-    setScreen('home')
-    setStatus('auth')
-  }
-
-  const relogin = useCallback(() => boot(nickRef.current), [boot])
-
-  const ctx = { nick, player, setPlayer, profile, refreshProfile, notify, logout, relogin, unread, setUnread }
+  const ctx = { nick, player, setPlayer, profile, refreshProfile, notify, relogin, unread, setUnread }
   const Screen = SCREENS[screen]
 
   let body
-  if (status === 'auth') {
-    body = <Login initial={tgName()} onSubmit={submitNick} busy={false} error={error} />
-  } else if (status === 'loading') {
+  if (status === 'loading') {
     body = (
       <div className="center-fill">
         <div className="loader" />
@@ -127,11 +104,8 @@ export default function App() {
     body = (
       <div className="center-fill">
         <div className="big-msg">{error}</div>
-        <button className="btn" onClick={() => boot(nick)}>
+        <button className="btn" onClick={boot}>
           ПОВТОРИТЬ
-        </button>
-        <button className="btn ghost" onClick={logout}>
-          СМЕНИТЬ НИК
         </button>
       </div>
     )

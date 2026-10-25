@@ -84,12 +84,17 @@ async function call(name, body) {
 // Публичные функции (формат ответов 1-в-1 как в docs/api.md)
 // ---------------------------------------------------------------------------
 
-// nickname нужен только мок-ветке. В docs/api.md у login пока нет поля для ника
-// (ник берётся из Telegram), поэтому на сервер он не отправляется.
-export async function login(nickname) {
+// Ник берётся из Telegram (docs/api.md): сервер сам создаёт игрока и обновляет
+// username при каждом входе. Ник с фронта не отправляется.
+const tgName = () => {
+  const u = window.Telegram?.WebApp?.initDataUnsafe?.user
+  return u?.username || u?.first_name || 'player'
+}
+
+export async function login() {
   if (useMock('login')) {
     await wait(rndInt(300, 600))
-    return mock.login(nickname)
+    return mock.login()
   }
   return call('login', {})
 }
@@ -262,6 +267,8 @@ const db = {
     clothing: [],
     outfit: { hat: null, hoodie: null, pants: null, shoe: null, chain: null },
     cards: new Set(START_CARD_IDS),
+    // Остаток боёв до сгорания карточки (docs/api.md: лимит 3 боя)
+    uses: Object.fromEntries(START_CARD_IDS.map((id) => [id, 3])),
   },
 }
 
@@ -300,12 +307,25 @@ function randomOutfit() {
   return out
 }
 
-// Рука: 4-6 случайных карточек на каждый слот из карточек игрока
-function makeHand() {
+// Карточка с полем uses_left (осталось боёв до сгорания)
+const withUses = (card) => ({ ...card, uses_left: db.studio.uses[card.id] ?? 3 })
+
+// Рука: ровно по 4 рабочие карточки (uses_left > 0) на слот. Карточки, уже
+// прошедшие в этом баттле, стараемся не выдавать; если без них меньше 4 — добираем
+// из остальных рабочих. Зеркало серверной make_battle_hand.
+function makeHand(usedInBattle) {
+  const used = usedInBattle || new Set()
   const hand = {}
   for (const slot of SLOT_CODES) {
-    const cards = POOL.filter((p) => p.slot === slot && db.studio.cards.has(p.card.id)).map((p) => p.card)
-    hand[slot] = shuffle(cards).slice(0, rndInt(4, 6))
+    const usable = POOL.filter(
+      (p) => p.slot === slot && db.studio.cards.has(p.card.id) && (db.studio.uses[p.card.id] ?? 0) > 0,
+    )
+    const picked = shuffle(usable.filter((p) => !used.has(p.card.id))).slice(0, 4)
+    if (picked.length < 4) {
+      const rest = shuffle(usable.filter((p) => !picked.some((q) => q.card.id === p.card.id)))
+      picked.push(...rest.slice(0, 4 - picked.length))
+    }
+    hand[slot] = picked.map((p) => withUses(p.card))
   }
   return hand
 }
@@ -366,12 +386,13 @@ function popFloor() {
 }
 
 const mock = {
-  login(nickname) {
+  login() {
     const is_new = !db.player
+    const name = tgName()
     if (is_new) {
       db.player = {
         id: uuid(),
-        username: nickname || 'player',
+        username: name,
         avatar: 'default',
         level: 1,
         xp: 0,
@@ -380,10 +401,10 @@ const mock = {
         coins: START_COINS,
         streams: 0,
         skills: { rhyme: 1, flow: 1, punch: 1, charisma: 1 },
-        ai_requests_left: 20,
       }
-    } else if (nickname) {
-      db.player.username = nickname
+    } else {
+      // как сервер: ник синхронизируется с Telegram при каждом входе
+      db.player.username = name
     }
     return { is_new, player: clone(db.player) }
   },
@@ -421,6 +442,13 @@ const mock = {
     const opp = OPPONENTS.find((o) => o.id === opponentId)
     if (!opp) throw new ApiError('INTERNAL')
     if (db.player.popularity < opp.required) throw new ApiError('OPPONENT_LOCKED')
+    // как сервер: для старта батла нужно минимум 4 рабочие карточки на каждый слот
+    for (const slot of SLOT_CODES) {
+      const usable = POOL.filter(
+        (p) => p.slot === slot && db.studio.cards.has(p.card.id) && (db.studio.uses[p.card.id] ?? 0) > 0,
+      )
+      if (usable.length < 4) throw new ApiError('CARD_POOL_TOO_SMALL')
+    }
     const id = uuid()
     const b = {
       id,
@@ -433,6 +461,7 @@ const mock = {
       ow: 0,
       ptotal: 0,
       ototal: 0,
+      used: new Set(), // карточки, уже прошедшие в этом баттле (по ним не списываем повторно)
       hand: makeHand(),
     }
     db.battles[id] = b
@@ -457,7 +486,6 @@ const mock = {
     if (roundNumber < b.round) throw new ApiError('ROUND_ALREADY_SUBMITTED')
     if (roundNumber !== b.round) throw new ApiError('INVALID_ROUND')
     if (!Array.isArray(cardIds) || cardIds.length !== 4) throw new ApiError('INVALID_CARDS')
-    if (db.player.ai_requests_left <= 0) throw new ApiError('DAILY_LIMIT')
 
     const cards = cardIds.map((id, i) => {
       const inSlot = b.hand[SLOT_CODES[i]].find((c) => c.id === id)
@@ -466,6 +494,15 @@ const mock = {
       throw new ApiError(elsewhere ? 'INVALID_CARDS' : 'CARD_NOT_OWNED')
     })
     if (new Set(cardIds).size !== 4) throw new ApiError('INVALID_CARDS')
+    if (cards.some((c) => (db.studio.uses[c.id] ?? 3) <= 0)) throw new ApiError('CARD_BURNED')
+
+    // Сгорание: один бой списывает с карточки не больше одного использования
+    for (const c of cards) {
+      if (!b.used.has(c.id)) {
+        db.studio.uses[c.id] = Math.max(0, (db.studio.uses[c.id] ?? 3) - 1)
+        b.used.add(c.id)
+      }
+    }
 
     const theme = b.themes[b.round - 1]
     const player = scorePlayer(cards, theme)
@@ -474,7 +511,6 @@ const mock = {
     const winner =
       player.points > opponent.points ? 'player' : player.points < opponent.points ? 'opponent' : 'draw'
 
-    db.player.ai_requests_left -= 1
     if (winner === 'player') b.pw += 1
     if (winner === 'opponent') b.ow += 1
     b.ptotal += player.points
@@ -485,14 +521,13 @@ const mock = {
 
     if (!done) {
       b.round += 1
-      b.hand = makeHand()
+      b.hand = makeHand(b.used)
       return {
         round,
         battle: { status: 'active', player_rounds_won: b.pw, opponent_rounds_won: b.ow },
         next_round: { number: b.round, theme: b.themes[b.round - 1] },
         hand: clone(b.hand),
         rewards: null,
-        ai_requests_left: db.player.ai_requests_left,
       }
     }
 
@@ -519,7 +554,6 @@ const mock = {
       next_round: null,
       hand: null,
       rewards,
-      ai_requests_left: db.player.ai_requests_left,
     }
   },
 }
@@ -731,9 +765,10 @@ const mock2 = {
       }
       const duplicate = st.cards.has(pick.card.id)
       const refund = duplicate ? DUP_REFUND[pick.card.rarity] : 0
+      if (!duplicate) st.uses[pick.card.id] = 3
       st.cards.add(pick.card.id)
       db.player.coins += refund
-      drop = { type: 'card', card: { ...pick.card, slot: pick.slot }, duplicate, refund }
+      drop = { type: 'card', card: { ...withUses(pick.card), slot: pick.slot }, duplicate, refund }
     }
     return { player: clone(db.player), drop }
   },
@@ -741,7 +776,7 @@ const mock2 = {
   getDeck() {
     need()
     return {
-      cards: POOL.filter((p) => db.studio.cards.has(p.card.id)).map((p) => ({ ...p.card, slot: p.slot })),
+      cards: POOL.filter((p) => db.studio.cards.has(p.card.id)).map((p) => ({ ...withUses(p.card), slot: p.slot })),
     }
   },
 }

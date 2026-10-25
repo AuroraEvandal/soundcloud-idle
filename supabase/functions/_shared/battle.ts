@@ -30,11 +30,14 @@ export async function readBattle(playerId: string, battleId: string) {
     .eq('battle_id', battle.id).order('round_number', { ascending: false }).limit(1)
   if (roundsError) throw roundsError
 
+  // uses_left лежит в player_cards, поэтому читаем руку через неё
   const cards = battle.status === 'active' && battle.current_hand?.length
-    ? await db.from('cards').select('id,text,slot,theme,rarity,syllables,bonus_type,bonus_value').in('id', battle.current_hand)
+    ? await db.from('player_cards')
+      .select('uses_left, card:cards(id,text,slot,theme,rarity,syllables,bonus_type,bonus_value)')
+      .eq('player_id', playerId).in('card_id', battle.current_hand)
     : { data: [], error: null }
   if (cards.error) throw cards.error
-  const byId = new Map((cards.data || []).map((c: any) => [c.id, c]))
+  const byId = new Map((cards.data || []).map((row: any) => [row.card.id, { ...row.card, uses_left: row.uses_left }]))
   const hand: Record<string, unknown[]> = { setup: [], development: [], boost: [], punch: [] }
   for (const id of battle.current_hand || []) {
     const card = byId.get(id) as Record<string, unknown> | undefined

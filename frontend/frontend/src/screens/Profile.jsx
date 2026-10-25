@@ -5,7 +5,7 @@ import ProgressBar from '../components/ProgressBar'
 import { SKILLS } from '../constants'
 
 export default function Profile({ onClose }) {
-  const { nick, player, profile, logout } = useGame()
+  const { nick, player, profile } = useGame()
   if (!player) return null
   const unlocked = (profile?.opponents || []).filter((o) => o.unlocked)
   const location = unlocked.length ? unlocked[unlocked.length - 1].location : 'Двор'
@@ -35,10 +35,6 @@ export default function Profile({ onClose }) {
           <div className="row-between mt">
             <span>Популярность</span>
             <span className="muted">{player.popularity}</span>
-          </div>
-          <div className="row-between mt">
-            <span>Оценок судьи осталось</span>
-            <span className="muted">{player.ai_requests_left}</span>
           </div>
         </div>
 
@@ -80,10 +76,6 @@ export default function Profile({ onClose }) {
             ))}
           </div>
         )}
-
-        <button className="btn dark wide" onClick={logout}>
-          СМЕНИТЬ НИК
-        </button>
       </div>
     </div>
   )

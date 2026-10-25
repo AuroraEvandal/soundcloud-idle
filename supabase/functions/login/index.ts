@@ -15,6 +15,12 @@ Deno.serve((req) => handle(req, async (body) => {
     const existing = await db.from('players').select('*').eq('telegram_id', user.id).single()
     if (existing.error) throw existing.error
     player = existing.data
+    // Ник всегда берётся из Telegram: подтягиваем новый, если игрок сменил его там.
+    if (player.username !== user.username) {
+      const renamed = await db.from('players').update({ username: user.username }).eq('id', player.id).select('*').single()
+      if (renamed.error) throw renamed.error
+      player = renamed.data
+    }
   } else if (error) {
     throw error
   } else {
