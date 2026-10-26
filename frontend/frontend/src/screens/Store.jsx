@@ -7,6 +7,7 @@ import { RARITY } from '../constants'
 import AppBar from '../components/AppBar'
 import Tabs from '../components/Tabs'
 import Icon from '../components/Icon'
+import CharacterModel from '../components/CharacterModel'
 import ErrorBox from '../components/ErrorBox'
 
 const SLOTS = [
@@ -16,9 +17,6 @@ const SLOTS = [
   ['shoe', 'Обувь', 'shoe'],
   ['chain', 'Цепь', 'chain'],
 ]
-
-// Порядок слоёв на манекене снизу вверх
-const Z = ['pants', 'shoe', 'hoodie', 'chain', 'hat']
 
 function ItemRow({ item, children }) {
   return (
@@ -110,15 +108,11 @@ export default function Store({ onClose }) {
         {wardrobe && tab === 'wardrobe' && (
           <div className="wardrobe">
             <div className="mannequin" aria-label={`Манекен ${nick}`}>
-              <svg viewBox="0 0 60 120" width="100%" height="100%" fill="#121212" stroke="#2a2a2a" strokeWidth="1.5">
-                <circle cx="30" cy="16" r="11" />
-                <path d="M14 34h32l4 40H10Z" />
-                <path d="M16 74h12l-2 40H14ZM32 74h12l2 40H34Z" />
-              </svg>
-              {Z.map((s) => {
-                const it = byId(wardrobe.outfit[s])
-                return it?.image ? <img key={s} className="layer" src={it.image} alt={it.name} /> : null
-              })}
+              <CharacterModel
+                look={Object.fromEntries(
+                  Object.entries(wardrobe.outfit).map(([s, id]) => [s, byId(id)?.image]),
+                )}
+              />
             </div>
             <div className="eq-grid">
               {SLOTS.map(([s, label, icon]) => {

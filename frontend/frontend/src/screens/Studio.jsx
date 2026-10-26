@@ -17,6 +17,7 @@ export default function Studio({ onClose }) {
   const [studio, setStudio] = useState(null)
   const [error, setError] = useState(null)
   const [tap, setTap] = useState(false)
+  const [releases, setReleases] = useState([])
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
   const pending = useRef(0)
@@ -46,7 +47,11 @@ export default function Studio({ onClose }) {
       const r = await recordSnippet(taps)
       setStudio(r.studio)
       setPlayer(r.player)
-      r.released.forEach((s) => notify(`Сниппет вышел: +${s.streams} прослушиваний, +₽${s.coins}`))
+      const released = r.released || []
+      if (released.length) {
+        setReleases((current) => [...current, ...released])
+        released.forEach((s) => notify(`Сниппет вышел: +${s.streams} прослушиваний, +₽${s.coins}`))
+      }
       setError(null)
     } catch (e) {
       setError(errorInfo(e))
@@ -196,6 +201,28 @@ export default function Studio({ onClose }) {
           </div>
         )}
       </div>
+      {releases.length > 0 && (
+        <div className="release-shade">
+          <section className="release-card" role="dialog" aria-modal="true" aria-labelledby="release-title">
+            <div className="release-art" aria-hidden="true">
+              <div className="release-disc"><span /></div>
+              <div className="release-wave"><i /><i /><i /><i /><i /><i /><i /></div>
+              <Icon name="cloud" size={30} color="var(--accent)" />
+            </div>
+            <div className="release-kicker">НОВЫЙ РЕЛИЗ</div>
+            <h2 id="release-title">Сниппет вышел!</h2>
+            <p className="muted release-copy">Трек уже слушают. Продолжай записывать — следующая запись не за горами.</p>
+            <div className="release-stats" aria-live="polite">
+              <div><b>+{releases[0].streams}</b><span>прослушиваний</span></div>
+              <div><b>+{releases[0].coins}</b><span>монет</span></div>
+              <div><b>+{releases[0].popularity_change}</b><span>популярности</span></div>
+            </div>
+            <button className="btn release-cta" onClick={() => setReleases((queue) => queue.slice(1))}>
+              ОТЛИЧНО
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

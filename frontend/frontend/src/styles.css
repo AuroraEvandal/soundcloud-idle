@@ -943,6 +943,135 @@ button:disabled {
 .mic.tap {
   transform: scale(0.94);
 }
+.release-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #000000c9;
+  animation: release-fade-in 0.22s ease-out both;
+}
+.release-card {
+  width: min(100%, 350px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  text-align: center;
+  animation: release-card-in 0.38s steps(5) both;
+}
+.release-art {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #080808;
+  border: 1px solid var(--line);
+}
+.release-disc {
+  position: absolute;
+  width: 82px;
+  height: 82px;
+  border: 2px solid #5a5a5a;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, #171717 0 5px, #2b2b2b 6px 7px);
+  animation: release-disc-spin 3.6s linear infinite;
+}
+.release-disc span {
+  position: absolute;
+  inset: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.release-art > svg {
+  position: relative;
+  z-index: 1;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 50%;
+}
+.release-wave {
+  position: absolute;
+  inset: auto 8px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 22px;
+}
+.release-wave i {
+  width: 3px;
+  height: 7px;
+  background: var(--accent);
+  animation: release-wave 0.65s steps(3) infinite alternate;
+}
+.release-wave i:nth-child(2n) { animation-delay: 0.2s; }
+.release-wave i:nth-child(3n) { animation-delay: 0.4s; }
+.release-kicker {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.release-card h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.release-copy {
+  max-width: 270px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.release-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 4px 0;
+}
+.release-stats > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 4px;
+  background: var(--bar);
+}
+.release-stats b {
+  color: var(--text);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.release-stats span {
+  color: var(--text2);
+  font-size: 10px;
+}
+.release-cta {
+  width: 100%;
+  min-height: 44px;
+}
+@keyframes release-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes release-card-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes release-disc-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes release-wave {
+  to { height: 20px; }
+}
 
 /* ---------- Колода и паки ---------- */
 .packs {
@@ -1215,16 +1344,6 @@ button:disabled {
   height: 36px;
   object-fit: contain;
   image-rendering: pixelated;
-}
-.mannequin .layer {
-  image-rendering: pixelated;
-}
-.mannequin .layer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 .eq {
   border: 1px solid transparent;
