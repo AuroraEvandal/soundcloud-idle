@@ -83,6 +83,7 @@ export function playerView(p: Record<string, unknown>) {
     xp_to_next: Math.round(100 * Math.pow(1.1, level - 1)),
     popularity: p.popularity,
     coins: p.coins,
+    streams: Number(p.streams || 0),
     skills: { rhyme: p.skill_rhyme, flow: p.skill_flow, punch: p.skill_punch, charisma: p.skill_charisma },
   }
 }

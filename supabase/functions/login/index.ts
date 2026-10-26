@@ -8,7 +8,7 @@ Deno.serve((req) => handle(req, async (body) => {
   let { data: player, error } = await db.from('players').insert({
     telegram_id: user.id,
     username: user.username,
-    coins: 350,
+    // Монеты не указываем: применится дефолт базы (300).
   }).select('*').single()
 
   if (error?.code === '23505') {
@@ -33,6 +33,24 @@ Deno.serve((req) => handle(req, async (body) => {
     { onConflict: 'player_id,card_id', ignoreDuplicates: true },
   )
   if (grant.error) throw grant.error
+
+  // Бесплатные биты (цена 0) выдаются так же идемпотентно, как стартовые карточки.
+  const freeBeats = await db.from('beats').select('id').eq('price', 0)
+  if (freeBeats.error) throw freeBeats.error
+  if (freeBeats.data.length) {
+    const beatGrant = await db.from('player_beats').upsert(
+      freeBeats.data.map((beat: any) => ({ player_id: player.id, beat_id: beat.id })),
+      { onConflict: 'player_id,beat_id', ignoreDuplicates: true },
+    )
+    if (beatGrant.error) throw beatGrant.error
+    if (player.selected_beat_id === null) {
+      const picked = await db.from('players')
+        .update({ selected_beat_id: freeBeats.data[0].id })
+        .eq('id', player.id).select('*').single()
+      if (picked.error) throw picked.error
+      player = picked.data
+    }
+  }
 
   const today = new Date().toISOString().slice(0, 10)
   if (player.ai_requests_date !== today) {
