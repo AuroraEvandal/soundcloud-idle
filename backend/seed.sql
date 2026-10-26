@@ -87,6 +87,62 @@ on conflict (id) do update set
 select setval(pg_get_serial_sequence('public.clothing', 'id'), greatest((select max(id) from public.clothing), 1), true);
 
 -- =====================================================
+-- БИТЫ (v0.2). base_streams — стримы за один релиз до множителей.
+-- price 0 = бесплатный, выдаётся игроку при регистрации.
+-- =====================================================
+with starter(id, name, base_streams, price) as (values
+  (1, 'Бит 1: Дрилл', 150, 0),
+  (2, 'Бит 2: Трэп', 300, 800),
+  (3, 'Бит 3: Фонк', 500, 2500),
+  (4, 'Бит 4: Хедлайнер', 800, 6000)
+)
+insert into public.beats (id, name, base_streams, price)
+select id, name, base_streams, price from starter
+on conflict (id) do update set
+  name = excluded.name,
+  base_streams = excluded.base_streams,
+  price = excluded.price;
+
+select setval(pg_get_serial_sequence('public.beats', 'id'), greatest((select max(id) from public.beats), 1), true);
+
+-- =====================================================
+-- ОБОРУДОВАНИЕ СТУДИИ (v0.2). Все бонусы — income_pct,
+-- суммарно +110% к доходу сниппетов.
+-- =====================================================
+with starter(id, name, price, bonus_type, bonus_value) as (values
+  (1, 'Наушники', 200, 'income_pct', 10),
+  (2, 'Студийный микрофон', 600, 'income_pct', 20),
+  (3, 'Звуковая карта', 1500, 'income_pct', 30),
+  (4, 'Студийные мониторы', 3500, 'income_pct', 50)
+)
+insert into public.equipment (id, name, price, bonus_type, bonus_value)
+select id, name, price, bonus_type, bonus_value from starter
+on conflict (id) do update set
+  name = excluded.name,
+  price = excluded.price,
+  bonus_type = excluded.bonus_type,
+  bonus_value = excluded.bonus_value;
+
+select setval(pg_get_serial_sequence('public.equipment', 'id'), greatest((select max(id) from public.equipment), 1), true);
+
+-- =====================================================
+-- ПАКИ (v0.2). clothing_chance — шанс, что вместо карточки выпадет одежда.
+-- Редкость карточки и возврат за дубликат зашиты в функции open-pack:
+-- common 70 / rare 24 / epic 6, возврат 20 / 60 / 150.
+-- =====================================================
+with starter(id, name, price, clothing_chance) as (values
+  (1, 'Базовый пак', 200, 0.07)
+)
+insert into public.packs (id, name, price, clothing_chance)
+select id, name, price, clothing_chance from starter
+on conflict (id) do update set
+  name = excluded.name,
+  price = excluded.price,
+  clothing_chance = excluded.clothing_chance;
+
+select setval(pg_get_serial_sequence('public.packs', 'id'), greatest((select max(id) from public.packs), 1), true);
+
+-- =====================================================
 -- СВЯЗИ ТЕМ (theme_relations)
 -- Автор игры заполняет сам: насколько две темы близки по смыслу, 0..10.
 -- Пара пишется один раз, тема_а по алфавиту раньше тема_б (иначе БД отклонит).

@@ -172,6 +172,54 @@ create table theme_relations (
 );
 
 
+-- 13. СТУДИЯ И ЭКОНОМИКА (v0.2)
+create table if not exists beats (
+  id serial primary key,
+  name text not null,
+  base_streams int not null,                    -- сколько стримов даёт один релиз до множителей
+  price int not null default 0                  -- 0 = бесплатный, куплен всем при регистрации
+);
+
+-- Колонки игрока для студии. Энергия восстанавливается временем:
+-- сервер считает от energy_updated_at (+1 за 3 секунды, максимум 100).
+alter table players
+  add column if not exists streams bigint not null default 0,
+  add column if not exists hype int not null default 0,
+  add column if not exists energy int not null default 100,
+  add column if not exists energy_updated_at timestamptz not null default now(),
+  add column if not exists selected_beat_id int references beats(id);
+alter table players alter column coins set default 300;   -- стартовые монеты нового игрока
+
+create table if not exists equipment (
+  id serial primary key,
+  name text not null,
+  price int not null,
+  bonus_type text not null check (bonus_type in ('income_pct', 'popularity_pct', 'charisma')),
+  bonus_value int not null default 0
+);
+
+-- Купленное оборудование и купленные биты (бесплатный бит выдаётся при регистрации)
+create table if not exists player_equipment (
+  player_id uuid references players(id) on delete cascade,
+  equipment_id int references equipment(id) on delete cascade,
+  acquired_at timestamptz not null default now(),
+  primary key (player_id, equipment_id)
+);
+
+create table if not exists player_beats (
+  player_id uuid references players(id) on delete cascade,
+  beat_id int references beats(id) on delete cascade,
+  primary key (player_id, beat_id)
+);
+
+create table if not exists packs (
+  id serial primary key,
+  name text not null,
+  price int not null,
+  clothing_chance numeric(3,2) not null default 0.07   -- шанс, что вместо карточки выпадет одежда
+);
+
+
 -- =====================================================
 -- БЕЗОПАСНОСТЬ
 -- Включаем RLS на всех таблицах. Без политик это значит:
@@ -190,6 +238,11 @@ alter table clothing enable row level security;
 alter table player_clothing enable row level security;
 alter table player_outfit enable row level security;
 alter table theme_relations enable row level security;
+alter table beats enable row level security;
+alter table equipment enable row level security;
+alter table player_equipment enable row level security;
+alter table player_beats enable row level security;
+alter table packs enable row level security;
 
 
 -- =====================================================
