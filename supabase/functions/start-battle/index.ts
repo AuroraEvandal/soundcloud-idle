@@ -1,5 +1,5 @@
 import { authPlayer, db, handle, requestId, rpcError } from '../_shared/common.ts'
-import { readBattle } from '../_shared/battle.ts'
+import { randomOpponentOutfit, readBattle } from '../_shared/battle.ts'
 
 Deno.serve((req) => handle(req, async (body) => {
   const { player } = await authPlayer(body)
@@ -12,6 +12,13 @@ Deno.serve((req) => handle(req, async (body) => {
     p_request_id: request_id,
   })
   rpcError(created.error)
+
+  // Одежда соперника выбирается один раз на батл и хранится в самом батле,
+  // чтобы восстановление через get-hand показывало тот же образ.
+  const outfit = await randomOpponentOutfit()
+  const saved = await db.from('battles').update({ opponent_outfit: outfit }).eq('id', created.data)
+  if (saved.error) throw saved.error
+
   const state = await readBattle(player.id, created.data)
   return {
     battle: state.battle,

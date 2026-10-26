@@ -12,10 +12,34 @@ export function battleView(battle: any) {
       name: opponent?.name,
       style: opponent?.style || '',
       level: opponent?.level,
+      // Только для отображения в арене (docs/api.md, start-battle)
+      ...(battle.opponent_outfit ? { outfit: battle.opponent_outfit } : {}),
     },
     player_rounds_won: battle.player_rounds_won,
     opponent_rounds_won: battle.opponent_rounds_won,
   }
+}
+
+// Случайная одежда соперника из всей библиотеки (включая вещи «только из паков»).
+// Бонусов у неё нет и в расчёты она не входит. Минимум три вещи, чтобы соперник
+// не выходил на сцену совсем раздетым.
+export async function randomOpponentOutfit() {
+  const cl = await db.from('clothing').select('id,name,image_url,slot')
+  if (cl.error) throw cl.error
+  const bySlot: Record<string, any[]> = {}
+  for (const c of cl.data || []) (bySlot[c.slot] ||= []).push(c)
+  const slots = ['hat', 'hoodie', 'pants', 'shoe', 'chain']
+  const pick = (slot: string) => {
+    const list = bySlot[slot] || []
+    return list.length ? list[Math.floor(Math.random() * list.length)] : null
+  }
+  const out: Record<string, { id: number; name: string; image: string } | null> = {}
+  for (const slot of slots) out[slot] = Math.random() < 0.8 ? pick(slot) : null
+  for (const slot of slots) {
+    if (Object.values(out).filter(Boolean).length >= 3) break
+    if (!out[slot]) out[slot] = pick(slot)
+  }
+  return out
 }
 
 export async function readBattle(playerId: string, battleId: string) {

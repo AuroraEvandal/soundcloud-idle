@@ -83,6 +83,7 @@ export function playerView(p: Record<string, unknown>) {
     xp_to_next: Math.round(100 * Math.pow(1.1, level - 1)),
     popularity: p.popularity,
     coins: p.coins,
+    streams: Number(p.streams || 0),
     skills: { rhyme: p.skill_rhyme, flow: p.skill_flow, punch: p.skill_punch, charisma: p.skill_charisma },
   }
 }
@@ -110,6 +111,7 @@ export async function handle(req: Request, action: (body: Record<string, unknown
       'CARD_BURNED', 'OPPONENT_LOCKED', 'DAILY_LIMIT', 'IDEMPOTENCY_CONFLICT',
       'CARD_POOL_TOO_SMALL', 'JUDGE_UNAVAILABLE', 'INVALID_REQUEST_ID', 'INVALID_REQUEST',
       'OPPONENT_NOT_FOUND', 'THEMES_NOT_CONFIGURED', 'INVALID_ROUND_RESULT', 'BATTLE_IN_PROGRESS',
+      'NOT_ENOUGH_COINS', 'ALREADY_OWNED', 'ITEM_NOT_FOUND', 'NOT_OWNED', 'NO_ENERGY',
     ])
     const safeCode = known.has(code) ? code : 'INTERNAL'
     const status = error instanceof GameError ? error.status : safeCode === 'INTERNAL' ? 500 : 400
