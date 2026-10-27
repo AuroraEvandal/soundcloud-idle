@@ -13,10 +13,11 @@ export const MOCK = {
   getHand: true,
   startBattle: true,
   submitRound: true,
-  // Новые функции ждут согласования API (см. API-PROPOSAL.md), пока только мок.
+  // Экономика v0.2 описана в docs/api.md. Пока бэкенд не задеплоен — работаем на моке.
   getStudio: true,
   recordSnippet: true,
   selectBeat: true,
+  buyBeat: true,
   getShop: true,
   buyItem: true,
   getWardrobe: true,
@@ -133,7 +134,7 @@ export async function submitRound(battleId, roundNumber, cardIds) {
 }
 
 // ---------------------------------------------------------------------------
-// Предложенные функции (API-PROPOSAL.md). Имена серверных функций пока не утверждены.
+// Экономика v0.2 (docs/api.md, разделы 6-15). Формат ответов 1-в-1 с сервером.
 // ---------------------------------------------------------------------------
 const proposed = (key, fnName, body, mockFn, ms = [300, 500]) => async () => {
   if (useMock(key)) {
@@ -148,6 +149,8 @@ export const recordSnippet = (taps) =>
   proposed('recordSnippet', 'record-snippet', { taps }, () => mock2.recordSnippet(taps), [200, 400])()
 export const selectBeat = (beatId) =>
   proposed('selectBeat', 'select-beat', { beatId }, () => mock2.selectBeat(beatId))()
+export const buyBeat = (beatId) =>
+  proposed('buyBeat', 'buy-beat', { beatId }, () => mock2.buyBeat(beatId))()
 export const getShop = () => proposed('getShop', 'get-shop', {}, () => mock2.getShop())()
 // kind: 'equipment' | 'clothing'
 export const buyItem = (kind, itemId) =>
@@ -263,6 +266,7 @@ const db = {
     energy: 100,
     ts: Date.now(),
     beat: 1,
+    beats: new Set([1]), // бесплатные биты куплены при регистрации
     equipment: [],
     clothing: [],
     outfit: { hat: null, hoodie: null, pants: null, shoe: null, chain: null },
@@ -576,15 +580,17 @@ function applyRewards(win) {
     p.skills[k] += 1
   }
   if (win) p.coins += 50
-  return { xp_change, popularity_change: boosted, level_up, new_level: p.level }
+  return { xp_change, popularity_change: boosted, coins_change: win ? 50 : 0, level_up, new_level: p.level }
 }
 
 // ---------------------------------------------------------------------------
-// Мок новых механик: сниппеты, оборудование, одежда, паки. Числа временные.
+// Мок новых механик: сниппеты, оборудование, одежда, паки. Числа как на сервере
+// (docs/api.md «Экономика v0.2», backend/seed.sql).
 // ---------------------------------------------------------------------------
 const ENERGY_MAX = 100
-const HYPE_MAX = 50
+const HYPE_MAX = 20
 const REGEN_MS = 3000
+const MAX_TAPS_PER_REQUEST = 200
 const RARITY_W = { common: 70, rare: 24, epic: 6 }
 const DUP_REFUND = { common: 20, rare: 60, epic: 150 }
 
@@ -633,7 +639,13 @@ function studioView() {
     energy: st.energy,
     energy_max: ENERGY_MAX,
     selected_beat_id: st.beat,
-    beats: BEATS.map((b) => ({ id: b.id, name: b.name })),
+    beats: BEATS.map((b) => ({
+      id: b.id,
+      name: b.name,
+      base_streams: b.base_streams,
+      price: b.price,
+      owned: st.beats.has(b.id),
+    })),
     equipment: EQUIPMENT.map(eqView),
     income_pct: pctOf('income_pct'),
   }
@@ -658,11 +670,11 @@ const mock2 = {
 
   recordSnippet(taps) {
     need()
-    if (!Number.isInteger(taps) || taps < 1) throw new ApiError('INTERNAL')
+    if (!Number.isInteger(taps) || taps < 1) throw new ApiError('INVALID_REQUEST')
     regen()
     const st = db.studio
     if (st.energy <= 0) throw new ApiError('NO_ENERGY')
-    const use = Math.min(taps, st.energy, 200)
+    const use = Math.min(taps, MAX_TAPS_PER_REQUEST, st.energy)
     st.energy -= use
     st.hype += use
     const released = []
@@ -670,9 +682,10 @@ const mock2 = {
       st.hype -= HYPE_MAX
       const beat = BEATS.find((b) => b.id === st.beat)
       const p = db.player
-      const streams = Math.round(beat.base_streams * (1 + p.popularity / 200) * (1 + pctOf('income_pct') / 100))
+      // Формула как на сервере: кап популярности ×3, прирост фанатов не больше +25
+      const streams = Math.round(beat.base_streams * (1 + Math.min(p.popularity, 400) / 200) * (1 + pctOf('income_pct') / 100))
       const coins = Math.round(streams / 10)
-      const popularity_change = Math.max(1, Math.round(streams / 100))
+      const popularity_change = Math.min(25, Math.max(1, Math.round((streams / 100) * (1 + pctOf('popularity_pct') / 100))))
       p.streams += streams
       p.coins += coins
       p.popularity += popularity_change
@@ -684,7 +697,22 @@ const mock2 = {
   selectBeat(beatId) {
     need()
     if (!BEATS.some((b) => b.id === beatId)) throw new ApiError('ITEM_NOT_FOUND')
+    if (!db.studio.beats.has(beatId)) throw new ApiError('NOT_OWNED')
     db.studio.beat = beatId
+    regen()
+    return { player: clone(db.player), studio: studioView() }
+  },
+
+  buyBeat(beatId) {
+    need()
+    const beat = BEATS.find((b) => b.id === beatId)
+    if (!beat) throw new ApiError('ITEM_NOT_FOUND')
+    const st = db.studio
+    if (st.beats.has(beatId)) throw new ApiError('ALREADY_OWNED')
+    if (db.player.coins < beat.price) throw new ApiError('NOT_ENOUGH_COINS')
+    db.player.coins -= beat.price
+    st.beats.add(beatId)
+    st.beat = beatId // купленный бит сразу выбирается, как на сервере
     regen()
     return { player: clone(db.player), studio: studioView() }
   },

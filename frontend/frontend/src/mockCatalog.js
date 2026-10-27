@@ -1,5 +1,5 @@
-// КАТАЛОГ ДЛЯ МОКА. Все вещи, цены и бонусы здесь заглушки: автор игры заменит их своими.
-// Позже тот же каталог переезжает в таблицы БД (см. API-PROPOSAL.md), а этот файл больше не нужен.
+// КАТАЛОГ ДЛЯ МОКА. Числа согласованы с docs/api.md (Экономика v0.2)
+// и backend/seed.sql: одни и те же id и цены на моке и на сервере.
 //
 // Типы бонусов (bonus.type):
 //   income_pct      +N% к доходу от сниппетов (прослушивания и монеты)
@@ -8,16 +8,20 @@
 
 export const START_COINS = 300
 
+// price 0 = бесплатный бит, куплен всем при регистрации.
+// base_streams — стримы за один релиз до множителей.
 export const BEATS = [
-  { id: 1, name: 'Бит 1: Дрилл', base_streams: 100 },
-  { id: 2, name: 'Бит 2: Трэп', base_streams: 140 },
+  { id: 1, name: 'Бит 1: Дрилл', base_streams: 150, price: 0 },
+  { id: 2, name: 'Бит 2: Трэп', base_streams: 300, price: 800 },
+  { id: 3, name: 'Бит 3: Фонк', base_streams: 500, price: 2500 },
+  { id: 4, name: 'Бит 4: Хедлайнер', base_streams: 800, price: 6000 },
 ]
 
 export const EQUIPMENT = [
-  { id: 1, name: 'Наушники', icon: 'headphones', price: 500, bonus: { type: 'income_pct', value: 10 } },
-  { id: 2, name: 'Студийный микрофон', icon: 'mic', price: 1500, bonus: { type: 'income_pct', value: 20 } },
-  { id: 3, name: 'Звуковая карта', icon: 'box', price: 3000, bonus: { type: 'income_pct', value: 30 } },
-  { id: 4, name: 'Студийные мониторы', icon: 'headphones', price: 6000, bonus: { type: 'income_pct', value: 40 } },
+  { id: 1, name: 'Наушники', icon: 'headphones', price: 200, bonus: { type: 'income_pct', value: 10 } },
+  { id: 2, name: 'Студийный микрофон', icon: 'mic', price: 600, bonus: { type: 'income_pct', value: 20 } },
+  { id: 3, name: 'Звуковая карта', icon: 'box', price: 1500, bonus: { type: 'income_pct', value: 30 } },
+  { id: 4, name: 'Студийные мониторы', icon: 'headphones', price: 3500, bonus: { type: 'income_pct', value: 50 } },
 ]
 
 // slot: hat | hoodie | pants | shoe | chain (как в слотах гардероба)

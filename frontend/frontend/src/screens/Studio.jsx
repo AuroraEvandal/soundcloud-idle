@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGame } from '../GameContext'
-import { getStudio, recordSnippet, selectBeat, buyItem } from '../api'
+import { getStudio, recordSnippet, selectBeat, buyBeat, buyItem } from '../api'
 import { errorInfo } from '../errors'
 import { bonusText } from '../bonus'
 import AppBar from '../components/AppBar'
@@ -104,6 +104,13 @@ export default function Studio({ onClose }) {
       setStudio(r.studio)
     })
 
+  const buyBeatItem = (id) =>
+    act(async () => {
+      const r = await buyBeat(id)
+      setPlayer(r.player)
+      setStudio(r.studio)
+    })
+
   const buy = (id) =>
     act(async () => {
       const r = await buyItem('equipment', id)
@@ -168,11 +175,23 @@ export default function Studio({ onClose }) {
         {studio && tab === 'beats' && (
           <div className="pad list">
             {studio.beats.map((b) => (
-              <div className="row" key={b.id}>
-                <div className="row-main">{b.name}</div>
-                <button className="btn small" disabled={busy || b.id === studio.selected_beat_id} onClick={() => pick(b.id)}>
-                  {b.id === studio.selected_beat_id ? 'ВЫБРАН' : 'ВЫБРАТЬ'}
-                </button>
+              <div className="row bar" key={b.id}>
+                <div className="row-main">
+                  {b.name}
+                  <div className="muted small-t">Доход: ×{(b.base_streams / 150).toFixed(1)}</div>
+                </div>
+                {b.owned ? (
+                  <button className="btn small" disabled={busy || b.id === studio.selected_beat_id} onClick={() => pick(b.id)}>
+                    {b.id === studio.selected_beat_id ? 'ВЫБРАН' : 'ВЫБРАТЬ'}
+                  </button>
+                ) : (
+                  <>
+                    <span className="price">₽{b.price}</span>
+                    <button className="btn small" disabled={busy || (player?.coins ?? 0) < b.price} onClick={() => buyBeatItem(b.id)}>
+                      КУПИТЬ
+                    </button>
+                  </>
+                )}
               </div>
             ))}
           </div>
