@@ -40,7 +40,8 @@ export async function telegramUser(initData: unknown) {
   if (authDate > now + 60 || now - authDate > 24 * 60 * 60) throw new GameError('INVALID_INIT_DATA', 401)
 
   const checkString = [...params.entries()]
-    .filter(([key]) => key !== 'hash' && key !== 'signature')
+    // Telegram's HMAC covers every initData field except hash, including signature.
+    .filter(([key]) => key !== 'hash')
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => `${key}=${value}`)
     .join('\n')

@@ -1,7 +1,6 @@
 // Таблица ошибок из frontend-AGENTS.md (раздел 9). Коды берём только из docs/api.md.
 // action: stop | relogin | home | resync | stay | retry
 const TABLE = {
-  INVALID_INIT_DATA: ['Открой игру через Telegram', 'stop'],
   PLAYER_NOT_FOUND: ['', 'relogin'],
   BATTLE_NOT_FOUND: ['Этот батл не найден', 'home'],
   BATTLE_FINISHED: ['Батл уже закончен', 'home'],
@@ -26,6 +25,16 @@ const TABLE = {
 export function errorInfo(err, extra = {}) {
   if (err?.network) {
     return { code: 'NETWORK', message: 'Нет соединения. Проверь интернет и повтори', action: 'retry' }
+  }
+  if (err?.code === 'INVALID_INIT_DATA') {
+    const hasTelegramData = Boolean(window.Telegram?.WebApp?.initData)
+    return {
+      code: err.code,
+      message: hasTelegramData
+        ? 'Telegram передал данные, но сервер не подтвердил подпись. Проверь, что в Supabase задан токен именно этого бота.'
+        : 'Telegram не передал данные для входа. Запусти игру кнопкой меню «Играть» в чате с ботом, а не обычной ссылкой.',
+      action: 'stop',
+    }
   }
   const code = TABLE[err?.code] ? err.code : 'INTERNAL'
   let [message, action] = TABLE[code]
