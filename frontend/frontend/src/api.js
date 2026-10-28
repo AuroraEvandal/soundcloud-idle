@@ -8,22 +8,21 @@ import { supabase } from './supabase'
 import { BEATS, EQUIPMENT, CLOTHING, PACKS, START_CARD_IDS, START_COINS } from './mockCatalog'
 
 export const MOCK = {
-  login: true,
-  getProfile: true,
-  getHand: true,
-  startBattle: true,
-  submitRound: true,
-  // Экономика v0.2 описана в docs/api.md. Пока бэкенд не задеплоен — работаем на моке.
-  getStudio: true,
-  recordSnippet: true,
-  selectBeat: true,
-  buyBeat: true,
-  getShop: true,
-  buyItem: true,
-  getWardrobe: true,
-  equipItem: true,
-  openPack: true,
-  getDeck: true,
+  login: false,
+  getProfile: false,
+  getHand: false,
+  startBattle: false,
+  submitRound: false,
+  getStudio: false,
+  recordSnippet: false,
+  selectBeat: false,
+  buyBeat: false,
+  getShop: false,
+  buyItem: false,
+  getWardrobe: false,
+  equipItem: false,
+  openPack: false,
+  getDeck: false,
 }
 
 export class ApiError extends Error {

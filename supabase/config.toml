@@ -12,3 +12,33 @@ verify_jwt = false
 
 [functions.submit-round]
 verify_jwt = false
+
+[functions.get-studio]
+verify_jwt = false
+
+[functions.record-snippet]
+verify_jwt = false
+
+[functions.select-beat]
+verify_jwt = false
+
+[functions.buy-beat]
+verify_jwt = false
+
+[functions.get-shop]
+verify_jwt = false
+
+[functions.buy-item]
+verify_jwt = false
+
+[functions.get-wardrobe]
+verify_jwt = false
+
+[functions.equip-item]
+verify_jwt = false
+
+[functions.open-pack]
+verify_jwt = false
+
+[functions.get-deck]
+verify_jwt = false
