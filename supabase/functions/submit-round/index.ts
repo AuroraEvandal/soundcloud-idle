@@ -1,6 +1,23 @@
 import { authPlayer, db, GameError, handle, requestId, rpcError } from '../_shared/common.ts'
 import { scoreRound, type ThemeRelations } from '../_shared/scoring.ts'
 
+let relationCache: { expiresAt: number; rows: { theme_a: string; theme_b: string; strength: number }[] } | null = null
+let relationLoad: Promise<{ theme_a: string; theme_b: string; strength: number }[]> | null = null
+
+function loadThemeRelations() {
+  if (relationCache && relationCache.expiresAt > Date.now()) return Promise.resolve(relationCache.rows)
+  if (!relationLoad) {
+    relationLoad = (async () => {
+      const result = await db.from('theme_relations').select('theme_a,theme_b,strength')
+      if (result.error) throw result.error
+      const rows = result.data as { theme_a: string; theme_b: string; strength: number }[]
+      relationCache = { rows, expiresAt: Date.now() + 60_000 }
+      return rows
+    })().finally(() => { relationLoad = null })
+  }
+  return relationLoad
+}
+
 Deno.serve((req) => handle(req, async (body) => {
   const { player } = await authPlayer(body)
   if (typeof body.battleId !== 'string') throw new GameError('BATTLE_NOT_FOUND', 404)
@@ -19,9 +36,15 @@ Deno.serve((req) => handle(req, async (body) => {
   const battle = battleQuery.data
   if (!battle) throw new GameError('BATTLE_NOT_FOUND', 404)
 
-  // Return the stored answer before invoking the AI or changing any counters.
-  const prior = await db.from('rounds').select('request_id,card_ids,result_payload')
-    .eq('battle_id', battle.id).eq('round_number', roundNumber).maybeSingle()
+  // These reads are independent after the battle has been loaded.
+  const [prior, reused, cardsResult, owned, relationsQuery] = await Promise.all([
+    db.from('rounds').select('request_id,card_ids,result_payload')
+      .eq('battle_id', battle.id).eq('round_number', roundNumber).maybeSingle(),
+    db.from('rounds').select('battle_id,round_number,card_ids').eq('request_id', request_id).maybeSingle(),
+    db.from('cards').select('id,text,slot,theme,themes,rarity,syllables,rhyme_group,bonus_type,bonus_value').in('id', cardIds),
+    db.from('player_cards').select('card_id,uses_left').eq('player_id', player.id).in('card_id', cardIds),
+    loadThemeRelations(),
+  ])
   if (prior.error) throw prior.error
   if (prior.data) {
     if (prior.data.request_id === request_id && prior.data.card_ids.join(',') === cardIds.join(',')) return prior.data.result_payload
@@ -29,8 +52,6 @@ Deno.serve((req) => handle(req, async (body) => {
     throw new GameError('ROUND_ALREADY_SUBMITTED', 409)
   }
 
-  const reused = await db.from('rounds').select('battle_id,round_number,card_ids')
-    .eq('request_id', request_id).maybeSingle()
   if (reused.error) throw reused.error
   if (reused.data && (reused.data.battle_id !== battle.id || reused.data.round_number !== roundNumber || reused.data.card_ids.join(',') !== cardIds.join(','))) {
     throw new GameError('IDEMPOTENCY_CONFLICT', 409)
@@ -39,25 +60,19 @@ Deno.serve((req) => handle(req, async (body) => {
   if (roundNumber !== battle.current_round) throw new GameError('INVALID_ROUND', 409)
   if (!Array.isArray(battle.current_hand) || !cardIds.every((id) => battle.current_hand.includes(id))) throw new GameError('INVALID_CARDS')
 
-  const cardsResult = await db.from('cards')
-    .select('id,text,slot,theme,themes,rarity,syllables,rhyme_group,bonus_type,bonus_value')
-    .in('id', cardIds)
   if (cardsResult.error) throw cardsResult.error
   const cardsById = new Map(cardsResult.data.map((card: any) => [card.id, card]))
   const expectedSlots = ['setup', 'development', 'boost', 'punch']
   const cards = cardIds.map((id, i) => cardsById.get(id) as Record<string, unknown> | undefined)
   if (cards.some((card, i) => !card || card.slot !== expectedSlots[i])) throw new GameError('INVALID_CARDS')
 
-  const owned = await db.from('player_cards').select('card_id,uses_left').eq('player_id', player.id).in('card_id', cardIds)
   if (owned.error) throw owned.error
   if (owned.data.length !== 4) throw new GameError('CARD_NOT_OWNED', 403)
   if (owned.data.some((row: any) => Number(row.uses_left) <= 0)) throw new GameError('CARD_BURNED', 403)
 
-  const relationsQuery = await db.from('theme_relations').select('theme_a,theme_b,strength')
-  if (relationsQuery.error) throw relationsQuery.error
   // Пары в таблице уже в алфавитном порядке (theme_a < theme_b); scoring сортирует ключ так же.
   const relations: ThemeRelations = {}
-  for (const row of relationsQuery.data as { theme_a: string; theme_b: string; strength: number }[]) {
+  for (const row of relationsQuery) {
     relations[`${row.theme_a}|${row.theme_b}`] = Number(row.strength)
   }
 

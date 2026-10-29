@@ -4,6 +4,7 @@ const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '600',
 }
 
 export class GameError extends Error {
@@ -61,15 +62,9 @@ export async function telegramUser(initData: unknown) {
 }
 
 export async function playerForTelegram(telegramId: string) {
-  let { data, error } = await db.from('players').select('*').eq('telegram_id', telegramId).maybeSingle()
+  const { data, error } = await db.from('players').select('*').eq('telegram_id', telegramId).maybeSingle()
   if (error) throw error
   if (!data) throw new GameError('PLAYER_NOT_FOUND', 404)
-  const today = new Date().toISOString().slice(0, 10)
-  if (data.ai_requests_date !== today) {
-    const reset = await db.from('players').update({ ai_requests_today: 0, ai_requests_date: today }).eq('id', data.id).select('*').single()
-    if (reset.error) throw reset.error
-    data = reset.data
-  }
   return data
 }
 
@@ -105,6 +100,8 @@ export async function handle(req: Request, action: (body: Record<string, unknown
     const data = await action(body)
     return Response.json(data, { headers: cors })
   } catch (error) {
+    // Do not log request bodies: they contain Telegram initData.
+    console.error('[edge-function] request failed', error instanceof GameError ? error.code : (error as Error)?.message || 'unknown error')
     const code = error instanceof GameError ? error.code : (error as Error)?.message || 'INTERNAL'
     const known = new Set([
       'INVALID_INIT_DATA', 'PLAYER_NOT_FOUND', 'BATTLE_NOT_FOUND', 'BATTLE_FINISHED',

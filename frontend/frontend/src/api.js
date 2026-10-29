@@ -3,7 +3,7 @@
 //
 // MOCK[имя] = true  -> фейковый ответ (логика мок-сервера живёт ниже в этом файле)
 // MOCK[имя] = false -> настоящий вызов серверной функции
-// Если ключей Supabase нет в .env, любая функция работает на фейке.
+// В production отсутствие конфигурации считается ошибкой, а не поводом играть на фейке.
 import { supabase } from './supabase'
 import { BEATS, EQUIPMENT, CLOTHING, PACKS, START_CARD_IDS, START_COINS } from './mockCatalog'
 
@@ -37,7 +37,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 const rnd = (a, b) => a + Math.random() * (b - a)
 const rndInt = (a, b) => Math.floor(rnd(a, b + 1))
 const clone = (x) => (x == null ? x : JSON.parse(JSON.stringify(x)))
-const useMock = (name) => MOCK[name] || !supabase
+const useMock = (name) => import.meta.env.DEV && (MOCK[name] || !supabase)
 const pendingRequestIds = new Map()
 
 // Сохраняем один ID на операцию, пока не получим определённый ответ.
@@ -58,6 +58,7 @@ async function callIdempotent(name, body) {
 
 // Общий вызов серверной функции. initData добавляется в каждый запрос.
 async function call(name, body) {
+  if (!supabase) throw new ApiError('CONFIGURATION_ERROR', 'server configuration missing')
   const initData = window.Telegram?.WebApp?.initData || ''
   let res
   try {
@@ -144,8 +145,10 @@ const proposed = (key, fnName, body, mockFn, ms = [300, 500]) => async () => {
 }
 
 export const getStudio = () => proposed('getStudio', 'get-studio', {}, () => mock2.getStudio())()
-export const recordSnippet = (taps) =>
-  proposed('recordSnippet', 'record-snippet', { taps }, () => mock2.recordSnippet(taps), [200, 400])()
+export const recordSnippet = (taps, requestId = crypto.randomUUID()) =>
+  useMock('recordSnippet')
+    ? (async () => { await wait(rndInt(200, 400)); return mock2.recordSnippet(taps) })()
+    : call('record-snippet', { taps, requestId })
 export const selectBeat = (beatId) =>
   proposed('selectBeat', 'select-beat', { beatId }, () => mock2.selectBeat(beatId))()
 export const buyBeat = (beatId) =>

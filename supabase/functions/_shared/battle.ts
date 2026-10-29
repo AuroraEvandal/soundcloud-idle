@@ -1,5 +1,8 @@
 import { db, GameError, mapCard } from './common.ts'
 
+let clothingCache: { expiresAt: number; rows: any[] } | null = null
+let clothingLoad: Promise<any[]> | null = null
+
 export function battleView(battle: any) {
   const opponent = Array.isArray(battle.opponents) ? battle.opponents[0] : battle.opponents
   const location = Array.isArray(opponent?.locations) ? opponent.locations[0] : opponent?.locations
@@ -24,10 +27,19 @@ export function battleView(battle: any) {
 // Бонусов у неё нет и в расчёты она не входит. Минимум три вещи, чтобы соперник
 // не выходил на сцену совсем раздетым.
 export async function randomOpponentOutfit() {
-  const cl = await db.from('clothing').select('id,name,image_url,slot')
-  if (cl.error) throw cl.error
+  if (!clothingCache || clothingCache.expiresAt <= Date.now()) {
+    if (!clothingLoad) {
+      clothingLoad = (async () => {
+        const cl = await db.from('clothing').select('id,name,image_url,slot')
+        if (cl.error) throw cl.error
+        clothingCache = { rows: cl.data || [], expiresAt: Date.now() + 300_000 }
+        return clothingCache.rows
+      })().finally(() => { clothingLoad = null })
+    }
+    await clothingLoad
+  }
   const bySlot: Record<string, any[]> = {}
-  for (const c of cl.data || []) (bySlot[c.slot] ||= []).push(c)
+  for (const c of clothingCache?.rows || []) (bySlot[c.slot] ||= []).push(c)
   const slots = ['hat', 'hoodie', 'pants', 'shoe', 'chain']
   const pick = (slot: string) => {
     const list = bySlot[slot] || []
@@ -49,17 +61,17 @@ export async function readBattle(playerId: string, battleId: string) {
   if (error) throw error
   if (!battle) throw new GameError('BATTLE_NOT_FOUND', 404)
 
-  const { data: rounds, error: roundsError } = await db.from('rounds')
-    .select('round_number,result_payload')
-    .eq('battle_id', battle.id).order('round_number', { ascending: false }).limit(1)
-  if (roundsError) throw roundsError
-
-  // uses_left лежит в player_cards, поэтому читаем руку через неё
-  const cards = battle.status === 'active' && battle.current_hand?.length
-    ? await db.from('player_cards')
+  // These reads only need the loaded battle row, so execute them together.
+  const [roundsResult, cards] = await Promise.all([
+    db.from('rounds').select('round_number,result_payload')
+      .eq('battle_id', battle.id).order('round_number', { ascending: false }).limit(1),
+    battle.status === 'active' && battle.current_hand?.length
+      ? db.from('player_cards')
       .select('uses_left, card:cards(id,text,slot,theme,themes,rarity,syllables,bonus_type,bonus_value)')
       .eq('player_id', playerId).in('card_id', battle.current_hand)
-    : { data: [], error: null }
+      : Promise.resolve({ data: [], error: null } as any),
+  ])
+  if (roundsResult.error) throw roundsResult.error
   if (cards.error) throw cards.error
   const byId = new Map((cards.data || []).map((row: any) => [row.card.id, { ...row.card, uses_left: row.uses_left }]))
   const hand: Record<string, unknown[]> = { setup: [], development: [], boost: [], punch: [] }
@@ -67,7 +79,7 @@ export async function readBattle(playerId: string, battleId: string) {
     const card = byId.get(id) as Record<string, unknown> | undefined
     if (card && typeof card.slot === 'string' && card.slot in hand) hand[card.slot].push(mapCard(card))
   }
-  const lastResult = rounds?.[0]?.result_payload || null
+  const lastResult = roundsResult.data?.[0]?.result_payload || null
   const active = battle.status === 'active'
   return {
     battle: battleView(battle),

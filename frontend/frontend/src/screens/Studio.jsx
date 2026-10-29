@@ -21,6 +21,8 @@ export default function Studio({ onClose }) {
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
   const pending = useRef(0)
+  const retryBatch = useRef(null)
+  const retryCount = useRef(0)
   const inflight = useRef(false)
   const timer = useRef(null)
 
@@ -37,15 +39,32 @@ export default function Studio({ onClose }) {
     load()
   }, [load])
 
+  // Локальный прогноз для интерфейса; сервер всё равно проверяет запас энергии.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStudio((s) => s && s.energy < s.energy_max ? { ...s, energy: s.energy + 1 } : s)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Тапы копятся и отправляются пачкой. Считает сервер, здесь только быстрый отклик.
   const flush = useCallback(async () => {
-    if (inflight.current || !pending.current) return
-    const taps = pending.current
-    pending.current = 0
+    if (inflight.current || (!pending.current && !retryBatch.current)) return
+    const batch = retryBatch.current || { taps: pending.current, requestId: crypto.randomUUID() }
+    if (!retryBatch.current) pending.current = 0
     inflight.current = true
     try {
-      const r = await recordSnippet(taps)
-      setStudio(r.studio)
+      const r = await recordSnippet(batch.taps, batch.requestId)
+      retryBatch.current = null
+      retryCount.current = 0
+      setStudio((current) => {
+        const queued = pending.current
+        return {
+          ...r.studio,
+          energy: Math.max(0, r.studio.energy - queued),
+          hype: (r.studio.hype + queued) % r.studio.hype_max,
+        }
+      })
       setPlayer(r.player)
       const released = r.released || []
       if (released.length) {
@@ -55,10 +74,17 @@ export default function Studio({ onClose }) {
       setError(null)
     } catch (e) {
       setError(errorInfo(e))
-      load()
+      if (e?.network) retryBatch.current = batch
+      else { retryBatch.current = null; retryCount.current = 0; load() }
     } finally {
       inflight.current = false
-      if (pending.current) flush()
+      if (retryBatch.current) {
+        clearTimeout(timer.current)
+        const delay = Math.min(30_000, 1500 * 2 ** retryCount.current++)
+        timer.current = setTimeout(() => { timer.current = null; flush() }, delay)
+      } else if (pending.current && !timer.current) {
+        timer.current = setTimeout(() => { timer.current = null; flush() }, 0)
+      }
     }
   }, [load, notify, setPlayer])
 
@@ -79,8 +105,7 @@ export default function Studio({ onClose }) {
     setError(null)
     setStudio((s) => ({ ...s, energy: s.energy - 1, hype: (s.hype + 1) % s.hype_max }))
     pending.current += 1
-    clearTimeout(timer.current)
-    timer.current = setTimeout(flush, 600)
+    if (!timer.current) timer.current = setTimeout(() => { timer.current = null; flush() }, 600)
   }
 
   async function act(fn) {

@@ -15,9 +15,14 @@ Deno.serve((req) => handle(req, async (body) => {
 
   // Одежда соперника выбирается один раз на батл и хранится в самом батле,
   // чтобы восстановление через get-hand показывало тот же образ.
-  const outfit = await randomOpponentOutfit()
-  const saved = await db.from('battles').update({ opponent_outfit: outfit }).eq('id', created.data)
-  if (saved.error) throw saved.error
+  const current = await db.from('battles').select('opponent_outfit').eq('id', created.data).single()
+  if (current.error) throw current.error
+  if (!current.data.opponent_outfit) {
+    const outfit = await randomOpponentOutfit()
+    const saved = await db.from('battles').update({ opponent_outfit: outfit })
+      .eq('id', created.data).is('opponent_outfit', null)
+    if (saved.error) throw saved.error
+  }
 
   const state = await readBattle(player.id, created.data)
   return {

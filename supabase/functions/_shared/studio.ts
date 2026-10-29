@@ -59,9 +59,9 @@ export function releaseRewards(baseStreams: number, popularity: number, incomePc
 }
 
 // Вид студии для ответов get-studio / record-snippet / select-beat / buy-beat.
-export async function studioView(player: Record<string, any>) {
+export async function studioView(player: Record<string, any>, cachedBonuses?: Record<string, number>) {
   const [bonuses, beats, equipment, ownedBeats, ownedEquipment] = await Promise.all([
-    bonusPct(player.id),
+    cachedBonuses ? Promise.resolve(cachedBonuses) : bonusPct(player.id),
     db.from('beats').select('id,name,base_streams,price').order('id'),
     db.from('equipment').select('id,name,price,bonus_type,bonus_value').order('id'),
     db.from('player_beats').select('beat_id').eq('player_id', player.id),
