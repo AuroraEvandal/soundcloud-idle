@@ -45,11 +45,16 @@ function punchScore(cards: Record<string, unknown>[]) {
 
 // Смысл — средняя сила связи тем карточек между собой (6 пар) и с темой раунда (4 связи).
 function meaningScore(cards: Record<string, unknown>[], theme: string, relations: ThemeRelations) {
-  const themes = cards.map((c) => String(c.theme || ''))
+  const themes = cards.map((c) => {
+    const list = Array.isArray(c.themes) ? c.themes.map(String).filter(Boolean) : []
+    return list.length ? list.slice(0, 3) : (c.theme ? [String(c.theme)] : [])
+  })
   const values: number[] = []
   for (let i = 0; i < themes.length; i++) {
-    for (let j = i + 1; j < themes.length; j++) values.push(relationOf(relations, themes[i], themes[j]))
-    values.push(relationOf(relations, themes[i], theme))
+    for (let j = i + 1; j < themes.length; j++) {
+      for (const a of themes[i]) for (const b of themes[j]) values.push(relationOf(relations, a, b))
+    }
+    for (const cardTheme of themes[i]) values.push(relationOf(relations, cardTheme, theme))
   }
   return half(clamp(values.reduce((sum, v) => sum + v, 0) / values.length))
 }

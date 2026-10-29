@@ -51,6 +51,7 @@ create table cards (
   text text not null,
   slot text not null check (slot in ('setup', 'development', 'boost', 'punch')),
   theme text,                                  -- деньги, улица, ирония...
+  themes text[] not null default '{}',          -- от 1 до 3 тематик; theme оставлено для совместимости
   rarity text not null default 'common' check (rarity in ('common', 'rare', 'epic')),
   syllables int not null,                      -- число слогов (считается заранее)
   rhyme_group text not null,                   -- окончание для рифмы, например 'апки'

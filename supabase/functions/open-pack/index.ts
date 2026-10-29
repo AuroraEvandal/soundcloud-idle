@@ -14,7 +14,7 @@ Deno.serve((req) => handle(req, async (body) => {
   const [fresh, cardRow, itemRow] = await Promise.all([
     db.from('players').select('*').eq('id', player.id).single(),
     drop.type === 'card'
-      ? db.from('cards').select('id,text,slot,theme,rarity,syllables,bonus_type,bonus_value').eq('id', drop.card_id).maybeSingle()
+      ? db.from('cards').select('id,text,slot,theme,themes,rarity,syllables,bonus_type,bonus_value').eq('id', drop.card_id).maybeSingle()
       : Promise.resolve({ data: null, error: null } as any),
     drop.type === 'clothing'
       ? db.from('clothing')
@@ -38,6 +38,7 @@ Deno.serve((req) => handle(req, async (body) => {
         slot: c.slot,
         text: c.text,
         theme: c.theme,
+        themes: Array.isArray(c.themes) && c.themes.length ? c.themes : (c.theme ? [c.theme] : []),
         rarity: c.rarity,
         syllables: c.syllables,
         uses_left: 3,
