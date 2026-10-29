@@ -8,6 +8,7 @@ import Arena from '../components/Arena'
 import CardView from '../components/CardView'
 import ErrorBox from '../components/ErrorBox'
 import Icon from '../components/Icon'
+import { opponentDisplayName } from '../displayNames'
 
 const EMPTY = { setup: null, development: null, boost: null, punch: null }
 
@@ -62,6 +63,7 @@ export default function Battle() {
   const [busy, setBusy] = useState(false)
   const [restoring, setRestoring] = useState(false)
   const [note, setNote] = useState('')
+  const [chapterOpen, setChapterOpen] = useState(false)
   const [look, setLook] = useState({})
   const busyRef = useRef(false)
 
@@ -257,7 +259,7 @@ export default function Battle() {
             >
               <div className="opp-lvl">{o.level}</div>
               <div className="opp-main">
-                <div className="opp-name">{o.name}</div>
+                <div className="opp-name">{opponentDisplayName(o, o.unlocked)}</div>
                 <div className="muted small-t">{o.location}</div>
               </div>
               {o.unlocked ? (
@@ -270,6 +272,23 @@ export default function Battle() {
               )}
             </button>
           ))}
+          <button
+            className="opp chapter-announcement"
+            type="button"
+            aria-expanded={chapterOpen}
+            onClick={() => setChapterOpen((open) => !open)}
+          >
+            <div className="opp-lvl">II</div>
+            <div className="opp-main">
+              <div className="opp-name">Анонс второй главы</div>
+              <div className="muted small-t">{chapterOpen ? 'Скрыть' : 'Нажми, чтобы открыть'}</div>
+            </div>
+          </button>
+          {chapterOpen && (
+            <div className="chapter-message" role="status">
+              СПАСИБО ЗА ПРОХОЖДЕНИЕ 1 ГЛАВЫ!!11!! Мы выходим на ЗАПАДНУЮ UG сцену. soon........
+            </div>
+          )}
         </div>
       </div>
     )
@@ -289,7 +308,7 @@ export default function Battle() {
     <div className="battle">
       <Arena
         playerName={nick}
-        opponentName={battle?.opponent?.name}
+        opponentName={opponentDisplayName(battle?.opponent)}
         playerLook={look}
         opponentLook={opponentLook(battle?.opponent?.outfit)}
         playerState={pState}
@@ -355,7 +374,7 @@ export default function Battle() {
             </div>
             <Lines title={nick} side={result.round.player} />
             {result.round.player.comment && <div className="comment">Судья: {result.round.player.comment}</div>}
-            <Lines title={battle?.opponent?.name} side={result.round.opponent} />
+            <Lines title={opponentDisplayName(battle?.opponent)} side={result.round.opponent} />
             <button className="btn cta" onClick={next}>
               {result.next_round ? 'СЛЕДУЮЩИЙ РАУНД' : 'ИТОГИ БАТЛА'}
             </button>

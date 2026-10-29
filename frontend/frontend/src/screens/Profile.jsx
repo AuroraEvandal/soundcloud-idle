@@ -3,6 +3,7 @@ import AppBar from '../components/AppBar'
 import Avatar from '../components/Avatar'
 import ProgressBar from '../components/ProgressBar'
 import { SKILLS } from '../constants'
+import { isBossUnlocked, opponentDisplayName } from '../displayNames'
 
 export default function Profile({ onClose }) {
   const { nick, player, profile } = useGame()
@@ -70,7 +71,7 @@ export default function Profile({ onClose }) {
             <div className="section">Последние батлы</div>
             {profile.recent_battles.map((b) => (
               <div className="row-between mt" key={b.id}>
-                <span>{b.opponent_name}</span>
+                <span>{opponentDisplayName({ id: b.opponent_id, name: b.opponent_name }, isBossUnlocked(profile))}</span>
                 <span className={b.result === 'win' ? 'win' : 'loss'}>{b.result === 'win' ? 'Победа' : 'Поражение'}</span>
               </div>
             ))}

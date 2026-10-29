@@ -9,6 +9,7 @@ import Tabs from '../components/Tabs'
 import Icon from '../components/Icon'
 import CardView from '../components/CardView'
 import ErrorBox from '../components/ErrorBox'
+import { clothingDisplayName } from '../displayNames'
 
 export default function Deck({ onClose }) {
   const [tab, setTab] = useState('deck')
@@ -65,7 +66,7 @@ const FILL = ['common', 'common', 'common', 'rare', 'common', 'epic', 'common', 
 function dropView(drop) {
   return drop.type === 'card'
     ? { label: drop.card.text, rarity: drop.card.rarity }
-    : { label: drop.item.name, rarity: drop.item.rarity }
+    : { label: clothingDisplayName(drop.item), rarity: drop.item.rarity }
 }
 
 function Packs() {
@@ -150,7 +151,7 @@ function Packs() {
             <div className={`row bar rarity-row rarity-${result.item.rarity}`}>
               {result.item.thumb && <img className="thumb" src={result.item.thumb} alt="" />}
               <div className="row-main">
-                {result.item.name}
+                {clothingDisplayName(result.item)}
                 <div className="muted small-t">
                   Одежда · {RARITY[result.item.rarity]} · {bonusText(result.item.bonus)}
                 </div>

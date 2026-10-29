@@ -9,6 +9,7 @@ import Tabs from '../components/Tabs'
 import Icon from '../components/Icon'
 import CharacterModel from '../components/CharacterModel'
 import ErrorBox from '../components/ErrorBox'
+import { clothingDisplayName } from '../displayNames'
 
 const SLOTS = [
   ['hat', 'Шапка', 'hat'],
@@ -23,7 +24,7 @@ function ItemRow({ item, children }) {
     <div className={`row bar rarity-row rarity-${item.rarity}`}>
       {item.thumb && <img className="thumb" src={item.thumb} alt="" />}
       <div className="row-main">
-        {item.name}
+        {clothingDisplayName(item)}
         <div className="muted small-t">
           {RARITY[item.rarity]} · {bonusText(item.bonus)}
         </div>

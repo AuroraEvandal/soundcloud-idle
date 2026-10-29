@@ -567,6 +567,18 @@ button:disabled {
   gap: 4px;
   color: var(--text2);
 }
+.chapter-announcement {
+  width: 100%;
+  color: var(--text);
+  border: 1px solid var(--accent);
+}
+.chapter-message {
+  padding: 14px;
+  color: var(--text);
+  background: var(--card);
+  border-radius: 10px;
+  line-height: 1.5;
+}
 .battle {
   flex: 1;
   min-height: 0;

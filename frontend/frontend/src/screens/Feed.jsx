@@ -1,6 +1,7 @@
 import { useGame } from '../GameContext'
 import Waveform from '../components/Waveform'
 import ProgressBar from '../components/ProgressBar'
+import { isBossUnlocked, opponentDisplayName } from '../displayNames'
 
 const COVERS = ['#FF5500', '#0A84FF', '#30D158', '#AF52DE', '#FF9F0A']
 
@@ -8,6 +9,7 @@ const COVERS = ['#FF5500', '#0A84FF', '#30D158', '#AF52DE', '#FF9F0A']
 export default function Feed() {
   const { nick, profile } = useGame()
   const items = profile?.recent_battles || []
+  const bossUnlocked = isBossUnlocked(profile)
   if (!items.length) {
     return (
       <div className="pad">
@@ -26,7 +28,7 @@ export default function Feed() {
               {b.result === 'win' ? 'W' : 'L'}
             </div>
             <div className="track-main">
-              <div className="track-title">Баттл vs {b.opponent_name}</div>
+              <div className="track-title">Баттл vs {opponentDisplayName({ id: b.opponent_id, name: b.opponent_name }, bossUnlocked)}</div>
               <div className="muted small-t">
                 {nick} · {b.result === 'win' ? 'победа' : 'поражение'}
               </div>

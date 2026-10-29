@@ -6,7 +6,7 @@ import Icon from '../components/Icon'
 
 const CONTACTS = [
   { id: 'adam', name: 'Менеджер Адам', color: '#0A84FF' },
-  { id: 'rhymes', name: 'Рифмы и П*****', color: '#30D158' },
+  { id: 'rhymes', name: 'ТОПОР 18+', color: '#30D158' },
 ]
 
 const ADAM_GUIDE = [
