@@ -57,7 +57,7 @@ export async function readBattle(playerId: string, battleId: string) {
   // uses_left лежит в player_cards, поэтому читаем руку через неё
   const cards = battle.status === 'active' && battle.current_hand?.length
     ? await db.from('player_cards')
-      .select('uses_left, card:cards(id,text,slot,theme,rarity,syllables,bonus_type,bonus_value)')
+      .select('uses_left, card:cards(id,text,slot,theme,themes,rarity,syllables,bonus_type,bonus_value)')
       .eq('player_id', playerId).in('card_id', battle.current_hand)
     : { data: [], error: null }
   if (cards.error) throw cards.error

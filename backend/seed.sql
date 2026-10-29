@@ -43,6 +43,7 @@ on conflict (id) do update set
   text = excluded.text,
   slot = excluded.slot,
   theme = excluded.theme,
+  themes = array[excluded.theme],
   rarity = excluded.rarity,
   syllables = excluded.syllables,
   rhyme_group = excluded.rhyme_group,
@@ -149,9 +150,9 @@ select setval(pg_get_serial_sequence('public.packs', 'id'), greatest((select max
 -- Пока пары нет в таблице, оценка «смысл» считает её нейтральной (5).
 -- Пример (раскомментируй и поменяй числа на свои):
 --
--- insert into public.theme_relations (theme_a, theme_b, strength) values
---   ('деньги', 'ирония', 6),
---   ('деньги', 'улица', 8),
---   ('ирония', 'улица', 7)
--- on conflict (theme_a, theme_b) do update set strength = excluded.strength;
+insert into public.theme_relations (theme_a, theme_b, strength) values
+  ('деньги', 'ирония', 5),
+  ('деньги', 'улица', 7),
+  ('ирония', 'улица', 3)
+on conflict (theme_a, theme_b) do update set strength = excluded.strength;
 -- =====================================================

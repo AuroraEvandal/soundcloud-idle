@@ -40,7 +40,7 @@ Deno.serve((req) => handle(req, async (body) => {
   if (!Array.isArray(battle.current_hand) || !cardIds.every((id) => battle.current_hand.includes(id))) throw new GameError('INVALID_CARDS')
 
   const cardsResult = await db.from('cards')
-    .select('id,text,slot,theme,rarity,syllables,rhyme_group,bonus_type,bonus_value')
+    .select('id,text,slot,theme,themes,rarity,syllables,rhyme_group,bonus_type,bonus_value')
     .in('id', cardIds)
   if (cardsResult.error) throw cardsResult.error
   const cardsById = new Map(cardsResult.data.map((card: any) => [card.id, card]))

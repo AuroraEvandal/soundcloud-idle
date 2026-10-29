@@ -139,6 +139,7 @@ export function mapCard(c: Record<string, unknown>) {
     id: c.id,
     text: c.text,
     theme: c.theme,
+    themes: Array.isArray(c.themes) && c.themes.length ? c.themes : (c.theme ? [c.theme] : []),
     rarity: c.rarity,
     syllables: c.syllables,
     ...(c.uses_left != null ? { uses_left: c.uses_left } : {}),
