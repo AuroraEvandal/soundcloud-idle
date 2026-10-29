@@ -12,6 +12,7 @@ import Deck from './screens/Deck'
 import Telegram from './screens/Telegram'
 import Profile from './screens/Profile'
 import Store from './screens/Store'
+import { initialTelegramMessages } from './telegramMessages'
 
 const SCREENS = {
   soundwave: SoundWave,
@@ -32,7 +33,9 @@ export default function App() {
   const [screen, setScreen] = useState('home')
   const [island, setIsland] = useState('')
   const [unread, setUnread] = useState(0)
+  const [telegramMessages, setTelegramMessages] = useState({ adam: [], topor: [] })
   const islandTimer = useRef(null)
+  const deliveredTelegramEvents = useRef(new Set())
 
   const notify = useCallback((text) => {
     setIsland(text)
@@ -56,6 +59,7 @@ export default function App() {
         const res = await login()
         setPlayer(res.player)
         setNick(res.player.username)
+        setTelegramMessages((current) => current.adam.length ? current : initialTelegramMessages(res.player.username))
         await refreshProfile()
         setStatus('ready')
         if (res.is_new) {
@@ -83,7 +87,18 @@ export default function App() {
 
   const relogin = useCallback(() => boot(), [boot])
 
-  const ctx = { nick, player, setPlayer, profile, refreshProfile, notify, relogin, unread, setUnread }
+  const addTelegramMessages = useCallback((incoming, eventId) => {
+    if (eventId && deliveredTelegramEvents.current.has(eventId)) return
+    if (eventId) deliveredTelegramEvents.current.add(eventId)
+    const added = Object.values(incoming).reduce((count, messages) => count + messages.length, 0)
+    setTelegramMessages((current) => ({
+      ...current,
+      ...Object.fromEntries(Object.entries(incoming).map(([chat, messages]) => [chat, [...(current[chat] || []), ...messages]])),
+    }))
+    if (added) setUnread((count) => count + added)
+  }, [])
+
+  const ctx = { nick, player, setPlayer, profile, refreshProfile, notify, relogin, unread, setUnread, telegramMessages, setTelegramMessages, addTelegramMessages }
   const Screen = SCREENS[screen]
 
   let body

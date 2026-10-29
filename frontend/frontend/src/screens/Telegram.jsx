@@ -3,37 +3,22 @@ import { useGame } from '../GameContext'
 import AppBar from '../components/AppBar'
 import Avatar from '../components/Avatar'
 import Icon from '../components/Icon'
-
-const CONTACTS = [
-  { id: 'adam', name: 'Менеджер Адам', color: '#0A84FF' },
-  { id: 'rhymes', name: 'ТОПОР 18+', color: '#30D158' },
-]
-
-const ADAM_GUIDE = [
-  'Привет, {nick}! Я твой менеджер. Быстрый гайд по игре:',
-  'В SoundWave выбери соперника, собери строчку из 4 карточек и нажми «Зачитать». Баттл состоит из 3 раундов.',
-  'Баттлы дают опыт и популярность. Опыт повышает уровень, а популярность открывает новых соперников.',
-  'В студии записывай сниппеты: набери хайп до максимума — трек выйдет и принесёт прослушивания и монеты.',
-  'Монеты трать в магазине. Паки открывай в колоде. У каждой карточки 3 использования — выбирай их с умом. Удачи!',
-]
+import CharacterModel from '../components/CharacterModel'
+import { CONTACTS } from '../telegramMessages'
 
 // Чаты пока используют локальные сообщения; новых ответов от сервера нет.
 export default function Telegram({ onClose }) {
-  const { nick, setUnread } = useGame()
+  const { setUnread, telegramMessages, setTelegramMessages } = useGame()
   const [open, setOpen] = useState(null)
-  const [log, setLog] = useState({
-    adam: ADAM_GUIDE.map((text) => ({ me: false, text: text.replace('{nick}', nick) })),
-    rhymes: [],
-  })
   const [text, setText] = useState('')
   const endRef = useRef(null)
 
   useEffect(() => setUnread(0), [setUnread])
-  useEffect(() => endRef.current?.scrollIntoView?.({ block: 'end' }), [log, open])
+  useEffect(() => endRef.current?.scrollIntoView?.({ block: 'end' }), [telegramMessages, open])
 
   const preview = (c) => {
-    const l = log[c.id]
-    if (c.id === 'rhymes' && !l.length) return 'Новый биф!'
+    const l = telegramMessages[c.id] || []
+    if (c.id === 'topor' && !l.length) return 'Новости баттлов и афиши'
     return l.length ? l[l.length - 1].text : 'Нет сообщений'
   }
 
@@ -41,7 +26,7 @@ export default function Telegram({ onClose }) {
     e.preventDefault()
     const t = text.trim()
     if (!t) return
-    setLog((l) => ({ ...l, [open.id]: [...l[open.id], { me: true, text: t }] }))
+    setTelegramMessages((messages) => ({ ...messages, [open.id]: [...(messages[open.id] || []), { me: true, text: t }] }))
     setText('')
   }
 
@@ -55,9 +40,25 @@ export default function Telegram({ onClose }) {
           </span>
         </AppBar>
         <div className="app-body chat scroll">
-          {log[open.id].map((m, i) => (
+          {(telegramMessages[open.id] || []).map((m, i) => (
             <div key={i} className={'bubble ' + (m.me ? 'me' : 'them')}>
               {m.text}
+              {m.poster && (
+                <div className="telegram-poster">
+                  <div className="telegram-poster-stage">
+                    <span className="telegram-poster-eyebrow">{m.poster.eyebrow}</span>
+                    <div className="telegram-poster-fighters">
+                      <div className="telegram-poster-fighter">
+                        <CharacterModel look={m.poster.playerLook || {}} />
+                        <small>{m.poster.playerName}</small>
+                      </div>
+                      {m.poster.image && <img src={m.poster.image} alt="" />}
+                    </div>
+                    <strong>{m.poster.title}</strong>
+                    <span className="telegram-poster-stamp">{m.poster.stamp}</span>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           <div ref={endRef} />

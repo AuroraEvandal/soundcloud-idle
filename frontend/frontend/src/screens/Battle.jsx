@@ -9,6 +9,8 @@ import CardView from '../components/CardView'
 import ErrorBox from '../components/ErrorBox'
 import Icon from '../components/Icon'
 import { opponentDisplayName } from '../displayNames'
+import { opponentArt } from '../opponentArt'
+import { victoryTelegramMessages } from '../telegramMessages'
 
 const EMPTY = { setup: null, development: null, boost: null, punch: null }
 
@@ -18,12 +20,6 @@ const playerLook = (w) =>
     Object.entries(w?.outfit || {})
       .map(([slot, id]) => [slot, w.items.find((i) => i.id === id)?.image])
       .filter(([, img]) => img),
-  )
-const opponentLook = (outfit) =>
-  Object.fromEntries(
-    Object.entries(outfit || {})
-      .filter(([, it]) => it?.image)
-      .map(([slot, it]) => [slot, it.image]),
   )
 const fmt1 = (n) => Number(n).toFixed(1)
 
@@ -50,7 +46,7 @@ function Lines({ title, side }) {
 }
 
 export default function Battle() {
-  const { nick, player, profile, refreshProfile, relogin } = useGame()
+  const { nick, player, profile, refreshProfile, relogin, addTelegramMessages } = useGame()
   // list | build | judging | result | final
   const [phase, setPhase] = useState('list')
   const [battle, setBattle] = useState(null)
@@ -66,12 +62,13 @@ export default function Battle() {
   const [chapterOpen, setChapterOpen] = useState(false)
   const [look, setLook] = useState({})
   const busyRef = useRef(false)
+  const announcedWins = useRef(new Set())
 
   async function restoreBattle(id) {
     setRestoring(true)
     setError(null)
     try {
-      const state = await getHand(id)
+      const [state, wardrobe] = await Promise.all([getHand(id), getWardrobe().catch(() => null)])
       // Не подменяем состояние, если игрок уже успел начать другой батл.
       if (readBattleId() !== id) return
       if (!state.battle) {
@@ -81,7 +78,7 @@ export default function Battle() {
       }
       setBattle(state.battle)
       setHand(state.cards)
-      setLook({})
+      setLook(playerLook(wardrobe))
       if (state.last_result) {
         setRound(state.last_result.round)
         setResult(state.last_result)
@@ -111,6 +108,23 @@ export default function Battle() {
     // Восстановление запускается один раз при создании экрана.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (phase !== 'result' || result?.next_round || result?.battle?.result !== 'win') return
+    const battleId = result.battle.id || battle?.id
+    if (!battleId || announcedWins.current.has(battleId)) return
+    announcedWins.current.add(battleId)
+
+    const announce = async () => {
+      const latestProfile = await refreshProfile().catch(() => profile)
+      const opponent = battle?.opponent || { id: result.battle.opponent_id, name: result.battle.opponent_name }
+      const nextOpponent = opponent?.id === 5
+        ? null
+        : (latestProfile?.opponents || []).find((candidate) => candidate.id > (opponent?.id || 0))
+      addTelegramMessages(victoryTelegramMessages({ nick, opponent, nextOpponent, playerLook: look }), `battle-win:${battleId}`)
+    }
+    announce()
+  }, [phase, result, battle?.id, battle?.opponent?.id, nick, look, profile, refreshProfile, addTelegramMessages])
 
   const unlocked = (profile?.opponents || []).filter((o) => o.unlocked).length
 
@@ -310,7 +324,7 @@ export default function Battle() {
         playerName={nick}
         opponentName={opponentDisplayName(battle?.opponent)}
         playerLook={look}
-        opponentLook={opponentLook(battle?.opponent?.outfit)}
+        opponentImage={opponentArt(battle?.opponent?.id)}
         playerState={pState}
         opponentState={oState}
         shake={shake}
