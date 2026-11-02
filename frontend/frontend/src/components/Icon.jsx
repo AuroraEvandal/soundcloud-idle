@@ -21,6 +21,8 @@ const P = {
   box: { d: 'M4 8l8-4 8 4v9l-8 4-8-4ZM4 8l8 4 8-4M12 12v9' },
   help: { d: 'M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4M12 17.5h.01' },
   check: { d: 'M5 12.5 10 17.5 19 7.5' },
+  heart: { d: 'M12 21 3.5 12.5C-1 7 6 1 12 7c6-6 13 0 8.5 5.5Z' },
+  crown: { d: 'M3 6l4 5 5-8 5 8 4-5-2 13H5ZM5 16h14' },
 }
 
 export default function Icon({ name, size = 24, color = 'currentColor', stroke = 2 }) {

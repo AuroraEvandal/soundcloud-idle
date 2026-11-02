@@ -132,6 +132,16 @@ export async function submitRound(battleId, roundNumber, cardIds) {
   return callIdempotent('submit-round', { battleId, roundNumber, cardIds })
 }
 
+export async function startMiniGame(battleId, roundNumber, actionId = 'prepare') {
+  if (useMock('submitRound')) return mock.startMiniGame(battleId, roundNumber, actionId)
+  return call('start-mini-game', { battleId, roundNumber, actionId })
+}
+
+export async function finishMiniGame(battleId, miniGameId, actionId) {
+  if (useMock('submitRound')) return mock.finishMiniGame(battleId, miniGameId, actionId)
+  return call('finish-mini-game', { battleId, miniGameId, actionId })
+}
+
 // ---------------------------------------------------------------------------
 // Экономика v0.2 (docs/api.md, разделы 6-15). Формат ответов 1-в-1 с сервером.
 // ---------------------------------------------------------------------------
@@ -388,6 +398,12 @@ function popFloor() {
   return Math.max(0, ...OPPONENTS.filter((o) => p >= o.required).map((o) => o.required))
 }
 
+function mockMiniView(game) {
+  const { answer_id, ...view } = game
+  return clone({ ...view, server_now: Date.now(),
+    prompt: game.started_at ? game.prompt : null, options: game.started_at ? game.options : [] })
+}
+
 const mock = {
   login() {
     const is_new = !db.player
@@ -436,8 +452,54 @@ const mock = {
     if (!db.player) throw new ApiError('PLAYER_NOT_FOUND')
     const b = db.battles[battleId]
     if (!b) throw new ApiError('BATTLE_NOT_FOUND')
-    if (b.status === 'finished') throw new ApiError('BATTLE_FINISHED')
-    return { cards: clone(b.hand) }
+    return { battle: { id: b.id, status: b.status, opponent: b.opp,
+      player_rounds_won: b.pw, opponent_rounds_won: b.ow },
+      round: b.status === 'active' ? { number: b.round, theme: b.themes[b.round - 1] } : null,
+      cards: b.status === 'active' ? clone(b.hand) : null, last_result: clone(b.last_result || null) }
+  },
+
+  startMiniGame(battleId, roundNumber, actionId) {
+    const b = db.battles[battleId]
+    if (!b) throw new ApiError('BATTLE_NOT_FOUND')
+    if (b.status !== 'active') throw new ApiError('BATTLE_FINISHED')
+    if (![2, 3].includes(roundNumber) || roundNumber !== b.round) throw new ApiError('INVALID_ROUND')
+    if (!['prepare', 'start'].includes(actionId)) throw new ApiError('INVALID_MINI_GAME_ACTION')
+    b.miniGames ||= {}
+    if (!b.miniGames[roundNumber]) {
+      const kind = ['timing', 'slang', 'wave'][Math.floor(Math.random() * 3)]
+      const options = ['хит', 'компот', 'шкаф'].map((text) => ({ id: uuid(), text }))
+      b.miniGames[roundNumber] = { id: uuid(), kind, round_number: roundNumber,
+        duration_ms: { timing: 2400, slang: 2000, wave: 3200 }[kind],
+        prompt: 'Залетел на бит — и сразу в…', options: shuffle(options), answer_id: options[0].id,
+        started_at: null, penalty_points: null }
+    }
+    const game = b.miniGames[roundNumber]
+    if (actionId === 'start' && game.started_at === null) game.started_at = Date.now() + 800
+    if (game.penalty_points === null && game.started_at !== null && Date.now() > game.started_at + game.duration_ms + 250) {
+      game.penalty_points = game.kind === 'slang' ? 20 : 15
+    }
+    return mockMiniView(game)
+  },
+
+  finishMiniGame(battleId, miniGameId, actionId) {
+    const b = db.battles[battleId]
+    if (!b) throw new ApiError('BATTLE_NOT_FOUND')
+    const game = Object.values(b.miniGames || {}).find((g) => g.id === miniGameId)
+    if (!game) throw new ApiError('MINI_GAME_REQUIRED')
+    if (game.penalty_points !== null) return mockMiniView(game)
+    if (b.status !== 'active') throw new ApiError('BATTLE_FINISHED')
+    if (game.round_number !== b.round) throw new ApiError('INVALID_ROUND')
+    if (game.started_at === null) throw new ApiError('MINI_GAME_NOT_STARTED')
+    const valid = actionId === 'timeout' || (game.kind === 'slang'
+      ? game.options.some((o) => o.id === actionId) : actionId === 'tap')
+    if (!valid) throw new ApiError('INVALID_MINI_GAME_ACTION')
+    const elapsed = Date.now() - game.started_at
+    const passed = actionId !== 'timeout' && elapsed >= 0 && (game.kind === 'slang'
+      ? elapsed <= 2250 && actionId === game.answer_id
+      : game.kind === 'timing' ? elapsed >= 840 && elapsed <= 1810
+        : (elapsed >= 560 && elapsed <= 1290) || (elapsed >= 2160 && elapsed <= 2890))
+    game.penalty_points = passed ? 0 : game.kind === 'slang' ? 20 : 15
+    return mockMiniView(game)
   },
 
   startBattle(opponentId) {
@@ -488,6 +550,8 @@ const mock = {
     if (b.status === 'finished') throw new ApiError('BATTLE_FINISHED')
     if (roundNumber < b.round) throw new ApiError('ROUND_ALREADY_SUBMITTED')
     if (roundNumber !== b.round) throw new ApiError('INVALID_ROUND')
+    const miniGame = b.miniGames?.[roundNumber]
+    if (roundNumber > 1 && miniGame?.penalty_points == null) throw new ApiError('MINI_GAME_REQUIRED')
     if (!Array.isArray(cardIds) || cardIds.length !== 4) throw new ApiError('INVALID_CARDS')
 
     const cards = cardIds.map((id, i) => {
@@ -509,6 +573,9 @@ const mock = {
 
     const theme = b.themes[b.round - 1]
     const player = scorePlayer(cards, theme)
+    player.base_points = player.points
+    player.penalty_points = miniGame?.penalty_points ?? 0
+    player.points = Math.max(0, player.points - player.penalty_points)
     player.comment = judgeComment(player.scores)
     const opponent = scoreBot(b.opp.level, theme)
     const winner =
@@ -519,23 +586,28 @@ const mock = {
     b.ptotal += player.points
     b.ototal += opponent.points
 
-    const round = { number: b.round, theme, player, opponent, winner }
+    const round = { number: b.round, theme, player, opponent, winner, mini_game: miniGame ? {
+      kind: miniGame.kind, penalty_points: miniGame.penalty_points,
+      message: !miniGame.penalty_points ? 'Концентрация сохранена' : miniGame.kind === 'slang'
+        ? 'Забыл текст на**й!' : miniGame.kind === 'timing' ? 'Мимо! Штрафные баллы!' : 'Микрофон фонит! Сбился с волны.',
+    } : null }
     const done = b.pw >= 2 || b.ow >= 2 || b.round >= 3
 
     if (!done) {
       b.round += 1
       b.hand = makeHand(b.used)
-      return {
+      b.last_result = {
         round,
         battle: { status: 'active', player_rounds_won: b.pw, opponent_rounds_won: b.ow },
         next_round: { number: b.round, theme: b.themes[b.round - 1] },
         hand: clone(b.hand),
         rewards: null,
       }
+      return clone(b.last_result)
     }
 
     // Батл закончен. Если после 3 раундов равенство, решают суммарные очки.
-    const win = b.pw !== b.ow ? b.pw > b.ow : b.ptotal >= b.ototal
+    const win = b.pw !== b.ow ? b.pw > b.ow : b.ptotal > b.ototal
     b.status = 'finished'
     const rewards = applyRewards(win)
     db.stats.battles_played += 1
@@ -546,7 +618,7 @@ const mock = {
       result: win ? 'win' : 'loss',
       created_at: new Date().toISOString(),
     })
-    return {
+    b.last_result = {
       round,
       battle: {
         status: 'finished',
@@ -558,6 +630,7 @@ const mock = {
       hand: null,
       rewards,
     }
+    return clone(b.last_result)
   },
 }
 

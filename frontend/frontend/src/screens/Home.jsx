@@ -8,6 +8,7 @@ export const APPS = [
   { id: 'tg', label: 'ТГ', icon: 'plane', bg: '#0A84FF', fg: '#fff' },
   { id: 'profile', label: 'Профиль', icon: 'person', bg: '#30D158', fg: '#000' },
   { id: 'store', label: 'Магазин', icon: 'cart', bg: '#FF375F', fg: '#fff' },
+  { id: 'casino', label: 'Казик', image: '/cases/underground.png', bg: '#202611', fg: '#d4ff3f' },
 ]
 
 export function AppIcon({ app, onOpen, size = 60, showLabel = true, badge }) {
@@ -23,7 +24,7 @@ export function AppIcon({ app, onOpen, size = 60, showLabel = true, badge }) {
           borderColor: app.ring ? '#2a2a2a' : 'transparent',
         }}
       >
-        <Icon name={app.icon} size={size * 0.5} />
+        {app.image ? <img className="appicon-art" src={app.image} alt="" /> : <Icon name={app.icon} size={size * 0.5} />}
         {badge > 0 && <b className="badge">{badge}</b>}
       </span>
       {showLabel && <span className="appicon-label">{app.label}</span>}

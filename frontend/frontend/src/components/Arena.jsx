@@ -2,12 +2,12 @@ import CharacterModel from './CharacterModel'
 
 // Верхняя половина батла: размытая толпа с фонариками и модели рэперов на сцене.
 
-function Fighter({ name, look = {}, skin, tee, image, state, mine }) {
+function Fighter({ name, look = {}, image, state, mine }) {
   return (
     <div className={`fighter ${state || ''}`}>
       <div className={'fighter-name' + (mine ? ' mine' : '')}>{name}</div>
       <div className={'fig' + (image ? ' fig-opponent' : '')}>
-        {image ? <img className="opponent-art" src={image} alt="" draggable="false" /> : <CharacterModel look={look} skin={skin} tee={tee} />}
+        {image ? <img className="opponent-art" src={image} alt="" draggable="false" /> : mine ? <CharacterModel look={look} /> : <span className="unknown-fighter">?</span>}
       </div>
     </div>
   )
@@ -43,7 +43,7 @@ export default function Arena({ playerName, opponentName, playerLook, opponentIm
       </svg>
       <div className="stage-floor" />
       <div className="fighters">
-        <Fighter name={playerName} look={playerLook} skin="#d9a37a" tee="#ff5500" state={playerState} mine />
+        <Fighter name={playerName} look={playerLook} state={playerState} mine />
         <Fighter name={opponentName || '???'} image={opponentImage} state={opponentState} />
       </div>
     </div>

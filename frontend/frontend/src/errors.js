@@ -13,6 +13,9 @@ const TABLE = {
   OPPONENT_LOCKED: ['Соперник откроется при N популярности', 'stay'],
   IDEMPOTENCY_CONFLICT: ['Запрос уже использован для другого действия. Обнови игру', 'home'],
   CARD_POOL_TOO_SMALL: ['Для батла пока не хватает карточек в одном из слотов', 'home'],
+  MINI_GAME_REQUIRED: ['Сначала пройди проверку концентрации', 'resync'],
+  MINI_GAME_NOT_STARTED: ['Сначала нажми «Начать»', 'resync'],
+  INVALID_MINI_GAME_ACTION: ['Не удалось принять действие. Восстанови проверку концентрации', 'resync'],
   // Коды ниже ждут согласования (API-PROPOSAL.md)
   NOT_ENOUGH_COINS: ['Не хватает монет', 'stay'],
   ALREADY_OWNED: ['Это у тебя уже есть', 'stay'],

@@ -5,7 +5,7 @@ import ProgressBar from '../components/ProgressBar'
 import { SKILLS } from '../constants'
 import { isBossUnlocked, opponentDisplayName } from '../displayNames'
 
-export default function Profile({ onClose }) {
+export default function Profile({ onClose, onReplayIntro }) {
   const { nick, player, profile } = useGame()
   if (!player) return null
   const unlocked = (profile?.opponents || []).filter((o) => o.unlocked)
@@ -18,12 +18,14 @@ export default function Profile({ onClose }) {
       <AppBar title="Профиль" onBack={onClose} />
       <div className="app-body scroll pad">
         <div className="profile-top">
-          <Avatar name={nick} color="var(--card)" size={96} />
+          <Avatar name={nick} color="var(--card)" size={96} player />
           <div className="profile-name">{nick}</div>
           <div className="career">
             {location.toUpperCase()} (УР. {player.level})
           </div>
         </div>
+
+        <button className="story-replay" onClick={onReplayIntro}>↺ Как всё начиналось <span>Повторить вступление</span></button>
 
         <div className="panel">
           <div className="row-between">

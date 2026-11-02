@@ -1,0 +1,45 @@
+.mini-game { background: #080808; border: 1px solid var(--line); padding: 20px; border-radius: 16px; margin: 12px 0; outline: none; }
+.mini-eyebrow, .mini-clock, .mini-heading > span, .mini-footer { font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: .09em; color: var(--text2); }
+.mini-eyebrow { color: var(--accent); }
+.mini-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
+.mini-heading h2 { font-size: 24px; letter-spacing: -.7px; margin: 0; }
+.mini-heading > span { white-space: nowrap; font-size: 9px; }
+.mini-help { color: var(--text2); font-size: 13px; line-height: 1.5; margin: 14px 0; }
+.mini-stakes { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.mini-stakes span { color: var(--text2); }
+.mini-clock { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 12px; }
+.mini-clock b { font-size: 18px; color: var(--text); letter-spacing: 0; }
+.mini-timing { position: relative; height: 90px; border: 3px solid #fff; background: #000; margin: 20px 4px 24px; padding: 9px 0; }
+.mini-zones { display: flex; height: 100%; align-items: center; }
+.mini-zones i { display: block; height: 44%; background: #e44a39; width: 35%; border-inline: 2px solid #000; }
+.mini-zones i:nth-child(2), .mini-zones i:nth-child(4) { width: 10%; height: 75%; background: #e2c342; }
+.mini-zones i:nth-child(3) { width: 10%; height: 100%; background: #39cf67; }
+.mini-cursor { position: absolute; width: 4px; height: calc(100% + 16px); top: -8px; background: white; transform: translateX(-50%); box-shadow: 0 0 0 2px #000; }
+.mini-action { display: block; width: 100%; min-height: 48px; margin-top: 18px; touch-action: manipulation; font-weight: 800; letter-spacing: .06em; }
+.mini-action:disabled, .mini-options button:disabled { opacity: .5; }
+.mini-timer-track { height: 4px; background: #292929; overflow: hidden; }
+.mini-timer-track > div { background: var(--accent); height: 100%; transform-origin: left; }
+.mini-prompt { padding: 22px 0; min-height: 96px; font-size: 20px; font-weight: 700; line-height: 1.4; }
+.mini-options { display: grid; gap: 8px; min-height: 172px; }
+.mini-options button { display: flex; gap: 16px; align-items: center; text-align: left; padding: 14px; border: 1px solid var(--line); background: #151515; border-radius: 9px; min-height: 52px; touch-action: manipulation; }
+.mini-options button span { color: var(--accent); font: 12px ui-monospace, monospace; }
+.mini-options button:not(:disabled):active { background: #282828; }
+.mini-wave { position: relative; height: 150px; margin: 22px 4px; border-bottom: 1px solid #333; }
+.mini-peak-zone { position: absolute; width: 100%; height: 22%; border-block: 1px dashed #a53c09; background: #241005; }
+.mini-peak-zone span { position: absolute; right: 4px; top: 2px; font: 9px ui-monospace, monospace; color: var(--accent); }
+.mini-wave-bars { display: flex; gap: 3px; height: 100%; align-items: flex-end; }
+.mini-wave-bars i { flex: 1; background: var(--accent); transform-origin: bottom; border-radius: 2px 2px 0 0; }
+.mini-amplitude { position: absolute; inset: 0 auto 0 50%; width: 2px; background: #ffffff40; }
+.mini-amplitude i { display: block; position: absolute; left: -10px; width: 22px; height: 4px; background: white; box-shadow: 0 0 0 2px #080808; transform: translateY(-50%); }
+.mini-status { font-size: 12px; color: var(--text2); }
+.mini-outcome { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+.mini-outcome strong { display: block; font-size: 17px; }
+.mini-outcome p { font-size: 13px; color: var(--text2); }
+.mini-failed { border-color: var(--loss); }
+.mini-failed .mini-outcome strong { color: var(--loss); font-family: ui-monospace, Consolas, monospace; }
+.mini-error { color: var(--loss); font-size: 13px; }
+.mini-footer { margin-top: 20px; text-align: center; font-size: 9px; }
+.battle-mini .controls { overflow-y: auto; min-height: 0; }
+.battle-mini > .arena { display: none; }
+.battle-penalty { border-left: 2px solid var(--accent); padding: 8px 12px; font-size: 12px; color: var(--text2); margin-block: 10px; }
+@media (max-width: 360px) { .mini-game { padding: 16px; } .mini-heading > span { display: none; } }

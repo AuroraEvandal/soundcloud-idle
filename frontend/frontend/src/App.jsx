@@ -12,7 +12,11 @@ import Deck from './screens/Deck'
 import Telegram from './screens/Telegram'
 import Profile from './screens/Profile'
 import Store from './screens/Store'
+import Casino from './screens/Casino'
+import StoryIntro from './components/StoryIntro'
 import { initialTelegramMessages } from './telegramMessages'
+import { readIntro, saveIntro } from './storage'
+import { shouldShowIntro } from './story'
 
 const SCREENS = {
   soundwave: SoundWave,
@@ -21,6 +25,7 @@ const SCREENS = {
   tg: Telegram,
   profile: Profile,
   store: Store,
+  casino: Casino,
 }
 
 export default function App() {
@@ -31,6 +36,7 @@ export default function App() {
   const [status, setStatus] = useState('loading') // loading | ready | error | stop
   const [error, setError] = useState('')
   const [screen, setScreen] = useState('home')
+  const [intro, setIntro] = useState(null)
   const [island, setIsland] = useState('')
   const [unread, setUnread] = useState(0)
   const [telegramMessages, setTelegramMessages] = useState({ adam: [], topor: [] })
@@ -59,12 +65,16 @@ export default function App() {
         const res = await login()
         setPlayer(res.player)
         setNick(res.player.username)
+        if (shouldShowIntro(res.is_new, readIntro(res.player.id))) {
+          saveIntro(res.player.id, 'started')
+          setIntro('new')
+        }
         setTelegramMessages((current) => current.adam.length ? current : initialTelegramMessages(res.player.username))
         await refreshProfile()
         setStatus('ready')
         if (res.is_new) {
           setUnread(1)
-          setTimeout(() => notify('Менеджер Адам: новое сообщение'), 700)
+          notify('Менеджер Адам: новое сообщение')
         }
       } catch (e) {
         const info = errorInfo(e)
@@ -124,6 +134,12 @@ export default function App() {
         </button>
       </div>
     )
+  } else if (intro) {
+    body = <StoryIntro nick={nick} replay={intro === 'replay'} onFinish={(toBattle) => {
+      if (intro === 'new') saveIntro(player.id, 'done')
+      setIntro(null)
+      if (toBattle) setScreen('soundwave')
+    }} />
   } else {
     body = (
       <>
@@ -132,7 +148,7 @@ export default function App() {
           {screen === 'home' ? (
             <Home onOpen={setScreen} unread={unread} />
           ) : (
-            <Screen onClose={() => setScreen('home')} onOpen={setScreen} />
+            <Screen onClose={() => setScreen('home')} onOpen={setScreen} onReplayIntro={() => setIntro('replay')} />
           )}
         </div>
         {screen === 'home' && <Dock onOpen={setScreen} unread={unread} />}

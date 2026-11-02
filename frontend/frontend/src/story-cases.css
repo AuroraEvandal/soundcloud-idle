@@ -1,0 +1,76 @@
+/* Фрешмен: общая модель и портрет. PNG одежды сохраняют исходные координаты. */
+.player-body { object-fit: fill; image-rendering: pixelated; pointer-events: none; }
+.fig-layer { transform-origin: 50% 0; }
+.player-layer-hoodie { transform: translateY(5%) scale(.76, .72); }
+.player-layer-pants { transform: translateY(-11%) scale(1.12, 1.04); }
+.player-layer-shoe { transform: translateY(-4%) scaleX(1.22); }
+.player-layer-hat { transform: translateY(2%) scaleX(.86); }
+.player-layer-chain { transform: translateY(9%) scale(.8, .7); }
+.player-avatar { position: relative; overflow: hidden; border: 1px solid #34342c; }
+.player-avatar img { position: absolute; width: 180%; max-width: none; height: auto; top: -19%; left: -40%; image-rendering: pixelated; }
+.unknown-fighter { display: grid; place-items: center; height: 100%; color: #666; font-size: 72px; }
+.appicon-art { width: 90%; height: 90%; object-fit: contain; image-rendering: pixelated; }
+.story-replay { display: flex; width: 100%; flex-direction: column; gap: 6px; padding: 16px; margin: 0 0 12px; text-align: left; border: 1px solid #3b402e; background: #171b11; color: #d4ff3f; }
+.story-replay span { color: #b4b6a8; font-size: 12px; }
+.story-battle-note { display: grid; gap: 8px; margin: 16px 0; padding: 14px; border-left: 3px solid #d4ff3f; background: #171b11; font-size: 13px; line-height: 1.5; }
+.story-battle-note b { color: #d4ff3f; font-size: 10px; letter-spacing: .1em; }
+
+
+/* Витрина кейсов. */
+.casino { background: #0e100e; }
+.casino-body { padding: 22px 18px 24px; }
+.casino-heading > span { font: 10px monospace; letter-spacing: .14em; color: #a7b38f; }
+.casino-heading > b { display: block; margin-top: 14px; font-size: 34px; line-height: 1.07; letter-spacing: -.04em; }
+.casino-heading > p { margin: 10px 0 22px; color: #9da393; font-size: 13px; }
+.case-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.case-tabs button { display: flex; align-items: center; gap: 7px; padding: 10px 7px; border: 1px solid #353a2e; text-align: left; }
+.case-tabs button[aria-pressed=true] { border-color: #d4ff3f; background: #222817; }
+.case-tabs img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+.case-tabs span { font-size: 10px; font-weight: 850; }
+.case-tabs small { display: block; font: 12px monospace; margin-top: 4px; color: #c4cbb9; }
+.case-hero { text-align: center; padding: 18px 8px; background: radial-gradient(ellipse at 50% 40%, #333b2522, transparent 70%); border: 1px solid #31372a; }
+.case-kicker { color: var(--case-accent); font: 9px monospace; letter-spacing: .16em; }
+.case-art { position: relative; margin: 12px auto 0; width: 230px; max-width: 90%; height: 190px; background-image: linear-gradient(#ffffff07 1px, transparent 1px), linear-gradient(90deg, #ffffff07 1px, transparent 1px); background-size: 20px 20px; }
+.case-art::after { content: ''; position: absolute; inset: 20% 20%; background: var(--case-accent); opacity: .12; filter: blur(28px); }
+.case-art img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 10px 8px #0008); }
+.case-hero h2 { font-size: 27px; font-weight: 950; letter-spacing: -.04em; margin: 8px 0 5px; }
+.case-hero > p { color: #abb19e; font-size: 12px; margin: 0; }
+.case-price { margin: 18px 0 0; font-size: 27px; font-weight: 750; }
+.case-price > span { color: #ffdb6e; }
+.case-price > small { display: block; font-size: 10px; font-weight: 400; color: #abb19e; margin-top: 5px; }
+.case-demo-note { display: grid; gap: 5px; padding: 13px; background: #22271b; border-left: 2px solid var(--case-accent); margin: 14px 0 22px; }
+.case-demo-note b { font-size: 10px; letter-spacing: .07em; color: var(--case-accent); }
+.case-demo-note span { font-size: 11px; color: #c4cbb9; }
+.case-section-title { display: flex; justify-content: space-between; gap: 8px; margin: 0; font-size: 11px; letter-spacing: .03em; }
+.case-section-title > span { color: #9aa38b; font: 9px monospace; }
+.case-help { font-size: 11px; line-height: 1.6; color: #aab29c; margin: 10px 0 14px; }
+.case-rewards { display: grid; gap: 7px; }
+.case-reward { display: flex; align-items: center; gap: 11px; padding: 12px 10px; border: 1px solid #34392d; text-align: left; }
+.case-reward.selected { border-color: var(--case-accent); background: #ffffff06; }
+.case-reward-icon { flex: none; color: var(--case-accent); display: grid; place-items: center; height: 40px; width: 40px; background: #23291b; }
+.case-reward > span:nth-child(2) { min-width: 0; }
+.case-reward b { display: block; font-size: 12px; line-height: 1.4; margin-top: 3px; }
+.case-reward small { font-size: 9px; color: #b6bea7; }
+.case-odds { font: bold 12px monospace; color: var(--case-accent); margin-left: auto; }
+.case-open { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 12px 14px; background: var(--case-accent); color: #0f1608; font-size: 11px; font-weight: 900; letter-spacing: .04em; }
+.case-open:disabled { opacity: .65; }
+.case-open > span { font-size: 22px; }
+.case-buy { width: 100%; padding: 15px 8px; color: #9da393; font-size: 10px; border: 1px solid #34392d; margin-top: 8px; }
+.case-rules { margin-top: 20px; border-top: 1px solid #34392d; color: #abb49b; font-size: 12px; line-height: 1.6; }
+.case-rules summary { padding: 16px 0; cursor: pointer; color: #e1e6d8; }
+.case-rules p { margin: 0 0 12px; }
+.case-opening { padding: 14px 0; }
+.case-reel { position: relative; overflow: hidden; height: 112px; border-block: 1px solid #566044; background: #191e13; }
+.case-reel::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--case-accent); }
+.case-reel-strip { display: flex; width: max-content; margin-left: calc(50% - 50px); transform: translateX(-1500px); }
+.opening .case-reel-strip { animation: case-roll 2.5s cubic-bezier(.12,.65,.15,1) both; }
+.case-reel-item { width: 100px; flex: none; padding: 16px 7px; text-align: center; color: var(--case-accent); border-right: 1px solid #39422c; }
+.case-reel-item span { display: block; font-size: 9px; margin-top: 9px; color: #d8e0ca; }
+.case-result { display: grid; gap: 7px; padding: 16px 4px; text-align: center; font-size: 12px; }
+.case-result small { color: var(--case-accent); font: 9px monospace; letter-spacing: .1em; }
+.case-result strong { font-size: 19px; }
+.case-result span { color: #b3bca3; font-size: 11px; line-height: 1.6; }
+@keyframes case-roll { from { transform: translateX(0); } to { transform: translateX(-1500px); } }
+@media (prefers-reduced-motion: reduce) {
+  .opening .case-reel-strip { animation: none !important; }
+}
