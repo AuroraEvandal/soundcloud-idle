@@ -1,78 +1,164 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import AppBar from '../components/AppBar'
-import Icon from '../components/Icon'
-import { CASES } from '../caseCatalog'
+import ErrorBox from '../components/ErrorBox'
+import { PetArt } from '../components/PetCompanion'
+import { useGame } from '../GameContext'
+import { getCases, openCase, createCaseInvoice, getCaseOrder } from '../api'
+import { errorInfo } from '../errors'
+import { CASE_ART } from '../caseCatalog'
 
-function CasePreview({ box }) {
-  const [selection, setSelection] = useState(0)
-  const [phase, setPhase] = useState('idle')
-  const reward = box.rewards[selection]
-  // shortcut: выбранный концепт вместо розыгрыша; заменить после появления серверной выдачи.
-  const reel = Array.from({ length: 18 }, (_, i) => box.rewards[i === 15 ? selection : i % box.rewards.length])
-
-  useEffect(() => {
-    if (phase !== 'opening') return
-    const timer = setTimeout(() => setPhase('result'), 2600)
-    return () => clearTimeout(timer)
-  }, [phase])
-
-  return (
-    <div className="case-preview" style={{ '--case-accent': box.accent }}>
-      <div className="case-hero">
-        <span className="case-kicker">{box.label}</span>
-        <div className="case-art"><img src={box.image} alt={`Пиксельный кейс ${box.name}`} /></div>
-        <h2>{box.name}</h2>
-        <p>{box.subtitle}</p>
-        <div className="case-price">{box.price} <span>★</span><small>Telegram Stars · планируемая цена</small></div>
-      </div>
-      <div className="case-demo-note"><b>БЕСПЛАТНЫЙ ПРЕДПРОСМОТР</b><span>Без списания Stars и выдачи предметов.</span></div>
-      <h3 className="case-section-title">ВНУТРИ КЕЙСА <span>03 КОНЦЕПТА</span></h3>
-      <p className="case-help">Выбери предмет, чтобы посмотреть его анимацию открытия.</p>
-      <div className="case-rewards" role="group" aria-label="Предмет для предпросмотра">
-        {box.rewards.map((item, index) => (
-          <button key={item.id} className={'case-reward' + (selection === index ? ' selected' : '')}
-            disabled={phase === 'opening'} aria-pressed={selection === index}
-            onClick={() => { setSelection(index); setPhase('idle') }}>
-            <span className="case-reward-icon"><Icon name={item.icon} size={28} /></span>
-            <span><small>{item.kind}</small><b>{item.name}</b></span>
-            <span className="case-odds">{item.chance ? `${item.chance}%` : '—'}</span>
-          </button>
-        ))}
-      </div>
-      <p className="case-help">{box.id === 'underground' ? '60 / 25 / 15% — предложенные шансы категорий для будущей версии. В демо ты сам выбираешь результат.' : 'Шансы появятся после подтверждения реальных подарков и их наличия. Здесь показаны вымышленные концепты.'}</p>
-      {phase !== 'idle' && (
-        <div className={'case-opening ' + phase}>
-          <div className="case-reel" aria-hidden="true">
-            <div className="case-reel-strip">
-              {reel.map((item, index) => <div className="case-reel-item" key={index}><Icon name={item.icon} size={30} /><span>{item.name}</span></div>)}
-            </div>
-          </div>
-          <div className="case-result" role="status" aria-live="polite">
-            {phase === 'opening' ? 'Предпросмотр открытия…' : <><small>ВЫБРАННЫЙ КОНЦЕПТ</small><strong>{reward.name}</strong><span>{reward.detail}</span><span>Демонстрация. Предмет не начислен.</span></>}
-          </div>
-        </div>
-      )}
-      <button className="case-open" disabled={phase === 'opening'} onClick={() => setPhase('opening')}>
-        {phase === 'opening' ? 'ОТКРЫВАЕМ…' : phase === 'result' ? 'ПОВТОРИТЬ АНИМАЦИЮ' : 'ПОСМОТРЕТЬ ОТКРЫТИЕ'} <span>↗</span>
-      </button>
-      <button className="case-buy" disabled>ПОКУПКА ЗА {box.price} ★ — СКОРО</button>
-      <details className="case-rules"><summary>Как будет устроена выдача</summary><p>{box.description}</p><p>Один предмет за открытие. Состав и фиксированные шансы доступны до покупки. Цена предмета не означает возврат Stars.</p><p>В этой версии работает только витрина. Платежи, реальный розыгрыш, подарки и обмен дубликатов ещё недоступны.</p></details>
-    </div>
-  )
+function readOrder(playerId) {
+  try { return JSON.parse(localStorage.getItem(`case-order:${playerId}`)) || null }
+  catch { return null }
 }
 
 export default function Casino({ onClose }) {
-  const [selected, setSelected] = useState(CASES[0])
-  return (
-    <div className="app casino">
-      <AppBar title="Казик" onBack={onClose} />
-      <div className="app-body scroll casino-body">
-        <div className="casino-heading"><span>AFTER HOURS / 01</span><b>Твой следующий<br />редкий дроп.</b><p>Два кейса. Два разных вайба.</p></div>
-        <div className="case-tabs" role="group" aria-label="Выбор кейса">
-          {CASES.map((box) => <button key={box.id} aria-pressed={box.id === selected.id} onClick={() => setSelected(box)}><img src={box.image} alt="" /><span>{box.name}<small>{box.price} ★</small></span></button>)}
-        </div>
-        <CasePreview key={selected.id} box={selected} />
+  const { player, setPlayer, petCollection, setPetCollection } = useGame()
+  const [cases, setCases] = useState(null)
+  const [selected, setSelected] = useState('free')
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [drop, setDrop] = useState(null)
+  const [order, setOrder] = useState(() => readOrder(player.id))
+  const [checking, setChecking] = useState(false)
+  const [pollVersion, setPollVersion] = useState(0)
+  const [now, setNow] = useState(Date.now())
+  const busyRef = useRef(false)
+  const orderRef = useRef(order)
+  const mounted = useRef(true)
+
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+
+  const load = useCallback(async () => {
+    try {
+      const result = await getCases()
+      if (!mounted.current) return
+      setCases(result.cases)
+      setPetCollection(result.pets)
+      setError(null)
+    } catch (e) { if (mounted.current) setError(errorInfo(e)) }
+  }, [setPetCollection])
+  useEffect(() => { load() }, [load])
+
+  const rememberOrder = useCallback((value) => {
+    orderRef.current = value
+    if (mounted.current) setOrder(value)
+    try {
+      if (value) localStorage.setItem(`case-order:${player.id}`, JSON.stringify(value))
+      else localStorage.removeItem(`case-order:${player.id}`)
+    } catch { /* Заказ остаётся в памяти, если браузер запрещает хранилище. */ }
+  }, [player.id])
+
+  const applyDrop = useCallback((result) => {
+    setPlayer(result.player)
+    setPetCollection(result.pets)
+    setDrop(result.drop)
+  }, [setPlayer, setPetCollection])
+
+  // Ограниченная проверка; уход с экрана останавливает таймер. Callback Telegram ничего не выдаёт.
+  useEffect(() => {
+    if (!order?.order_id) return
+    let cancelled = false
+    let timer
+    let attempts = 0
+    setChecking(true)
+    const check = async () => {
+      try {
+        const result = await getCaseOrder(order.order_id)
+        if (cancelled) return
+        if (result.status === 'paid') {
+          applyDrop(result)
+          rememberOrder(null)
+          setChecking(false)
+          setError(null)
+          load()
+          return
+        }
+        attempts += 1
+        if (attempts < 30) timer = setTimeout(check, 2000)
+        else setChecking(false)
+      } catch (e) {
+        if (!cancelled) { setError(errorInfo(e)); setChecking(false) }
+      }
+    }
+    check()
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [order?.order_id, pollVersion, applyDrop, load, rememberOrder])
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  async function openSelected() {
+    if (busyRef.current || (selected !== 'free' && orderRef.current)) return
+    busyRef.current = true
+    setBusy(true)
+    setError(null)
+    setDrop(null)
+    try {
+      if (selected === 'free') {
+        const result = await openCase(selected)
+        if (!mounted.current) return
+        applyDrop(result)
+        await load()
+      } else {
+        const telegram = window.Telegram?.WebApp
+        if (!telegram?.openInvoice) {
+          setError({ message: 'Для оплаты открой игру внутри Telegram' })
+          return
+        }
+        const result = await createCaseInvoice(selected)
+        // Сохраняем заказ до открытия Telegram: при перезагрузке продолжим проверку.
+        rememberOrder(result)
+        if (!mounted.current) return
+        telegram.openInvoice(result.invoice_url, () => {
+          if (mounted.current) setPollVersion((v) => v + 1)
+        })
+      }
+    } catch (e) { if (mounted.current) setError(errorInfo(e)) }
+    finally { busyRef.current = false; if (mounted.current) setBusy(false) }
+  }
+
+  const box = cases?.find((item) => item.id === selected)
+  const art = CASE_ART[selected] || CASE_ART.free
+  const waiting = box?.available_at && Date.parse(box.available_at) > now
+  const dropPet = petCollection?.pets.find((pet) => pet.id === drop?.pet_id)
+
+  return <div className="app casino">
+    <AppBar title="Казик" onBack={onClose} />
+    <div className="app-body scroll casino-body">
+      <div className="casino-heading"><span>AFTER HOURS / PET COLLECTION</span><b>Кто будет<br />с тобой на сцене?</b><p>Питомцы, дружба и маленький бонус к доходу.</p></div>
+      <ErrorBox message={error?.message} onRetry={load} onHome={() => setError(null)} />
+      {!cases && !error && <p className="muted">Загрузка кейсов…</p>}
+      {order && <div className="case-pending" role="status">
+        <b>{checking ? 'Проверяем оплату на сервере…' : 'Заказ ожидает подтверждения оплаты'}</b>
+        <p>Награда появится после подтверждения Telegram. Можно вернуться к оплате или отложить её.</p>
+        <button className="btn small" disabled={checking} onClick={() => { setError(null); setPollVersion((v) => v + 1) }}>ПРОВЕРИТЬ ОПЛАТУ</button>
+        {order.invoice_url && <button className="btn small" onClick={() => {
+          try { window.Telegram?.WebApp?.openInvoice(order.invoice_url, () => { if (mounted.current) setPollVersion((v) => v + 1) }) }
+          catch (e) { setError({ message: e.message || 'Не удалось открыть оплату' }) }
+        }}>ОТКРЫТЬ СЧЁТ</button>}
+        <button className="btn small" onClick={() => { rememberOrder(null); setChecking(false); setError(null) }}>ОТЛОЖИТЬ ОПЛАТУ</button>
+        <p>Счёт сохранён на сервере; если оплатишь позже, награда сохранится.</p>
+      </div>}
+      <div className="case-tabs" role="group" aria-label="Выбор кейса">
+        {cases?.map((item) => <button key={item.id} aria-pressed={item.id === selected} disabled={busy} onClick={() => { setSelected(item.id); setDrop(null) }}>
+          <img src={(CASE_ART[item.id] || CASE_ART.free).image} alt="" /><span>{item.name}<small>{item.price_stars ? `${item.price_stars} ★` : 'Бесплатно'}</small></span>
+        </button>)}
       </div>
+      {box && <div className="case-preview" style={{ '--case-accent': art.accent }}>
+        <div className="case-hero"><span className="case-kicker">КОЛЛЕКЦИЯ СПУТНИКОВ</span><div className="case-art"><img src={art.image} alt={`Кейс ${box.name}`} /></div><h2>{box.name}</h2><p>{art.subtitle}</p><div className="case-price">{box.price_stars ? `${box.price_stars} ★` : 'Бесплатно'}<small>{box.price_stars ? 'Telegram Stars' : 'Раз в 24 часа'}</small></div></div>
+        <p className="case-help">Шанс питомца — {(box.pet_chance * 100).toLocaleString('ru-RU', { maximumFractionDigits: 2 })}%. Все три питомца равновероятны. Если питомец не выпал — {box.fallback_coins} монет.</p>
+        <div className="case-pets">{petCollection?.pets.map((pet) => <div key={pet.id}><PetArt pet={pet} /><span>{pet.name}</span></div>)}</div>
+        {waiting && <p className="case-help">Доступно {new Date(box.available_at).toLocaleString('ru-RU')}</p>}
+        <button className="case-open" disabled={busy || (box.price_stars > 0 && !!order) || waiting} onClick={openSelected}>{busy ? 'ОТКРЫВАЕМ…' : waiting ? 'КЕЙС ВОССТАНАВЛИВАЕТСЯ' : box.price_stars ? `ОПЛАТИТЬ ${box.price_stars} ★` : 'ОТКРЫТЬ БЕСПЛАТНО'} <span>↗</span></button>
+        {drop && <div className="case-result" role="status" aria-live="polite">
+          <small>ТВОЙ ДРОП</small>
+          {drop.type === 'pet' ? <>{dropPet && <PetArt pet={dropPet} pose="happy" />}<strong>{dropPet?.name || drop.pet_id}</strong><span>{drop.duplicate ? 'Дубликат · ' : 'Новый спутник · '}Уровень {drop.level}{drop.refund > 0 ? ` · +${drop.refund} монет` : ''}</span></> : <strong>+{drop.coins} монет</strong>}
+        </div>}
+        <details className="case-rules"><summary>Уровни и дружба</summary><p>Первый дроп открывает питомца. Два дубликата повышают его до уровня 3, следующие дают 300 монет. Релизы и батлы укрепляют дружбу активного спутника.</p><p>Выбрать спутника можно в профиле. Оплата подтверждается сервером; закрытие окна Telegram не означает выдачу награды.</p></details>
+      </div>}
     </div>
-  )
+  </div>
 }

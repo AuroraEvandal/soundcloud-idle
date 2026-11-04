@@ -48,3 +48,24 @@ verify_jwt = false
 
 [functions.get-deck]
 verify_jwt = false
+
+[functions.get-pets]
+verify_jwt = false
+
+[functions.equip-pet]
+verify_jwt = false
+
+[functions.get-cases]
+verify_jwt = false
+
+[functions.open-case]
+verify_jwt = false
+
+[functions.create-case-invoice]
+verify_jwt = false
+
+[functions.get-case-order]
+verify_jwt = false
+
+[functions.telegram-payments-webhook]
+verify_jwt = false

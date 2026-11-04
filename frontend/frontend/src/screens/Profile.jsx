@@ -1,4 +1,9 @@
+import { useState } from 'react'
 import { useGame } from '../GameContext'
+import { equipPet } from '../api'
+import { errorInfo } from '../errors'
+import ErrorBox from '../components/ErrorBox'
+import { PetArt } from '../components/PetCompanion'
 import AppBar from '../components/AppBar'
 import Avatar from '../components/Avatar'
 import ProgressBar from '../components/ProgressBar'
@@ -6,7 +11,17 @@ import { SKILLS } from '../constants'
 import { isBossUnlocked, opponentDisplayName } from '../displayNames'
 
 export default function Profile({ onClose, onReplayIntro }) {
-  const { nick, player, profile } = useGame()
+  const { nick, player, profile, petCollection, setPetCollection, petsError, refreshPets } = useGame()
+  const [petBusy, setPetBusy] = useState(false)
+  const [petError, setPetError] = useState(null)
+  async function choosePet(petId) {
+    if (petBusy) return
+    setPetBusy(true)
+    setPetError(null)
+    try { setPetCollection(await equipPet(petId)) }
+    catch (e) { setPetError(errorInfo(e)) }
+    finally { setPetBusy(false) }
+  }
   if (!player) return null
   const unlocked = (profile?.opponents || []).filter((o) => o.unlocked)
   const location = unlocked.length ? unlocked[unlocked.length - 1].location : 'Двор'
@@ -26,6 +41,27 @@ export default function Profile({ onClose, onReplayIntro }) {
         </div>
 
         <button className="story-replay" onClick={onReplayIntro}>↺ Как всё начиналось <span>Повторить вступление</span></button>
+
+        <div className="panel pet-collection">
+          <h3>Твоя команда</h3>
+          <p>Выбери одного спутника. Релизы и завершённые батлы укрепляют дружбу. Дубликаты из кейсов повышают уровень.</p>
+          <ErrorBox message={(petError || petsError)?.message} onRetry={() => refreshPets().catch(() => {})} onHome={() => setPetError(null)} />
+          {!petCollection && !petsError && <p>Загружаем питомцев…</p>}
+          {petCollection?.pets.map((pet) => <div className={'pet-card' + (!pet.owned ? ' locked' : '')} key={pet.id}>
+            <PetArt pet={pet} pose={pet.owned ? 'idle' : 'sleep'} />
+            <div className="pet-details"><b>{pet.name}</b>
+              {pet.owned ? <><small>Уровень {pet.level}/3 · доход +{pet.income_pct}%</small>
+                <small>Дружба {pet.friendship}/60 · стадия {pet.friendship_stage}/3</small>
+                <ProgressBar value={pet.friendship} max={60} />
+                <button className="btn small" disabled={petBusy} onClick={() => choosePet(petCollection.active_pet_id === pet.id ? null : pet.id)}>
+                  {petCollection.active_pet_id === pet.id ? 'ОТПУСТИТЬ ОТДОХНУТЬ' : 'ВЗЯТЬ С СОБОЙ'}
+                </button>
+                {petCollection.active_pet_id === pet.id && <div className="pet-active-label">СЕЙЧАС С ТОБОЙ</div>}
+              </> : <small>Ещё не открыт · ищи в кейсах</small>}
+            </div>
+          </div>)}
+          <p>Дружба: +1 за релиз, +3 за батл. Новые стадии при 20 и 60. Бонус действует на доход сниппетов.</p>
+        </div>
 
         <div className="panel">
           <div className="row-between">

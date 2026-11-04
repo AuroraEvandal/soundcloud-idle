@@ -3,8 +3,9 @@
 //
 // MOCK[имя] = true  -> фейковый ответ (логика мок-сервера живёт ниже в этом файле)
 // MOCK[имя] = false -> настоящий вызов серверной функции
-// Если ключей Supabase нет в .env, любая функция работает на фейке.
+// Старые маршруты без ключей работают на фейке; питомцы и кейсы требуют сервер.
 import { supabase } from './supabase'
+import { timingDuration, timingPosition, timingPath } from './timingGame'
 import { BEATS, EQUIPMENT, CLOTHING, PACKS, START_CARD_IDS, START_COINS } from './mockCatalog'
 
 export const MOCK = {
@@ -154,8 +155,13 @@ const proposed = (key, fnName, body, mockFn, ms = [300, 500]) => async () => {
 }
 
 export const getStudio = () => proposed('getStudio', 'get-studio', {}, () => mock2.getStudio())()
-export const recordSnippet = (taps) =>
-  proposed('recordSnippet', 'record-snippet', { taps }, () => mock2.recordSnippet(taps), [200, 400])()
+export async function recordSnippet(taps, requestId) {
+  if (useMock('recordSnippet')) {
+    await wait(rndInt(200, 400))
+    return mock2.recordSnippet(taps)
+  }
+  return requestId ? call('record-snippet', { taps, requestId }) : callIdempotent('record-snippet', { taps })
+}
 export const selectBeat = (beatId) =>
   proposed('selectBeat', 'select-beat', { beatId }, () => mock2.selectBeat(beatId))()
 export const buyBeat = (beatId) =>
@@ -171,6 +177,16 @@ export const equipItem = (slot, itemId) =>
 export const openPack = (packId) =>
   proposed('openPack', 'open-pack', { packId }, () => mock2.openPack(packId), [700, 1000])()
 export const getDeck = () => proposed('getDeck', 'get-deck', {}, () => mock2.getDeck())()
+
+const requireServer = () => {
+  if (!supabase) throw new ApiError('PAYMENT_UNAVAILABLE', 'Сервер питомцев и кейсов недоступен')
+}
+export async function getPets() { requireServer(); return call('get-pets', {}) }
+export async function equipPet(petId) { requireServer(); return call('equip-pet', { petId }) }
+export async function getCases() { requireServer(); return call('get-cases', {}) }
+export async function openCase(caseId) { requireServer(); return callIdempotent('open-case', { caseId }) }
+export async function createCaseInvoice(caseId) { requireServer(); return callIdempotent('create-case-invoice', { caseId }) }
+export async function getCaseOrder(orderId) { requireServer(); return call('get-case-order', { orderId }) }
 
 // ===========================================================================
 // МОК-СЕРВЕР. Здесь (и только здесь) живёт игровая логика на время разработки.
@@ -469,13 +485,14 @@ const mock = {
       const kind = ['timing', 'slang', 'wave'][Math.floor(Math.random() * 3)]
       const options = ['хит', 'компот', 'шкаф'].map((text) => ({ id: uuid(), text }))
       b.miniGames[roundNumber] = { id: uuid(), kind, round_number: roundNumber,
-        duration_ms: { timing: 2400, slang: 2000, wave: 3200 }[kind],
+        duration_ms: { timing: 1200, slang: 2000, wave: 3200 }[kind],
+        timing_hits: 0, timing_path: kind === 'timing' ? timingPath() : null,
         prompt: 'Залетел на бит — и сразу в…', options: shuffle(options), answer_id: options[0].id,
         started_at: null, penalty_points: null }
     }
     const game = b.miniGames[roundNumber]
     if (actionId === 'start' && game.started_at === null) game.started_at = Date.now() + 800
-    if (game.penalty_points === null && game.started_at !== null && Date.now() > game.started_at + game.duration_ms + 250) {
+    if (game.penalty_points === null && game.started_at !== null && Date.now() > game.started_at + game.duration_ms + (game.kind === 'timing' ? 80 : 250)) {
       game.penalty_points = game.kind === 'slang' ? 20 : 15
     }
     return mockMiniView(game)
@@ -490,14 +507,34 @@ const mock = {
     if (b.status !== 'active') throw new ApiError('BATTLE_FINISHED')
     if (game.round_number !== b.round) throw new ApiError('INVALID_ROUND')
     if (game.started_at === null) throw new ApiError('MINI_GAME_NOT_STARTED')
+    if (game.kind === 'timing') {
+      if (!/^(tap|timeout)-[123]$/.test(actionId)) throw new ApiError('INVALID_MINI_GAME_ACTION')
+      const stage = Number(actionId.at(-1))
+      if (stage <= game.timing_hits) return mockMiniView(game)
+      if (stage !== game.timing_hits + 1) throw new ApiError('INVALID_MINI_GAME_ACTION')
+      const elapsed = Date.now() - game.started_at
+      const pos = timingPosition(elapsed, game.timing_hits, game.timing_path)
+      const earlier = timingPosition(elapsed - 80, game.timing_hits, game.timing_path)
+      const passed = actionId.startsWith('tap-') && elapsed >= 0 && elapsed <= game.duration_ms + 80
+        && Math.min(pos, earlier) <= .6 && Math.max(pos, earlier) >= .4
+      if (!passed) game.penalty_points = 15
+      else {
+        game.timing_hits += 1
+        if (game.timing_hits === 3) game.penalty_points = 0
+        else {
+          game.started_at = Date.now() + 800
+          game.duration_ms = timingDuration(game.timing_hits)
+        }
+      }
+      return mockMiniView(game)
+    }
     const valid = actionId === 'timeout' || (game.kind === 'slang'
       ? game.options.some((o) => o.id === actionId) : actionId === 'tap')
     if (!valid) throw new ApiError('INVALID_MINI_GAME_ACTION')
     const elapsed = Date.now() - game.started_at
     const passed = actionId !== 'timeout' && elapsed >= 0 && (game.kind === 'slang'
       ? elapsed <= 2250 && actionId === game.answer_id
-      : game.kind === 'timing' ? elapsed >= 840 && elapsed <= 1810
-        : (elapsed >= 560 && elapsed <= 1290) || (elapsed >= 2160 && elapsed <= 2890))
+      : (elapsed >= 560 && elapsed <= 1290) || (elapsed >= 2160 && elapsed <= 2890))
     game.penalty_points = passed ? 0 : game.kind === 'slang' ? 20 : 15
     return mockMiniView(game)
   },

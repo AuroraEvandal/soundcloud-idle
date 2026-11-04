@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { existsSync } from 'node:fs'
 import { STORY_SCENES, shouldShowIntro } from '../src/story.js'
-import { CASES } from '../src/caseCatalog.js'
+import { CASE_ART } from '../src/caseCatalog.js'
 import { readIntro, saveIntro } from '../src/storage.js'
 
 test('intro shows for new players and interrupted viewers, never completed viewers', () => {
@@ -28,14 +28,13 @@ test('intro markers are isolated per player and tolerate unavailable storage', (
   delete globalThis.localStorage
 })
 
-test('preview catalog has complete category odds and no invented gift odds', () => {
-  assert.deepEqual(CASES.map((box) => box.price), [29, 100])
-  assert.equal(CASES[0].rewards.reduce((total, reward) => total + reward.chance, 0), 100)
-  assert.ok(CASES[0].rewards.every((reward) => reward.chance > 0))
-  assert.ok(CASES[1].rewards.every((reward) => reward.chance === undefined))
-  for (const box of CASES) {
+test('case display metadata keeps all three server IDs and never generates rewards or payment prices', () => {
+  assert.deepEqual(Object.keys(CASE_ART), ['free', 'underground', 'gift-vault'])
+  for (const box of Object.values(CASE_ART)) {
     assert.ok(existsSync(new URL(`../public${box.image}`, import.meta.url)))
-    assert.equal(new Set(box.rewards.map((reward) => reward.id)).size, box.rewards.length)
+    assert.equal(box.price, undefined)
+    assert.equal(box.rewards, undefined)
+    assert.equal(box.pet_chance, undefined)
   }
   assert.ok(existsSync(new URL('../public/player/freshman.png', import.meta.url)))
 })

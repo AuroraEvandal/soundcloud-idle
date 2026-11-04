@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { GameContext } from './GameContext'
-import { login, getProfile } from './api'
+import { login, getProfile, getPets } from './api'
 import { errorInfo } from './errors'
 import StatusBar from './components/StatusBar'
 import ResourceBar from './components/ResourceBar'
@@ -33,6 +33,8 @@ export default function App() {
   const [nick, setNick] = useState('')
   const [player, setPlayer] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [petCollection, setPetCollection] = useState(null)
+  const [petsError, setPetsError] = useState(null)
   const [status, setStatus] = useState('loading') // loading | ready | error | stop
   const [error, setError] = useState('')
   const [screen, setScreen] = useState('home')
@@ -57,6 +59,18 @@ export default function App() {
     return p
   }, [])
 
+  const refreshPets = useCallback(async () => {
+    try {
+      const collection = await getPets()
+      setPetCollection(collection)
+      setPetsError(null)
+      return collection
+    } catch (e) {
+      setPetsError(errorInfo(e))
+      throw e
+    }
+  }, [])
+
   const boot = useCallback(
     async () => {
       setStatus('loading')
@@ -71,6 +85,7 @@ export default function App() {
         }
         setTelegramMessages((current) => current.adam.length ? current : initialTelegramMessages(res.player.username))
         await refreshProfile()
+        await refreshPets().catch(() => {})
         setStatus('ready')
         if (res.is_new) {
           setUnread(1)
@@ -87,7 +102,7 @@ export default function App() {
         }
       }
     },
-    [notify, refreshProfile],
+    [notify, refreshProfile, refreshPets],
   )
 
   useEffect(() => {
@@ -108,7 +123,8 @@ export default function App() {
     if (added) setUnread((count) => count + added)
   }, [])
 
-  const ctx = { nick, player, setPlayer, profile, refreshProfile, notify, relogin, unread, setUnread, telegramMessages, setTelegramMessages, addTelegramMessages }
+  const activePet = petCollection?.pets.find((pet) => pet.id === petCollection.active_pet_id && pet.owned) || null
+  const ctx = { nick, player, setPlayer, profile, refreshProfile, petCollection, setPetCollection, activePet, petsError, refreshPets, notify, relogin, unread, setUnread, telegramMessages, setTelegramMessages, addTelegramMessages }
   const Screen = SCREENS[screen]
 
   let body

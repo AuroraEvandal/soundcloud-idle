@@ -48,7 +48,7 @@ function Lines({ title, side }) {
 }
 
 export default function Battle() {
-  const { nick, player, profile, refreshProfile, relogin, addTelegramMessages } = useGame()
+  const { nick, player, profile, refreshProfile, refreshPets, relogin, addTelegramMessages } = useGame()
   // list | build | judging | result | mini | final
   const [phase, setPhase] = useState('list')
   const [battle, setBattle] = useState(null)
@@ -111,6 +111,10 @@ export default function Battle() {
     // Восстановление запускается один раз при создании экрана.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (phase === 'result' && result?.battle?.status === 'finished') refreshPets().catch(() => {})
+  }, [phase, result, refreshPets])
 
   useEffect(() => {
     if (phase !== 'result' || result?.next_round || result?.battle?.result !== 'win') return

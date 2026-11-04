@@ -22,6 +22,10 @@ const TABLE = {
   ITEM_NOT_FOUND: ['Предмет не найден', 'stay'],
   NOT_OWNED: ['Этого предмета у тебя нет', 'stay'],
   NO_ENERGY: ['Нет энергии. Подожди, она восстанавливается', 'stay'],
+  PAYMENT_UNAVAILABLE: ['Питомцы и кейсы пока недоступны на сервере', 'retry'],
+  CASE_COOLDOWN: ['Бесплатный кейс ещё восстанавливается', 'retry'],
+  ORDER_NOT_FOUND: ['Заказ не найден', 'stay'],
+  INVALID_REQUEST: ['Не удалось выполнить запрос', 'stay'],
   INTERNAL: ['Ошибка сервера. Попробуй ещё раз', 'retry'],
 }
 

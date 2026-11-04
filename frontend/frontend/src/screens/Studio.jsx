@@ -8,11 +8,12 @@ import Tabs from '../components/Tabs'
 import Icon from '../components/Icon'
 import ProgressBar from '../components/ProgressBar'
 import ErrorBox from '../components/ErrorBox'
+import PetCompanion from '../components/PetCompanion'
 
 const ICONS = { 1: 'headphones', 2: 'mic', 3: 'box', 4: 'headphones' }
 
 export default function Studio({ onClose }) {
-  const { player, setPlayer, notify } = useGame()
+  const { player, setPlayer, notify, refreshPets } = useGame()
   const [tab, setTab] = useState('rec')
   const [studio, setStudio] = useState(null)
   const [error, setError] = useState(null)
@@ -21,6 +22,7 @@ export default function Studio({ onClose }) {
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
   const pending = useRef(0)
+  const retryBatch = useRef(null)
   const inflight = useRef(false)
   const timer = useRef(null)
 
@@ -39,28 +41,33 @@ export default function Studio({ onClose }) {
 
   // Тапы копятся и отправляются пачкой. Считает сервер, здесь только быстрый отклик.
   const flush = useCallback(async () => {
-    if (inflight.current || !pending.current) return
-    const taps = pending.current
-    pending.current = 0
+    if (inflight.current || (!pending.current && !retryBatch.current)) return
+    const batch = retryBatch.current || { taps: pending.current, requestId: crypto.randomUUID() }
+    if (!retryBatch.current) pending.current = 0
     inflight.current = true
+    let succeeded = false
     try {
-      const r = await recordSnippet(taps)
+      const r = await recordSnippet(batch.taps, batch.requestId)
+      retryBatch.current = null
+      succeeded = true
       setStudio(r.studio)
       setPlayer(r.player)
       const released = r.released || []
       if (released.length) {
+        refreshPets().catch(() => {})
         setReleases((current) => [...current, ...released])
         released.forEach((s) => notify(`Сниппет вышел: +${s.streams} прослушиваний, +₽${s.coins}`))
       }
       setError(null)
     } catch (e) {
+      retryBatch.current = e.network ? batch : null
       setError(errorInfo(e))
       load()
     } finally {
       inflight.current = false
-      if (pending.current) flush()
+      if (succeeded && pending.current) flush()
     }
-  }, [load, notify, setPlayer])
+  }, [load, notify, setPlayer, refreshPets])
 
   useEffect(
     () => () => {
@@ -132,7 +139,7 @@ export default function Studio({ onClose }) {
       />
       <div className="app-body scroll">
         <div className="pad">
-          <ErrorBox message={error?.message} onRetry={error?.action === 'retry' ? load : null} onHome={() => setError(null)} />
+          <ErrorBox message={error?.message} onRetry={error?.action === 'retry' ? () => { load(); flush() } : null} onHome={() => setError(null)} />
         </div>
         {!studio && !error && <div className="center-fill muted">Загрузка…</div>}
         {studio && tab === 'rec' && (
@@ -151,6 +158,7 @@ export default function Studio({ onClose }) {
               <Icon name="mic" size={96} color="#fff" stroke={1.6} />
             </button>
             <div className="studio-sub">ТАПАЙ ЧТОБЫ НАБРАТЬ ХАЙП</div>
+            <PetCompanion pose={tap ? 'music' : studio.energy <= 0 ? 'sleep' : releases.length ? 'happy' : 'idle'} />
             <div className="meter">
               <div className="row-between small-t">
                 <span>Хайп</span>

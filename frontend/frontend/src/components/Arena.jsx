@@ -1,4 +1,5 @@
 import CharacterModel from './CharacterModel'
+import PetCompanion from './PetCompanion'
 
 // Верхняя половина батла: размытая толпа с фонариками и модели рэперов на сцене.
 
@@ -42,6 +43,7 @@ export default function Arena({ playerName, opponentName, playerLook, opponentIm
         ))}
       </svg>
       <div className="stage-floor" />
+      <PetCompanion compact pose={playerState === 'win' ? 'happy' : playerState === 'hit' ? 'confused' : 'idle'} />
       <div className="fighters">
         <Fighter name={playerName} look={playerLook} state={playerState} mine />
         <Fighter name={opponentName || '???'} image={opponentImage} state={opponentState} />
