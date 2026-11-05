@@ -26,6 +26,7 @@ const TABLE = {
   CASE_COOLDOWN: ['Бесплатный кейс ещё восстанавливается', 'retry'],
   ORDER_NOT_FOUND: ['Заказ не найден', 'stay'],
   INVALID_REQUEST: ['Не удалось выполнить запрос', 'stay'],
+  CONFIGURATION_ERROR: ['Сервер игры не настроен. Сообщи разработчику', 'stop'],
   INTERNAL: ['Ошибка сервера. Попробуй ещё раз', 'retry'],
 }
 

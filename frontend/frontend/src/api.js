@@ -3,7 +3,7 @@
 //
 // MOCK[имя] = true  -> фейковый ответ (логика мок-сервера живёт ниже в этом файле)
 // MOCK[имя] = false -> настоящий вызов серверной функции
-// Старые маршруты без ключей работают на фейке; питомцы и кейсы требуют сервер.
+// В production отсутствие конфигурации считается ошибкой, а не поводом играть на фейке.
 import { supabase } from './supabase'
 import { timingDuration, timingPosition, timingPath } from './timingGame'
 import { BEATS, EQUIPMENT, CLOTHING, PACKS, START_CARD_IDS, START_COINS } from './mockCatalog'
@@ -38,7 +38,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 const rnd = (a, b) => a + Math.random() * (b - a)
 const rndInt = (a, b) => Math.floor(rnd(a, b + 1))
 const clone = (x) => (x == null ? x : JSON.parse(JSON.stringify(x)))
-const useMock = (name) => MOCK[name] || !supabase
+const useMock = (name) => import.meta.env.DEV && (MOCK[name] || !supabase)
 const pendingRequestIds = new Map()
 
 // Сохраняем один ID на операцию, пока не получим определённый ответ.
@@ -59,6 +59,7 @@ async function callIdempotent(name, body) {
 
 // Общий вызов серверной функции. initData добавляется в каждый запрос.
 async function call(name, body) {
+  if (!supabase) throw new ApiError('CONFIGURATION_ERROR', 'server configuration missing')
   const initData = window.Telegram?.WebApp?.initData || ''
   let res
   try {

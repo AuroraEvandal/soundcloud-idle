@@ -223,6 +223,10 @@ begin
   return p;
 end;
 $$;
+-- main used a different argument order; named PostgREST calls must resolve once.
+drop function if exists public.record_snippet_atomic(uuid,uuid,int);
+alter table public.snippet_requests add column if not exists taps int;
+alter table public.snippet_requests add column if not exists created_at timestamptz not null default now();
 create or replace function public.record_snippet_atomic(p_player_id uuid,p_taps int,p_request_id uuid default gen_random_uuid()) returns jsonb
 language plpgsql security definer set search_path=public as $$
 declare p players; b beats; v_use int; v_total int; v_income int; v_pop_pct int; v_streams int; v_coins int;
@@ -258,7 +262,7 @@ begin
   update players set energy=p.energy-v_use,energy_updated_at=p.energy_updated_at,hype=v_total%20,
     popularity=p.popularity,coins=p.coins,streams=p.streams,selected_beat_id=b.id where id=p_player_id returning * into p;
   v_response:=jsonb_build_object('player',to_jsonb(p),'released',v_released);
-  insert into snippet_requests values(p_player_id,p_request_id,p_taps,v_response);
+  insert into snippet_requests(player_id,request_id,taps,response) values(p_player_id,p_request_id,p_taps,v_response);
   return v_response;
 end;
 $$;

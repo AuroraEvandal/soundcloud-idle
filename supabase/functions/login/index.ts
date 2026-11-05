@@ -52,11 +52,5 @@ Deno.serve((req) => handle(req, async (body) => {
     }
   }
 
-  const today = new Date().toISOString().slice(0, 10)
-  if (player.ai_requests_date !== today) {
-    const reset = await db.from('players').update({ ai_requests_today: 0, ai_requests_date: today }).eq('id', player.id).select('*').single()
-    if (reset.error) throw reset.error
-    player = reset.data
-  }
   return { is_new: isNew, player: playerView(player) }
 }))

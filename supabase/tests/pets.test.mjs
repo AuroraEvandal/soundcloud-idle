@@ -13,6 +13,11 @@ before(async () => {
   await db.exec(await readFile(new URL('../../backend/schema.sql', import.meta.url), 'utf8'))
   for (const file of (await readdir(new URL('../migrations/', import.meta.url))).sort()) {
     await db.exec(await readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8'))
+    if (file === '20261030190023_atomic_record_snippet.sql') {
+      await db.query("insert into players(id,telegram_id,username) values ('00000000-0000-4000-8000-000000000013',13,'legacy')")
+      await db.query(`insert into snippet_requests(player_id,request_id,response) values
+        ('00000000-0000-4000-8000-000000000013','00000000-0000-4000-8000-000000000014','{"released":[],"legacy":true}')`)
+    }
   }
   await db.exec(await readFile(new URL('../migrations/20261104120000_pets_and_cases.sql',import.meta.url),'utf8'))
   await db.query('insert into players(id,telegram_id,username,coins) values ($1,11,\'test\',300),($2,12,\'other\',300)', [player, other])
@@ -116,4 +121,29 @@ test('case odds boundaries and fallback rewards exactly match the catalog', asyn
     [0,0.0005,25],[29,0.01,150],[100,0.03,600],
   ])
   await assert.rejects(rpc("select award_case_drop($1,'free',-1,0) result",[other]),/INVALID_REQUEST/)
+})
+
+
+test('merged recording RPC accepts named Edge Function arguments without overload ambiguity', async () => {
+  await db.query('update players set energy=100,hype=0 where id=$1', [other])
+  const request = id()
+  const args = [other, request, 1]
+  const sql = 'select record_snippet_atomic(p_player_id => $1::uuid, p_request_id => $2::uuid, p_taps => $3::int) result'
+  const first = await rpc(sql, args)
+  assert.equal(first.player.energy, 99)
+  assert.deepEqual(await rpc(sql, args), first)
+  await assert.rejects(rpc(sql, [other, request, 2]), /IDEMPOTENCY_CONFLICT/)
+})
+
+
+test('upgrading main preserves saved recording responses and replaying the repair is safe', async () => {
+  const repair = await readFile(new URL('../migrations/20261105120000_merge_recording_compatibility.sql', import.meta.url), 'utf8')
+  await db.exec(repair)
+  await db.exec(repair)
+  const legacy = await rpc(`select record_snippet_atomic(
+    p_player_id => '00000000-0000-4000-8000-000000000013'::uuid,
+    p_request_id => '00000000-0000-4000-8000-000000000014'::uuid,
+    p_taps => 1) result`)
+  assert.deepEqual(legacy, { released: [], legacy: true })
+  assert.equal((await db.query("select to_regprocedure('record_snippet_atomic(uuid,uuid,int)') old")).rows[0].old, null)
 })
