@@ -7,6 +7,7 @@
 import { supabase } from './supabase'
 import { timingDuration, timingPosition, timingPath } from './timingGame'
 import { BEATS, EQUIPMENT, CLOTHING, PACKS, START_CARD_IDS, START_COINS } from './mockCatalog'
+import { operationIds } from './operationIds'
 
 export const MOCK = {
   login: false,
@@ -27,10 +28,11 @@ export const MOCK = {
 }
 
 export class ApiError extends Error {
-  constructor(code, message, network = false) {
+  constructor(code, message, network = false, ambiguous = false) {
     super(message || code)
     this.code = code
     this.network = network
+    this.ambiguous = ambiguous
   }
 }
 
@@ -39,20 +41,21 @@ const rnd = (a, b) => a + Math.random() * (b - a)
 const rndInt = (a, b) => Math.floor(rnd(a, b + 1))
 const clone = (x) => (x == null ? x : JSON.parse(JSON.stringify(x)))
 const useMock = (name) => import.meta.env.DEV && (MOCK[name] || !supabase)
-const pendingRequestIds = new Map()
 
 // Сохраняем один ID на операцию, пока не получим определённый ответ.
 // После сетевого сбоя тот же ID позволяет серверу вернуть сохранённый результат.
 async function callIdempotent(name, body) {
-  const key = `${name}:${JSON.stringify(body)}`
-  const requestId = pendingRequestIds.get(key) || crypto.randomUUID()
-  pendingRequestIds.set(key, requestId)
+  // Telegram's unsafe user ID scopes local delivery state only; it never authorises a request.
+  const scope = globalThis.window?.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'session'
+  const key = `${scope}:${name}:${JSON.stringify(body)}`
+  const requestId = operationIds.read(key) || crypto.randomUUID()
+  operationIds.remember(key, requestId)
   try {
     const result = await call(name, { ...body, requestId })
-    pendingRequestIds.delete(key)
+    operationIds.forget(key)
     return result
   } catch (error) {
-    if (!error?.network) pendingRequestIds.delete(key)
+    if (!error?.network && !error?.ambiguous) operationIds.forget(key)
     throw error
   }
 }
@@ -63,7 +66,10 @@ async function call(name, body) {
   const initData = window.Telegram?.WebApp?.initData || ''
   let res
   try {
-    res = await supabase.functions.invoke(name, { body: { initData, ...body } })
+    res = await supabase.functions.invoke(name, {
+      body: { initData, ...body },
+      region: import.meta.env.VITE_SUPABASE_FUNCTION_REGION || 'ap-southeast-2',
+    })
   } catch {
     throw new ApiError('INTERNAL', 'network', true)
   }
@@ -72,13 +78,16 @@ async function call(name, body) {
     // Ошибка формата { error: { code } } может прийти с не-200 статусом.
     try {
       const payload = await error.context?.json?.()
-      if (payload?.error?.code) throw new ApiError(payload.error.code, payload.error.message)
+      // A 5xx can happen after the database committed (for example while loading
+      // the response view). Retrying must keep the ID of that same operation.
+      if (payload?.error?.code) throw new ApiError(payload.error.code, payload.error.message, false,
+        error.context?.status >= 500 || payload.error.code === 'INTERNAL')
     } catch (e) {
       if (e instanceof ApiError) throw e
     }
     throw new ApiError('INTERNAL', 'network', true)
   }
-  if (data?.error) throw new ApiError(data.error.code, data.error.message)
+  if (data?.error) throw new ApiError(data.error.code, data.error.message, false, data.error.code === 'INTERNAL')
   return data
 }
 
@@ -175,8 +184,13 @@ export const getWardrobe = () => proposed('getWardrobe', 'get-wardrobe', {}, () 
 // itemId = null снимает вещь со слота
 export const equipItem = (slot, itemId) =>
   proposed('equipItem', 'equip-item', { slot, itemId }, () => mock2.equipItem(slot, itemId))()
-export const openPack = (packId) =>
-  proposed('openPack', 'open-pack', { packId }, () => mock2.openPack(packId), [700, 1000])()
+export async function openPack(packId) {
+  if (useMock('openPack')) {
+    await wait(rndInt(700, 1000))
+    return mock2.openPack(packId)
+  }
+  return callIdempotent('open-pack', { packId })
+}
 export const getDeck = () => proposed('getDeck', 'get-deck', {}, () => mock2.getDeck())()
 
 const requireServer = () => {

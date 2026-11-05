@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from '../GameContext'
 import { getStudio, recordSnippet, selectBeat, buyBeat, buyItem } from '../api'
 import { errorInfo } from '../errors'
@@ -9,107 +9,41 @@ import Icon from '../components/Icon'
 import ProgressBar from '../components/ProgressBar'
 import ErrorBox from '../components/ErrorBox'
 import PetCompanion from '../components/PetCompanion'
+import { studioRecorderFor } from '../studioRecorder'
 
 const ICONS = { 1: 'headphones', 2: 'mic', 3: 'box', 4: 'headphones' }
 
 export default function Studio({ onClose }) {
-  const { player, setPlayer, notify, refreshPets } = useGame()
+  const { player, setPlayer, refreshPets } = useGame()
   const [tab, setTab] = useState('rec')
-  const [studio, setStudio] = useState(null)
-  const [error, setError] = useState(null)
   const [tap, setTap] = useState(false)
-  const [releases, setReleases] = useState([])
   const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState(null)
   const busyRef = useRef(false)
-  const pending = useRef(0)
-  const retryBatch = useRef(null)
-  const retryCount = useRef(0)
-  const inflight = useRef(false)
-  const timer = useRef(null)
-
-  const load = useCallback(() => {
-    getStudio()
-      .then((r) => {
-        setStudio(r.studio)
-        setPlayer(r.player)
-      })
-      .catch((e) => setError(errorInfo(e)))
-  }, [setPlayer])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  // Локальный прогноз для интерфейса; сервер всё равно проверяет запас энергии.
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStudio((s) => s && s.energy < s.energy_max ? { ...s, energy: s.energy + 1 } : s)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  // Тапы копятся и отправляются пачкой. Считает сервер, здесь только быстрый отклик.
-  const flush = useCallback(async () => {
-    if (inflight.current || (!pending.current && !retryBatch.current)) return
-    const batch = retryBatch.current || { taps: pending.current, requestId: crypto.randomUUID() }
-    if (!retryBatch.current) pending.current = 0
-    inflight.current = true
-    try {
-      const r = await recordSnippet(batch.taps, batch.requestId)
-      retryBatch.current = null
-      retryCount.current = 0
-      setStudio((current) => {
-        const queued = pending.current
-        return {
-          ...r.studio,
-          energy: Math.max(0, r.studio.energy - queued),
-          hype: (r.studio.hype + queued) % r.studio.hype_max,
-        }
-      })
+  const recorder = useMemo(() => studioRecorderFor(player.id, {
+    send: recordSnippet,
+    fetchStudio: getStudio,
+    onResult: (r) => {
       setPlayer(r.player)
-      const released = r.released || []
-      if (released.length) {
-        refreshPets().catch(() => {})
-        setReleases((current) => [...current, ...released])
-        released.forEach((s) => notify(`Сниппет вышел: +${s.streams} прослушиваний, +₽${s.coins}`))
-      }
-      setError(null)
-    } catch (e) {
-      setError(errorInfo(e))
-      if (e?.network) retryBatch.current = batch
-      else { retryBatch.current = null; retryCount.current = 0; load() }
-    } finally {
-      inflight.current = false
-      if (retryBatch.current) {
-        clearTimeout(timer.current)
-        const delay = Math.min(30_000, 1500 * 2 ** retryCount.current++)
-        timer.current = setTimeout(() => { timer.current = null; flush() }, delay)
-      } else if (pending.current && !timer.current) {
-        timer.current = setTimeout(() => { timer.current = null; flush() }, 0)
-      }
-    }
-  }, [load, notify, setPlayer, refreshPets])
-
-  useEffect(
-    () => () => {
-      clearTimeout(timer.current)
-      // Не теряем тапы, если игрок уходит со страницы раньше debounce-таймера.
-      if (pending.current) flush()
+      if (r.released?.length) refreshPets().catch(() => {})
     },
-    [flush],
-  )
+  }), [player.id, setPlayer, refreshPets])
+  const [recording, setRecording] = useState(recorder.snapshot)
+  const { studio, releases, releasing } = recording
+  const error = actionError || (recording.error ? errorInfo(recording.error) : null)
+  const load = () => recorder.load()
+  const setError = setActionError
+
+  useEffect(() => recorder.subscribe(setRecording), [recorder])
+  useEffect(() => { recorder.load() }, [recorder])
+  useEffect(() => {
+    const timer = setInterval(() => recorder.tick(), 3000)
+    return () => clearInterval(timer)
+  }, [recorder])
 
   function onTap() {
-    if (!studio || studio.energy <= 0) {
-      setError(errorInfo({ code: 'NO_ENERGY' }))
-      return
-    }
-    setError(null)
-    setStudio((s) => ({ ...s, energy: s.energy - 1, hype: (s.hype + 1) % s.hype_max }))
-    pending.current += 1
-    if (!timer.current) timer.current = setTimeout(() => { timer.current = null; flush() }, 600)
+    if (!busyRef.current) recorder.tap()
   }
-
   async function act(fn) {
     if (busyRef.current) return
     busyRef.current = true
@@ -127,15 +61,15 @@ export default function Studio({ onClose }) {
 
   const pick = (id) =>
     act(async () => {
-      const r = await selectBeat(id)
-      setStudio(r.studio)
+      await selectBeat(id)
+      await recorder.load()
     })
 
   const buyBeatItem = (id) =>
     act(async () => {
       const r = await buyBeat(id)
       setPlayer(r.player)
-      setStudio(r.studio)
+      await recorder.load()
     })
 
   const buy = (id) =>
@@ -159,7 +93,7 @@ export default function Studio({ onClose }) {
       />
       <div className="app-body scroll">
         <div className="pad">
-          <ErrorBox message={error?.message} onRetry={error?.action === 'retry' ? () => { load(); flush() } : null} onHome={() => setError(null)} />
+          <ErrorBox message={error?.message} onRetry={error?.action === 'retry' ? () => { load(); recorder.flush() } : null} onHome={() => setError(null)} />
         </div>
         {!studio && !error && <div className="center-fill muted">Загрузка…</div>}
         {studio && tab === 'rec' && (
@@ -173,11 +107,12 @@ export default function Studio({ onClose }) {
               }}
               onPointerUp={() => setTap(false)}
               onPointerLeave={() => setTap(false)}
+              disabled={!recording.canTap || busy}
               aria-label="Микрофон: тапай, чтобы набрать хайп"
             >
               <Icon name="mic" size={96} color="#fff" stroke={1.6} />
             </button>
-            <div className="studio-sub">ТАПАЙ ЧТОБЫ НАБРАТЬ ХАЙП</div>
+            <div className="studio-sub" role="status">{releasing ? 'ВЫПУСКАЕМ СНИППЕТ…' : 'ТАПАЙ ЧТОБЫ НАБРАТЬ ХАЙП'}</div>
             <PetCompanion pose={tap ? 'music' : studio.energy <= 0 ? 'sleep' : releases.length ? 'happy' : 'idle'} />
             <div className="meter">
               <div className="row-between small-t">
@@ -248,7 +183,7 @@ export default function Studio({ onClose }) {
           </div>
         )}
       </div>
-      {releases.length > 0 && (
+      {(releasing || releases.length > 0) && (
         <div className="release-shade">
           <section className="release-card" role="dialog" aria-modal="true" aria-labelledby="release-title">
             <div className="release-art" aria-hidden="true">
@@ -256,17 +191,21 @@ export default function Studio({ onClose }) {
               <div className="release-wave"><i /><i /><i /><i /><i /><i /><i /></div>
               <Icon name="cloud" size={30} color="var(--accent)" />
             </div>
-            <div className="release-kicker">НОВЫЙ РЕЛИЗ</div>
-            <h2 id="release-title">Сниппет вышел!</h2>
-            <p className="muted release-copy">Трек уже слушают. Продолжай записывать — следующая запись не за горами.</p>
+            <div className="release-kicker">{releases.length ? 'НОВЫЙ РЕЛИЗ' : 'ЗАПИСЬ ГОТОВА'}</div>
+            <h2 id="release-title">{releases.length ? 'Сниппет вышел!' : 'Выпускаем сниппет…'}</h2>
+            <p className="muted release-copy">{releases.length ? 'Трек уже слушают. Продолжай записывать — следующая запись не за горами.' : 'Хайп собран. Сохраняем запись и ждём результат.'}</p>
+            {releases.length > 0 ? <>
             <div className="release-stats" aria-live="polite">
               <div><b>+{releases[0].streams}</b><span>прослушиваний</span></div>
               <div><b>+{releases[0].coins}</b><span>монет</span></div>
               <div><b>+{releases[0].popularity_change}</b><span>популярности</span></div>
             </div>
-            <button className="btn release-cta" onClick={() => setReleases((queue) => queue.slice(1))}>
+            <button className="btn release-cta" onClick={() => recorder.acknowledgeRelease()}>
               ОТЛИЧНО
             </button>
+            </> : <div role="status">
+              {error ? <ErrorBox message={error.message} onRetry={() => recorder.flush()} /> : <div className="loader" />}
+            </div>}
           </section>
         </div>
       )}

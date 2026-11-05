@@ -84,8 +84,9 @@ export default function App() {
           setIntro('new')
         }
         setTelegramMessages((current) => current.adam.length ? current : initialTelegramMessages(res.player.username))
+        // The optional pet collection must not hold the game's loading screen.
+        refreshPets().catch(() => {})
         await refreshProfile()
-        await refreshPets().catch(() => {})
         setStatus('ready')
         if (res.is_new) {
           setUnread(1)

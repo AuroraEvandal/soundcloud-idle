@@ -1,5 +1,17 @@
 # Backend: Supabase
 
+## Обновление скорости и повторов — 2026-11-05
+
+Применены миграции вплоть до `20261105164819_configurable_battle_and_pack_balance.sql`.
+Опубликованы 29 Edge Functions, включая Beatmaker. `get-studio` и `record-snippet`
+проверяют подпись Telegram и получают полный ответ за одно обращение к базе.
+Клиент вызывает функции в регионе БД `ap-southeast-2`; CORS разрешает `x-region`.
+Пак защищён от повторного списания через `requestId`.
+
+Влияние навыков и веса редкостей меняются числами в `game_balance`;
+инструкция — [balance.md](balance.md). Цены и общий темп экономики не менялись.
+Проверки SQL в облаке выполнялись с итоговым `ROLLBACK`.
+
 В `backend/schema.sql` находится исходная схема проекта, а готовые карточки для старта — в `backend/seed.sql`.
 Edge Functions размещены в `supabase/functions/`, настройки их проверки — в `supabase/config.toml`, изменения схемы для уже созданной базы — в `supabase/migrations/`.
 

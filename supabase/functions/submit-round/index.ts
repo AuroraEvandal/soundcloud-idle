@@ -37,13 +37,15 @@ Deno.serve((req) => handle(req, async (body) => {
   if (!battle) throw new GameError('BATTLE_NOT_FOUND', 404)
 
   // These reads are independent after the battle has been loaded.
-  const [prior, reused, cardsResult, owned, relationsQuery] = await Promise.all([
+  const [prior, reused, cardsResult, owned, relationsQuery, balance, outfit] = await Promise.all([
     db.from('rounds').select('request_id,card_ids,result_payload')
       .eq('battle_id', battle.id).eq('round_number', roundNumber).maybeSingle(),
     db.from('rounds').select('battle_id,round_number,card_ids').eq('request_id', request_id).maybeSingle(),
     db.from('cards').select('id,text,slot,theme,themes,rarity,syllables,rhyme_group,bonus_type,bonus_value').in('id', cardIds),
     db.from('player_cards').select('card_id,uses_left').eq('player_id', player.id).in('card_id', cardIds),
     loadThemeRelations(),
+    db.from('game_balance').select('skill_step,charisma_step,max_skill_bonus').eq('id', true).single(),
+    db.from('player_outfit').select('item:clothing_id(bonus_type,bonus_value)').eq('player_id', player.id),
   ])
   if (prior.error) throw prior.error
   if (prior.data) {
@@ -77,7 +79,14 @@ Deno.serve((req) => handle(req, async (body) => {
   }
 
   const theme = battle.themes[roundNumber - 1]
-  const scoredRound = await scoreRound(cards as Record<string, unknown>[], theme, Number((Array.isArray(battle.opponents) ? battle.opponents[0] : battle.opponents)?.level || 1), relations)
+  if (balance.error) throw balance.error
+  if (outfit.error) throw outfit.error
+  const clothingCharisma = (outfit.data || []).reduce((sum, row: any) => {
+    const item = Array.isArray(row.item) ? row.item[0] : row.item
+    return sum + (item?.bonus_type === 'charisma' ? Number(item.bonus_value) : 0)
+  }, 0)
+  const scoredRound = await scoreRound(cards as Record<string, unknown>[], theme, Number((Array.isArray(battle.opponents) ? battle.opponents[0] : battle.opponents)?.level || 1), relations,
+    { player, clothingCharisma, balance: balance.data })
   const scored = { round: { number: roundNumber, ...scoredRound.round } }
   const result = await db.rpc('submit_round_atomic', {
     p_player_id: player.id,

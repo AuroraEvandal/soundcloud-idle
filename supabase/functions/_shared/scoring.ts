@@ -4,6 +4,7 @@
 // - смысл: из таблицы связей тем theme_relations (заполняет автор игры).
 import { GameError } from './common.ts'
 import { rhymeScore } from './rhyme.ts'
+import { skilledPoints, type BattleBalance } from './battleBalance.ts'
 
 const clamp = (x: number, min = 0, max = 10) => Math.max(min, Math.min(max, x))
 const half = (x: number) => Math.round(x * 2) / 2
@@ -124,6 +125,7 @@ export async function scoreRound(
   theme: string,
   opponentLevel: number,
   relations: ThemeRelations,
+  progression?: { player: Record<string, unknown>; clothingCharisma: number; balance: BattleBalance },
 ) {
   const lines = cards.map((c) => String(c.text))
   const scores = {
@@ -134,7 +136,9 @@ export async function scoreRound(
   }
   const comment = judgeComment(scores)
   const bonus = cards.reduce((sum, c) => sum + (c.bonus_type === 'flat_points' ? Number(c.bonus_value || 0) : 0), 0)
-  const playerPoints = points(scores) + bonus
+  const playerPoints = (progression
+    ? skilledPoints(scores, progression.player, progression.clothingCharisma, progression.balance)
+    : points(scores)) + bonus
 
   const rivalLines = botLines[theme] || botLines.деньги
   const base = 4.5 + Number(opponentLevel) * 0.6

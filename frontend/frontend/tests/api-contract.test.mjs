@@ -111,3 +111,41 @@ test('recording accepts a UUID tied to the batch, so equal-sized new batches sta
   assert.notEqual(calls[1].body.requestId, calls[2].body.requestId)
   assert.equal(calls[2].body.taps, 20)
 })
+
+test('pack retries reuse the request ID and a confirmed new opening gets another ID', async () => {
+  const calls = []
+  invoke = async (name, { body }) => {
+    calls.push({ name, body })
+    if (calls.length === 1) throw new TypeError('Failed to fetch')
+    return { data: { accepted: true } }
+  }
+  await assert.rejects(() => api.openPack(1), (e) => e.network)
+  await api.openPack(1)
+  await api.openPack(1)
+  assert.equal(calls[0].name, 'open-pack')
+  assert.match(calls[0].body.requestId, /^[0-9a-f-]{36}$/)
+  assert.deepEqual(calls[0], calls[1])
+  assert.notEqual(calls[1].body.requestId, calls[2].body.requestId)
+})
+
+test('HTTP 5xx leaves an operation ambiguous and retains its ID until success', async () => {
+  for (const request of [() => api.recordSnippet(17), () => api.openPack(1), () => api.openCase('free')]) {
+    const calls = []
+    invoke = async (name, { body }) => {
+      calls.push({ name, body })
+      return calls.length === 1
+        ? { error: { context: Response.json({ error: { code: 'INTERNAL' } }, { status: 500 }) } }
+        : { data: { accepted: true } }
+    }
+    await assert.rejects(request, (e) => e.code === 'INTERNAL' && e.ambiguous && !e.network)
+    await request()
+    assert.deepEqual(calls[0], calls[1])
+  }
+})
+
+test('database-heavy game functions are routed to the database region', async () => {
+  let options
+  invoke = async (_name, input) => { options = input; return { data: {} } }
+  await api.getStudio()
+  assert.equal(options.region, 'ap-southeast-2')
+})

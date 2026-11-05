@@ -1,8 +1,8 @@
-import { authPlayer, handle, playerView } from '../_shared/common.ts'
-import { refreshEnergy, studioView } from '../_shared/studio.ts'
+import { db, handle, playerView, rpcError, telegramUser } from '../_shared/common.ts'
 
 Deno.serve((req) => handle(req, async (body) => {
-  const { player } = await authPlayer(body)
-  const fresh = await refreshEnergy(player)
-  return { player: playerView(fresh), studio: await studioView(fresh) }
+  const user = await telegramUser(body.initData)
+  const { data, error } = await db.rpc('get_studio_by_telegram', { p_telegram_id: user.id })
+  rpcError(error)
+  return { player: playerView(data.player), studio: data.studio }
 }))

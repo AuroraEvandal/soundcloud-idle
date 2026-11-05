@@ -1,4 +1,4 @@
-import { authPlayer, db, GameError, handle, playerView, rpcError } from '../_shared/common.ts'
+import { authPlayer, db, GameError, handle, playerView, requestId, rpcError } from '../_shared/common.ts'
 import { clothingView } from '../_shared/studio.ts'
 
 Deno.serve((req) => handle(req, async (body) => {
@@ -7,7 +7,11 @@ Deno.serve((req) => handle(req, async (body) => {
   if (!Number.isSafeInteger(packId) || packId <= 0) throw new GameError('ITEM_NOT_FOUND')
   // Списание монет и ролл — одна транзакция в базе (open_pack_atomic).
   // Возврат: { type: 'card'|'clothing', card_id?|item_id?, duplicate, refund }.
-  const rolled = await db.rpc('open_pack_atomic', { p_player_id: player.id, p_pack_id: packId })
+  const rolled = await db.rpc('open_pack_idempotent', {
+    p_player_id: player.id,
+    p_pack_id: packId,
+    p_request_id: body.requestId == null ? crypto.randomUUID() : requestId(body.requestId),
+  })
   rpcError(rolled.error)
   const drop = rolled.data as Record<string, any>
 
