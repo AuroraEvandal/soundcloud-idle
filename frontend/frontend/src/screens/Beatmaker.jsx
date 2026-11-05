@@ -24,9 +24,12 @@ export default function Beatmaker({ onEnergyChange }) {
   const [data,setData] = useState(null), [error,setError] = useState(null), [busy,setBusy] = useState(false)
   const [bar,setBar] = useState(0), [pitch,setPitch] = useState({piano:12,melody:19})
   const [playing,setPlaying] = useState(false), [step,setStep] = useState(-1), [result,setResult] = useState(null)
+  const [playback,setPlayback] = useState(null)
+  const listening = playing && playback?.id != null
+  const displayed = listening ? playback.composition : composition
   const busyRef = useRef(false), mounted = useRef(false), audio = useRef(null)
   const loadVersion = useRef(0)
-  const stop = useCallback(() => { audio.current?.stop(); setPlaying(false); setStep(-1) },[])
+  const stop = useCallback(() => { audio.current?.stop(); setPlaying(false); setStep(-1); setPlayback(null) },[])
   const load = useCallback(async (before = null) => {
     try {
       const version = ++loadVersion.current
@@ -53,12 +56,15 @@ export default function Beatmaker({ onEnergyChange }) {
     }
     edit(next)
   }
-  async function preview(value) {
-    if (playing) { stop(); return }
+  async function preview(value, id = null) {
+    if (playing && playback?.id === id) { stop(); return }
+    stop()
     try {
       audio.current ||= createBeatPlayer()
+      setPlayback({id,composition:structuredClone(value)})
+      setBar(0)
       setPlaying(true)
-      await audio.current.play(value,at=>{ if(mounted.current) setStep(at) })
+      await audio.current.play(value,at=>{ if(mounted.current) { setStep(at); setBar(Math.floor(at/16)) } })
     } catch(e) { stop(); setError({message:e.message}) }
   }
   async function act(operation) {
@@ -88,7 +94,7 @@ export default function Beatmaker({ onEnergyChange }) {
     {beat.stream_cap != null && <p className="small-t">Лимит: {beat.stream_cap} стримов · собрано {beat.streams_paid}<br/>Доступно сейчас: {beat.collectable_streams || 0} стримов / {beat.collectable_coins || 0} монет</p>}
     {beat.status==='sold' && <p>Продан за {beat.sale_coins} монет</p>}
     <div className="bm-actions">
-      <button className="btn small" disabled={busy} onClick={()=>preview({...beat,key:beat.musical_key})}>{playing?'СТОП':'СЛУШАТЬ'}</button>
+      <button className="btn small" disabled={busy} aria-pressed={playing && playback?.id===beat.id} onClick={()=>preview({...beat,key:beat.musical_key},beat.id)}>{playing && playback?.id===beat.id?'СТОП':'СЛУШАТЬ'}</button>
       {beat.status==='draft' && <><button className="btn small" disabled={busy} onClick={()=>act(()=>sellBeat(beat.id))}>ПРОДАТЬ СРАЗУ{beat.instant_sale_coins!=null?` · ₽${beat.instant_sale_coins}`:''}</button><button className="btn small" disabled={busy} onClick={()=>act(()=>releaseBeat(beat.id))}>ВЫПУСТИТЬ НА 24 Ч</button></>}
       {['streaming','complete'].includes(beat.status) && <button className="btn small" disabled={busy} onClick={()=>act(()=>collectBeat(beat.id))}>СОБРАТЬ СТРИМЫ</button>}
     </div>
@@ -97,23 +103,24 @@ export default function Beatmaker({ onEnergyChange }) {
     <div className="bm-heading"><small>BEAT LAB / 02 BARS</small><h2>Собери своё звучание</h2><p className="muted small-t">Тапай клетки. Для пианино и мелодии сначала выбери ноту. Прослушивание бесплатно.</p></div>
     <ErrorBox message={error?.message} onRetry={()=>load()} />
     <fieldset disabled={busy} className="bm-editor">
-      <div className="bm-settings">
-        <label>Стиль<select value={composition.genre} onChange={e=>edit({...composition,genre:e.target.value})}>{['trap','drill','phonk'].map(v=><option key={v}>{v}</option>)}</select></label>
-        <label>BPM<input type="number" min="60" max="180" value={composition.bpm} onChange={e=>edit({...composition,bpm:Number(e.target.value)})}/></label>
-        <label>Тональность<select value={composition.key} onChange={e=>edit({...composition,key:Number(e.target.value)})}>{NOTE_NAMES.map((v,i)=><option key={v} value={i}>{v}</option>)}</select></label>
-        <label>Лад<select value={composition.scale} onChange={e=>edit({...composition,scale:e.target.value})}><option value="minor">Минор</option><option value="major">Мажор</option></select></label>
-      </div>
-      <div className="bm-actions"><button className="btn small" onClick={()=>preview(composition)}>{playing?'■ СТОП':'▶ СЛУШАТЬ'}</button><button className="btn small" onClick={()=>edit(initialComposition())}>ШАБЛОН</button><button className="btn small" onClick={()=>edit({...composition,pattern:{drums:{kick:[],snare:[],hihat:[]},piano:[],melody:[]}})}>ОЧИСТИТЬ</button></div>
+      {listening && <p role="status">Слушаем сохранённый бит · {displayed.genre.toUpperCase()} / {displayed.bpm} BPM. Черновик сохранён — вернётся после остановки.</p>}
+      <fieldset className="bm-settings" disabled={listening} style={{border:0,padding:0,margin:0}}>
+        <label>Стиль<select value={displayed.genre} onChange={e=>edit({...composition,genre:e.target.value})}>{['trap','drill','phonk'].map(v=><option key={v}>{v}</option>)}</select></label>
+        <label>BPM<input type="number" min="60" max="180" value={displayed.bpm} onChange={e=>edit({...composition,bpm:Number(e.target.value)})}/></label>
+        <label>Тональность<select value={displayed.key} onChange={e=>edit({...composition,key:Number(e.target.value)})}>{NOTE_NAMES.map((v,i)=><option key={v} value={i}>{v}</option>)}</select></label>
+        <label>Лад<select value={displayed.scale} onChange={e=>edit({...composition,scale:e.target.value})}><option value="minor">Минор</option><option value="major">Мажор</option></select></label>
+      </fieldset>
+      <div className="bm-actions"><button className="btn small" onClick={()=>playing?stop():preview(composition)}>{playing?'■ СТОП':'▶ СЛУШАТЬ'}</button><button className="btn small" disabled={listening} onClick={()=>edit(initialComposition())}>ШАБЛОН</button><button className="btn small" disabled={listening} onClick={()=>edit({...composition,pattern:{drums:{kick:[],snare:[],hihat:[]},piano:[],melody:[]}})}>ОЧИСТИТЬ</button></div>
       <div className="bm-bars" role="group" aria-label="Такт">{[0,1].map(v=><button key={v} aria-pressed={bar===v} onClick={()=>setBar(v)}>ТАКТ {v+1}</button>)}</div>
       {LANES.map(([lane,label])=><div className="bm-lane" key={lane}>
-        <div className="row-between"><label>{label}</label>{['piano','melody'].includes(lane)&&<select aria-label={`Нота: ${label}`} value={pitch[lane]} onChange={e=>setPitch({...pitch,[lane]:Number(e.target.value)})}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{noteName(i)}</option>)}</select>}</div>
+        <div className="row-between"><label>{label}</label>{['piano','melody'].includes(lane)&&<select disabled={listening} aria-label={`Нота: ${label}`} value={pitch[lane]} onChange={e=>setPitch({...pitch,[lane]:Number(e.target.value)})}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{noteName(i)}</option>)}</select>}</div>
         <div className="bm-grid">{Array.from({length:16},(_,i)=>{
-          const at=bar*16+i, note=composition.pattern[lane]?.find(n=>n.step===at)
-          const active=lane in composition.pattern.drums ? composition.pattern.drums[lane].includes(at) : Boolean(note)
-          return <button key={at} className={`${active?'active ':''}${step===at?'cursor ':''}${i%4===0?'downbeat':''}`} aria-label={`${label}, шаг ${at+1}${note?`, ${noteName(note.note)}`:''}`} aria-pressed={active} onClick={()=>toggle(lane,at)}>{note?NOTE_NAMES[note.note%12]:i%4===0?i/4+1:'·'}</button>
+          const at=bar*16+i, note=displayed.pattern[lane]?.find(n=>n.step===at)
+          const active=lane in displayed.pattern.drums ? displayed.pattern.drums[lane].includes(at) : Boolean(note)
+          return <button key={at} disabled={listening} className={`${active?'active ':''}${step===at?'cursor ':''}${i%4===0?'downbeat':''}`} aria-label={`${label}, шаг ${at+1}${note?`, ${noteName(note.note)}`:''}`} aria-pressed={active} onClick={()=>toggle(lane,at)}>{note?NOTE_NAMES[note.note%12]:i%4===0?i/4+1:'·'}</button>
         })}</div>
       </div>)}
-      <button className="btn bm-record" disabled={!data || data.energy<data.energy_cost} onClick={()=>act(()=>recordBeat(composition))}>{busy?'СОХРАНЯЕМ…':`ЗАПИСАТЬ · ${data?.energy_cost ?? 50} ЭНЕРГИИ`}</button>
+      <button className="btn bm-record" disabled={listening || !data || data.energy<data.energy_cost} onClick={()=>act(()=>recordBeat(composition))}>{busy?'СОХРАНЯЕМ…':`ЗАПИСАТЬ · ${data?.energy_cost ?? 50} ЭНЕРГИИ`}</button>
       <p className="muted small-t">Энергия на сервере: {data?.energy ?? '…'} / 100 <button className="bm-link" onClick={()=>load()}>Обновить</button></p>
     </fieldset>
     {result && <section aria-label="Результат записи"><h3>Последний результат</h3>{beatCard(data?.beats.find(b=>b.id===result.id)||result)}</section>}
