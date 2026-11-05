@@ -31,6 +31,21 @@ verify_jwt = false
 [functions.buy-beat]
 verify_jwt = false
 
+[functions.get-beatmaker]
+verify_jwt = false
+
+[functions.record-beat]
+verify_jwt = false
+
+[functions.sell-beat]
+verify_jwt = false
+
+[functions.release-beat]
+verify_jwt = false
+
+[functions.collect-beat]
+verify_jwt = false
+
 [functions.get-shop]
 verify_jwt = false
 

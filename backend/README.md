@@ -138,7 +138,7 @@ shortcut: тайминг проверяется по серверному вре
 Скриптованные тапы в известное окно этим механизмом не предотвращаются.
 
 - Баттлы: `login`, `get-profile`, `get-hand`, `start-battle`, `submit-round`.
-- Студия: `get-studio`, `record-snippet`, `select-beat`.
+- Студия: `get-studio`, `record-snippet`, `select-beat`; Beatmaker: `get-beatmaker`, `record-beat`, `sell-beat`, `release-beat`, `collect-beat`.
 - Магазин и гардероб: `get-shop`, `buy-item`, `get-wardrobe`, `equip-item`, `buy-beat`.
 - Пак и колода: `open-pack`, `get-deck`.
 - Старт батла и выдача руки выполняются транзакционно в Postgres. У игрока может быть только один активный батл.
@@ -161,3 +161,7 @@ shortcut: тайминг проверяется по серверному вре
 ## Экономика v0.2
 
 Для существующего проекта миграция `supabase/migrations/20261026120000_economy.sql` добавляет таблицы и атомарные RPC покупки. Каталог битов, оборудования и паков, как и каталог карточек/одежды, заполняется через `backend/seed.sql`; сид можно запускать повторно. Новые проекты создают таблицы экономики из `backend/schema.sql`.
+
+### Beatmaker
+
+Миграция `supabase/migrations/20261105142758_beatmaker_studio_economy.sql` добавляет сохранение битов и атомарные операции записи, мгновенной продажи, выпуска на стримы и сбора дохода. Для нового API опубликованы функции `get-beatmaker`, `record-beat`, `sell-beat`, `release-beat` и `collect-beat`; контракт и примеры запросов находятся в `docs/api.md`.

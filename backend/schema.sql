@@ -1,7 +1,7 @@
 -- =====================================================
 -- Схема базы данных: симулятор рэпера (MVP)
--- После схемы применить supabase/migrations/, включая 20261103120000_timing_three_hits.sql.
--- Для питомцев, кейсов и атомарных релизов также нужна 20261104120000_pets_and_cases.sql.
+-- После схемы применить supabase/migrations/ по порядку, включая 20261103120000_timing_three_hits.sql.
+-- Для питомцев, кейсов, атомарных релизов и Beatmaker нужны последующие миграции из supabase/migrations/.
 -- Как запустить: Supabase -> SQL Editor -> New query ->
 -- вставить весь файл -> Run
 -- =====================================================
@@ -222,6 +222,37 @@ create table if not exists packs (
   clothing_chance numeric(3,2) not null default 0.07   -- шанс, что вместо карточки выпадет одежда
 );
 
+-- Записи игрока в Beatmaker, их серверная оценка и продажа/стриминг.
+create table if not exists player_recorded_beats (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references players(id) on delete cascade,
+  genre text not null check (genre in ('trap','drill','phonk')),
+  bpm int not null check (bpm between 60 and 180),
+  musical_key int not null check (musical_key between 0 and 11),
+  scale text not null check (scale in ('major','minor')),
+  pattern jsonb not null,
+  quality_score int not null check (quality_score between 0 and 100),
+  score_breakdown jsonb not null,
+  status text not null default 'draft' check (status in ('draft','sold','streaming','complete')),
+  sale_coins int,
+  stream_cap bigint,
+  streams_paid bigint not null default 0,
+  released_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (streams_paid >= 0 and (stream_cap is null or streams_paid <= stream_cap))
+);
+create index if not exists player_recorded_beats_owner_idx on player_recorded_beats(player_id,created_at desc);
+
+create table if not exists beatmaker_requests (
+  player_id uuid not null references players(id) on delete cascade,
+  request_id uuid not null,
+  action text not null check (action in ('record','sell','release','collect')),
+  payload jsonb not null,
+  response jsonb not null,
+  created_at timestamptz not null default now(),
+  primary key (player_id,request_id)
+);
+
 
 -- =====================================================
 -- БЕЗОПАСНОСТЬ
@@ -246,6 +277,8 @@ alter table equipment enable row level security;
 alter table player_equipment enable row level security;
 alter table player_beats enable row level security;
 alter table packs enable row level security;
+alter table player_recorded_beats enable row level security;
+alter table beatmaker_requests enable row level security;
 
 
 -- =====================================================

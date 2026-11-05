@@ -112,6 +112,7 @@ export async function handle(req: Request, action: (body: Record<string, unknown
       'NOT_ENOUGH_COINS', 'ALREADY_OWNED', 'ITEM_NOT_FOUND', 'NOT_OWNED', 'NO_ENERGY',
       'MINI_GAME_REQUIRED', 'MINI_GAME_NOT_STARTED', 'INVALID_MINI_GAME_ACTION',
       'CASE_COOLDOWN', 'PAYMENT_UNAVAILABLE', 'ORDER_NOT_FOUND',
+      'INVALID_BEAT', 'INVALID_PATTERN', 'BEAT_NOT_FOUND', 'BEAT_ALREADY_PROCESSED', 'BEAT_NOT_STREAMING',
     ])
     const safeCode = known.has(code) ? code : 'INTERNAL'
     const status = error instanceof GameError ? error.status : safeCode === 'INTERNAL' ? 500 : 400
