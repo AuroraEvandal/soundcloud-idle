@@ -10,6 +10,7 @@ import ProgressBar from '../components/ProgressBar'
 import ErrorBox from '../components/ErrorBox'
 import PetCompanion from '../components/PetCompanion'
 import { studioRecorderFor } from '../studioRecorder'
+import Beatmaker from './Beatmaker'
 
 const ICONS = { 1: 'headphones', 2: 'mic', 3: 'box', 4: 'headphones' }
 
@@ -85,6 +86,7 @@ export default function Studio({ onClose }) {
       <Tabs
         tabs={[
           ['rec', 'Запись'],
+          ['maker', 'Beat Lab'],
           ['beats', 'Биты'],
           ['gear', 'Оборудование'],
         ]}
@@ -92,6 +94,7 @@ export default function Studio({ onClose }) {
         onChange={setTab}
       />
       <div className="app-body scroll">
+        {tab === 'maker' && <Beatmaker onEnergyChange={load} />}
         <div className="pad">
           <ErrorBox message={error?.message} onRetry={error?.action === 'retry' ? () => { load(); recorder.flush() } : null} onHome={() => setError(null)} />
         </div>

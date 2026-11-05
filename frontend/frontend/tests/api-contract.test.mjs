@@ -149,3 +149,19 @@ test('database-heavy game functions are routed to the database region', async ()
   await api.getStudio()
   assert.equal(options.region, 'ap-southeast-2')
 })
+
+test('Beatmaker sends compositions for server scoring and stable IDs for mutations', async () => {
+  const calls=[]
+  invoke=async(name,{body})=>{ calls.push({name,body}); if(name==='record-beat' && calls.filter(c=>c.name===name).length===1) throw new TypeError('lost'); return {data:{}} }
+  const cursor={created_at:'2026-11-05T12:00:00.123456+00:00',id:battleId}
+  await api.getBeatmaker(cursor)
+  const { initialComposition }=await import('../src/beatAudio.js')
+  const composition=initialComposition()
+  await assert.rejects(()=>api.recordBeat(composition),e=>e.network)
+  await api.recordBeat(composition)
+  assert.deepEqual(calls[1],calls[2])
+  assert.equal(calls[2].body.quality_score,undefined)
+  assert.deepEqual(calls[0].body,{initData:'test-init-data',before:cursor})
+  await api.sellBeat(battleId); await api.releaseBeat(battleId); await api.collectBeat(battleId)
+  assert.deepEqual(calls.slice(-3).map(c=>c.name),['sell-beat','release-beat','collect-beat'])
+})

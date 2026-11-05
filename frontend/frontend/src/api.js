@@ -202,6 +202,11 @@ export async function getCases() { requireServer(); return call('get-cases', {})
 export async function openCase(caseId) { requireServer(); return callIdempotent('open-case', { caseId }) }
 export async function createCaseInvoice(caseId) { requireServer(); return callIdempotent('create-case-invoice', { caseId }) }
 export async function getCaseOrder(orderId) { requireServer(); return call('get-case-order', { orderId }) }
+export const getBeatmaker = (before = null) => call('get-beatmaker', before ? { before } : {})
+export const recordBeat = (composition) => callIdempotent('record-beat', composition)
+export const sellBeat = (beatId) => callIdempotent('sell-beat', { beatId })
+export const releaseBeat = (beatId) => callIdempotent('release-beat', { beatId })
+export const collectBeat = (beatId) => callIdempotent('collect-beat', { beatId })
 
 // ===========================================================================
 // МОК-СЕРВЕР. Здесь (и только здесь) живёт игровая логика на время разработки.

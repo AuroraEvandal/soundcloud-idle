@@ -81,16 +81,20 @@ test('Beatmaker shares energy with snippets and records/sells exactly once', asy
   const request = id()
   const sql = "select record_beat_atomic($1,$2,'trap',140,0,'minor','{}',80,'{}') result"
   const recorded = await rpc(sql, [other, request])
-  assert.equal(recorded.player.energy, 80)
+  assert.equal(recorded.player.energy, 50)
+  assert.equal(recorded.energy_cost, 50)
   assert.deepEqual(await rpc(sql, [other, request]), recorded)
   const snippet = await rpc('select record_snippet_atomic($1,10,$2) result', [other, id()])
-  assert.equal(snippet.player.energy, 70)
+  assert.equal(snippet.player.energy, 40)
   const sellRequest = id()
   const sold = await rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [other, recorded.beat.id, sellRequest])
   assert.equal(sold.coins_earned, 26)
   assert.deepEqual(await rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [other, recorded.beat.id, sellRequest]), sold)
   await assert.rejects(rpc('select release_recorded_beat_atomic($1,$2,$3) result', [other, recorded.beat.id, id()]), /BEAT_ALREADY_PROCESSED/)
   await assert.rejects(rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [player, recorded.beat.id, id()]), /BEAT_NOT_FOUND/)
+  await db.query('update players set energy=49,energy_updated_at=clock_timestamp() where id=$1',[other])
+  await assert.rejects(rpc(sql,[other,id()]), /NO_ENERGY/)
+  assert.equal(await rpc('select energy result from players where id=$1',[other]),49)
 })
 
 test('Beatmaker collection keeps fractional coin progress between requests', async () => {
@@ -146,4 +150,17 @@ test('pack rarity settings act on categories and prefer unowned cards within tha
   for (const role of ['anon','authenticated']) {
     assert.equal(await rpc("select has_table_privilege($1,'game_balance','update') result",[role]),false)
   }
+})
+
+test('beat history paginates beyond 100 per owner, including equal creation timestamps', async () => {
+  const owner=id()
+  await db.query('insert into players(id,telegram_id) values($1,95)',[owner])
+  await db.query(`insert into player_recorded_beats(player_id,genre,bpm,musical_key,scale,pattern,quality_score,score_breakdown,created_at)
+    select $1,'trap',140,0,'minor','{}',80,'{}','2026-11-05T12:00:00Z'::timestamptz from generate_series(1,105)`,[owner])
+  const first=(await db.query('select id,created_at from player_recorded_beats where player_id=$1 order by created_at desc,id desc limit 100',[owner])).rows
+  const last=first.at(-1)
+  const rest=(await db.query('select id from player_recorded_beats where player_id=$1 and (created_at<$2 or (created_at=$2 and id<$3)) order by created_at desc,id desc limit 100',[owner,last.created_at,last.id])).rows
+  assert.equal(first.length,100)
+  assert.equal(rest.length,5)
+  assert.equal(new Set([...first,...rest].map(b=>b.id)).size,105)
 })
