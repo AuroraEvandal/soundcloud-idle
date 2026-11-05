@@ -1,61 +1,33 @@
-import { db } from './common.ts'
+import { db, rpcError } from './common.ts'
 
 // Числа согласованы в docs/api.md «Экономика» и docs/game-design.md раздел 8.
 export const ENERGY_MAX = 100
-export const ENERGY_REGEN_MS = 3000
 export const HYPE_MAX = 20
-export const MAX_TAPS_PER_REQUEST = 200
 
-// income_pct / popularity_pct / charisma: купленное оборудование + надетая одежда.
+// Доход: оборудование + одежда + активный питомец; остальные бонусы без питомца.
 export async function bonusPct(playerId: string) {
-  const [equipment, outfit] = await Promise.all([
+  const [equipment, outfit, pet] = await Promise.all([
     db.from('player_equipment').select('item:equipment_id(bonus_type,bonus_value)').eq('player_id', playerId),
     db.from('player_outfit').select('item:clothing_id(bonus_type,bonus_value)').eq('player_id', playerId),
+    db.rpc('pet_income_pct', { p_player_id: playerId }),
   ])
   if (equipment.error) throw equipment.error
   if (outfit.error) throw outfit.error
+  rpcError(pet.error)
   const sum = (type: string) =>
     [...(equipment.data || []), ...(outfit.data || [])].reduce((n, row: any) => {
       const b = row.item
       return b?.bonus_type === type ? n + Number(b.bonus_value) : n
     }, 0)
-  return { income_pct: sum('income_pct'), popularity_pct: sum('popularity_pct'), charisma: sum('charisma') }
+  return { income_pct: sum('income_pct') + Number(pet.data), popularity_pct: sum('popularity_pct'), charisma: sum('charisma') }
 }
 
 // Энергия восстанавливается временем на сервере (+1 за 3 с, максимум 100).
 // Пока запас полон, «перелив» не копим — просто фиксируем момент.
 export async function refreshEnergy(player: Record<string, any>) {
-  const now = Date.now()
-  const last = new Date(player.energy_updated_at).getTime()
-  if (Number(player.energy) >= ENERGY_MAX) {
-    if (last > now - ENERGY_REGEN_MS) return player
-    const upd = await db.from('players')
-      .update({ energy_updated_at: new Date(now).toISOString() })
-      .eq('id', player.id).select('*').single()
-    if (upd.error) throw upd.error
-    return upd.data
-  }
-  const gain = Math.floor((now - last) / ENERGY_REGEN_MS)
-  if (gain <= 0) return player
-  const energy = Math.min(ENERGY_MAX, Number(player.energy) + gain)
-  const upd = await db.from('players')
-    .update({
-      energy,
-      // запас стал полным — точка отсчёта сбрасывается на сейчас, иначе частично
-      energy_updated_at: new Date(energy >= ENERGY_MAX ? now : last + gain * ENERGY_REGEN_MS).toISOString(),
-    })
-    .eq('id', player.id).select('*').single()
-  if (upd.error) throw upd.error
-  return upd.data
-}
-
-// Один релиз сниппета. Множитель от популярности упирается в ×3 (после 400 фанатов),
-// прирост фанатов за релиз — не больше +25 (docs/api.md, record-snippet).
-export function releaseRewards(baseStreams: number, popularity: number, incomePct: number, popularityPct: number) {
-  const streams = Math.round(baseStreams * (1 + Math.min(popularity, 400) / 200) * (1 + incomePct / 100))
-  const coins = Math.round(streams / 10)
-  const popularity_change = Math.min(25, Math.max(1, Math.round((streams / 100) * (1 + popularityPct / 100))))
-  return { streams, coins, popularity_change }
+  const { data, error } = await db.rpc('refresh_studio_energy', { p_player_id: player.id })
+  rpcError(error)
+  return data
 }
 
 // Вид студии для ответов get-studio / record-snippet / select-beat / buy-beat.

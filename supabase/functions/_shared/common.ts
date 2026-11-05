@@ -110,6 +110,8 @@ export async function handle(req: Request, action: (body: Record<string, unknown
       'CARD_POOL_TOO_SMALL', 'JUDGE_UNAVAILABLE', 'INVALID_REQUEST_ID', 'INVALID_REQUEST',
       'OPPONENT_NOT_FOUND', 'THEMES_NOT_CONFIGURED', 'INVALID_ROUND_RESULT', 'BATTLE_IN_PROGRESS',
       'NOT_ENOUGH_COINS', 'ALREADY_OWNED', 'ITEM_NOT_FOUND', 'NOT_OWNED', 'NO_ENERGY',
+      'MINI_GAME_REQUIRED', 'MINI_GAME_NOT_STARTED', 'INVALID_MINI_GAME_ACTION',
+      'CASE_COOLDOWN', 'PAYMENT_UNAVAILABLE', 'ORDER_NOT_FOUND',
     ])
     const safeCode = known.has(code) ? code : 'INTERNAL'
     const status = error instanceof GameError ? error.status : safeCode === 'INTERNAL' ? 500 : 400

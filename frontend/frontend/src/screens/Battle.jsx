@@ -8,6 +8,7 @@ import Arena from '../components/Arena'
 import CardView from '../components/CardView'
 import ErrorBox from '../components/ErrorBox'
 import Icon from '../components/Icon'
+import InterRoundMiniGame from '../components/InterRoundMiniGame'
 import { opponentDisplayName } from '../displayNames'
 import { opponentArt } from '../opponentArt'
 import { victoryTelegramMessages } from '../telegramMessages'
@@ -41,13 +42,14 @@ function Lines({ title, side }) {
         ))}
       </div>
       <div className="res-points">{side.points} очков</div>
+      {side.penalty_points > 0 && <div className="battle-penalty">{side.base_points} − {side.penalty_points} за мини-игру</div>}
     </div>
   )
 }
 
 export default function Battle() {
-  const { nick, player, profile, refreshProfile, relogin, addTelegramMessages } = useGame()
-  // list | build | judging | result | final
+  const { nick, player, profile, refreshProfile, refreshPets, relogin, addTelegramMessages } = useGame()
+  // list | build | judging | result | mini | final
   const [phase, setPhase] = useState('list')
   const [battle, setBattle] = useState(null)
   const [round, setRound] = useState(null)
@@ -61,6 +63,7 @@ export default function Battle() {
   const [note, setNote] = useState('')
   const [chapterOpen, setChapterOpen] = useState(false)
   const [look, setLook] = useState({})
+  const [penalty, setPenalty] = useState(0)
   const busyRef = useRef(false)
   const announcedWins = useRef(new Set())
 
@@ -108,6 +111,10 @@ export default function Battle() {
     // Восстановление запускается один раз при создании экрана.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (phase === 'result' && result?.battle?.status === 'finished') refreshPets().catch(() => {})
+  }, [phase, result, refreshPets])
 
   useEffect(() => {
     if (phase !== 'result' || result?.next_round || result?.battle?.result !== 'win') return
@@ -191,6 +198,7 @@ export default function Battle() {
       setPicks(EMPTY)
       setActive('setup')
       setResult(null)
+      setPenalty(0)
       if (r.last_result) {
         setRound(r.last_result.round)
         setResult(r.last_result)
@@ -244,7 +252,7 @@ export default function Battle() {
       setPicks(EMPTY)
       setActive('setup')
       setResult(null)
-      setPhase('build')
+      setPhase('mini')
     } else {
       clearBattleId()
       setPhase('final')
@@ -260,6 +268,7 @@ export default function Battle() {
         <div className="muted small-t">
           Открыто: {unlocked} из {profile?.opponents?.length || 0}
         </div>
+        {profile?.stats?.battles_played === 0 && <div className="story-battle-note"><b>ГЛАВА 01 / ПЕРВЫЙ ВЫЗОВ</b><span>3гот2010 увидел твой TikTok. Пора ответить строчками — выбери его ниже.</span></div>}
         {note && <div className="note">{note}</div>}
         {restoring && <div className="note">Восстанавливаю незавершённый батл…</div>}
         <ErrorBox message={error?.message} onRetry={error?.retry} onHome={() => setError(null)} />
@@ -319,7 +328,7 @@ export default function Battle() {
   const score = { p: sb?.player_rounds_won ?? 0, o: sb?.opponent_rounds_won ?? 0 }
 
   return (
-    <div className="battle">
+    <div className={`battle${phase === 'mini' ? ' battle-mini' : ''}`}>
       <Arena
         playerName={nick}
         opponentName={opponentDisplayName(battle?.opponent)}
@@ -340,8 +349,18 @@ export default function Battle() {
           </span>
         </div>
 
+        {phase === 'mini' && <InterRoundMiniGame key={`${battle.id}:${round.number}`}
+          battleId={battle.id} roundNumber={round.number}
+          onRecover={(info) => {
+            if (info.code === 'INVALID_INIT_DATA' || info.action === 'relogin') relogin()
+            else if (info.code === 'BATTLE_NOT_FOUND') toList()
+            else restoreBattle(battle.id)
+          }}
+          onComplete={(penaltyPoints) => { setPenalty(penaltyPoints); setPhase('build') }} />}
+
         {(phase === 'build' || phase === 'judging') && (
           <>
+            {penalty > 0 && <div className="battle-penalty">Концентрация потеряна: −{penalty} к очкам этого раунда</div>}
             <div className="slots">
               {SLOTS.map(([s, label]) => (
                 <button
@@ -387,6 +406,7 @@ export default function Battle() {
               {result.round.winner === 'draw' && 'Ничья в раунде'}
             </div>
             <Lines title={nick} side={result.round.player} />
+            {result.round.mini_game && <div className="battle-penalty" role="log">{result.round.mini_game.message}</div>}
             {result.round.player.comment && <div className="comment">Судья: {result.round.player.comment}</div>}
             <Lines title={opponentDisplayName(battle?.opponent)} side={result.round.opponent} />
             <button className="btn cta" onClick={next}>

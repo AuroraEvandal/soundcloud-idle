@@ -1,0 +1,67 @@
+.mini-game { background: #080808; border: 1px solid var(--line); padding: 20px; border-radius: 16px; margin: 12px 0; outline: none; }
+.mini-eyebrow, .mini-clock, .mini-heading > span, .mini-footer { font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: .09em; color: var(--text2); }
+.mini-eyebrow { color: var(--accent); }
+.mini-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
+.mini-heading h2 { font-size: 24px; letter-spacing: -.7px; margin: 0; }
+.mini-heading > span { white-space: nowrap; font-size: 9px; }
+.mini-help { color: var(--text2); font-size: 13px; line-height: 1.5; margin: 14px 0; }
+.mini-stakes { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.mini-stakes span { color: var(--text2); }
+.mini-clock { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 12px; }
+.mini-clock b { font-size: 18px; color: var(--text); letter-spacing: 0; }
+.mini-action { display: block; width: 100%; min-height: 48px; margin-top: 18px; touch-action: manipulation; font-weight: 800; letter-spacing: .06em; }
+.mini-action:disabled, .mini-options button:disabled { opacity: .5; }
+.mini-timer-track { height: 4px; background: #292929; overflow: hidden; }
+.mini-timer-track > div { background: var(--accent); height: 100%; transform-origin: left; }
+.mini-prompt { padding: 22px 0; min-height: 96px; font-size: 20px; font-weight: 700; line-height: 1.4; }
+.mini-options { display: grid; gap: 8px; min-height: 172px; }
+.mini-options button { display: flex; gap: 16px; align-items: center; text-align: left; padding: 14px; border: 1px solid var(--line); background: #151515; border-radius: 9px; min-height: 52px; touch-action: manipulation; }
+.mini-options button span { color: var(--accent); font: 12px ui-monospace, monospace; }
+.mini-options button:not(:disabled):active { background: #282828; }
+.mini-wave { position: relative; height: 150px; margin: 22px 4px; border-bottom: 1px solid #333; }
+.mini-peak-zone { position: absolute; width: 100%; height: 22%; border-block: 1px dashed #a53c09; background: #241005; }
+.mini-peak-zone span { position: absolute; right: 4px; top: 2px; font: 9px ui-monospace, monospace; color: var(--accent); }
+.mini-wave-bars { display: flex; gap: 3px; height: 100%; align-items: flex-end; }
+.mini-wave-bars i { flex: 1; background: var(--accent); transform-origin: bottom; border-radius: 2px 2px 0 0; }
+.mini-amplitude { position: absolute; inset: 0 auto 0 50%; width: 2px; background: #ffffff40; }
+.mini-amplitude i { display: block; position: absolute; left: -10px; width: 22px; height: 4px; background: white; box-shadow: 0 0 0 2px #080808; transform: translateY(-50%); }
+.mini-status { font-size: 12px; color: var(--text2); }
+.mini-outcome { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+.mini-outcome strong { display: block; font-size: 17px; }
+.mini-outcome p { font-size: 13px; color: var(--text2); }
+.mini-failed { border-color: var(--loss); }
+.mini-failed .mini-outcome strong { color: var(--loss); font-family: ui-monospace, Consolas, monospace; }
+.mini-error { color: var(--loss); font-size: 13px; }
+.mini-footer { margin-top: 20px; text-align: center; font-size: 9px; }
+.battle-mini .controls { overflow-y: auto; min-height: 0; }
+.battle-mini > .arena { display: none; }
+.battle-penalty { border-left: 2px solid var(--accent); padding: 8px 12px; font-size: 12px; color: var(--text2); margin-block: 10px; }
+@media (max-width: 360px) { .mini-game { padding: 16px; } .mini-heading > span { display: none; } }
+
+/* Timing console: waveform field, central lock and three visible stages. */
+.mini-rhythm { border-radius: 20px; background: #0b0b0d; }
+.mini-rhythm .mini-heading h2 { font-size: 27px; letter-spacing: -1px; }
+.rhythm-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 18px 0 14px; }
+.rhythm-steps > div { border: 1px solid #29292e; border-radius: 10px; padding: 10px 7px; color: #727278; background: #111114; }
+.rhythm-steps b { display: block; font: 24px/1 ui-monospace, monospace; margin-bottom: 8px; }
+.rhythm-steps span { font: 8px ui-monospace, monospace; letter-spacing: .04em; white-space: nowrap; }
+.rhythm-steps .is-current { border-color: var(--accent); color: var(--accent); background: #211209; }
+.rhythm-steps .is-hit { color: #72e099; border-color: #2d5b3a; background: #0c1c12; }
+.rhythm-deck { border: 1px solid #323238; background: #060607; border-radius: 14px; padding: 14px 16px 12px; overflow: hidden; }
+.rhythm-deck-label { display: flex; justify-content: space-between; font: 9px ui-monospace, monospace; letter-spacing: .12em; color: #77777e; }
+.rhythm-deck-label b { color: #dedee2; font-weight: 400; }
+.rhythm-field { position: relative; height: 152px; margin: 12px 4px 8px; }
+.rhythm-grid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; }
+.rhythm-grid i { width: 2px; background: #303036; border-radius: 2px; }
+.rhythm-target { position: absolute; left: 40%; width: 20%; inset-block: 5px; background: #21160d; border-inline: 1px solid #ff833d; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 9px 0; }
+.rhythm-target i { width: 12px; height: 3px; background: var(--accent); }
+.rhythm-target span { font: 9px ui-monospace, monospace; letter-spacing: .16em; color: #ff9a64; background: #21160d; z-index: 1; padding: 5px 0; }
+.rhythm-axis { position: absolute; top: 50%; width: 100%; border-top: 1px solid #505057; }
+.rhythm-playhead { position: absolute; height: 100%; top: 0; width: 2px; transform: translateX(-50%); background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+.rhythm-playhead i { display: block; width: 8px; height: 8px; background: white; transform: rotate(45deg); }
+.rhythm-playhead b { position: absolute; top: calc(50% - 6px); width: 12px; height: 12px; border: 2px solid white; background: #101012; border-radius: 50%; }
+.rhythm-ruler { display: flex; justify-content: space-between; font: 7px ui-monospace, monospace; letter-spacing: .06em; color: #626268; }
+.rhythm-ruler span:nth-child(2) { color: #ff8d50; }
+.rhythm-feedback { font: 9px/1.5 ui-monospace, monospace; letter-spacing: .05em; text-align: center; color: #b5b5bd; min-height: 30px; padding-top: 12px; }
+.mini-rhythm .mini-clock { margin-top: 8px; }
+.mini-rhythm .mini-action { border-radius: 12px; min-height: 54px; }

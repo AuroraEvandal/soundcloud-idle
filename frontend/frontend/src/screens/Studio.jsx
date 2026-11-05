@@ -8,11 +8,12 @@ import Tabs from '../components/Tabs'
 import Icon from '../components/Icon'
 import ProgressBar from '../components/ProgressBar'
 import ErrorBox from '../components/ErrorBox'
+import PetCompanion from '../components/PetCompanion'
 
 const ICONS = { 1: 'headphones', 2: 'mic', 3: 'box', 4: 'headphones' }
 
 export default function Studio({ onClose }) {
-  const { player, setPlayer, notify } = useGame()
+  const { player, setPlayer, notify, refreshPets } = useGame()
   const [tab, setTab] = useState('rec')
   const [studio, setStudio] = useState(null)
   const [error, setError] = useState(null)
@@ -68,6 +69,7 @@ export default function Studio({ onClose }) {
       setPlayer(r.player)
       const released = r.released || []
       if (released.length) {
+        refreshPets().catch(() => {})
         setReleases((current) => [...current, ...released])
         released.forEach((s) => notify(`Сниппет вышел: +${s.streams} прослушиваний, +₽${s.coins}`))
       }
@@ -86,7 +88,7 @@ export default function Studio({ onClose }) {
         timer.current = setTimeout(() => { timer.current = null; flush() }, 0)
       }
     }
-  }, [load, notify, setPlayer])
+  }, [load, notify, setPlayer, refreshPets])
 
   useEffect(
     () => () => {
@@ -157,7 +159,7 @@ export default function Studio({ onClose }) {
       />
       <div className="app-body scroll">
         <div className="pad">
-          <ErrorBox message={error?.message} onRetry={error?.action === 'retry' ? load : null} onHome={() => setError(null)} />
+          <ErrorBox message={error?.message} onRetry={error?.action === 'retry' ? () => { load(); flush() } : null} onHome={() => setError(null)} />
         </div>
         {!studio && !error && <div className="center-fill muted">Загрузка…</div>}
         {studio && tab === 'rec' && (
@@ -176,6 +178,7 @@ export default function Studio({ onClose }) {
               <Icon name="mic" size={96} color="#fff" stroke={1.6} />
             </button>
             <div className="studio-sub">ТАПАЙ ЧТОБЫ НАБРАТЬ ХАЙП</div>
+            <PetCompanion pose={tap ? 'music' : studio.energy <= 0 ? 'sleep' : releases.length ? 'happy' : 'idle'} />
             <div className="meter">
               <div className="row-between small-t">
                 <span>Хайп</span>

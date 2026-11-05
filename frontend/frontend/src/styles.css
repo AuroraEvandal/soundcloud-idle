@@ -48,6 +48,7 @@ button:disabled {
 
 /* ---------- Оболочка телефона ---------- */
 .stage {
+  height: 100vh;
   height: 100dvh;
   display: flex;
   justify-content: center;
@@ -58,6 +59,7 @@ button:disabled {
   position: relative;
   width: 100%;
   max-width: 430px;
+  height: 100vh;
   height: 100dvh;
   max-height: 932px;
   background: var(--bg);
