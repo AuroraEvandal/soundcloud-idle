@@ -14,7 +14,7 @@ export default function Telegram({ onClose }) {
   const endRef = useRef(null)
 
   useEffect(() => setUnread(0), [setUnread])
-  useEffect(() => endRef.current?.scrollIntoView?.({ block: 'end' }), [telegramMessages, open])
+  useEffect(() => { endRef.current?.scrollIntoView?.({ block: 'end' }) }, [telegramMessages, open])
 
   const preview = (c) => {
     const l = telegramMessages[c.id] || []
@@ -32,10 +32,10 @@ export default function Telegram({ onClose }) {
 
   if (open) {
     return (
-      <div className="app">
+      <div className="app messenger-app">
         <AppBar onBack={() => setOpen(null)} bg="var(--bar)">
           <span className="chat-head">
-            <Avatar name={open.name} color={open.color} size={30} />
+            <Avatar name={open.name} color="var(--bar)" size={36} />
             {open.name}
           </span>
         </AppBar>
@@ -79,24 +79,17 @@ export default function Telegram({ onClose }) {
   }
 
   return (
-    <div className="app">
-      <header className="appbar tg-bar">
-        <button className="appbar-btn" onClick={onClose} aria-label="Назад">
-          <Icon name="back" />
-        </button>
-        <div className="appbar-title">ЧАТЫ</div>
-        <div className="appbar-right">
-          <Icon name="compose" />
-        </div>
-      </header>
-      <div className="app-body scroll">
+    <div className="app messenger-app">
+      <AppBar title="Чаты" onBack={onClose} right={<span className="muted small-t">{CONTACTS.length} диалога</span>} />
+      <div className="app-body scroll chat-list">
         {CONTACTS.map((c) => (
           <button className="chat-item" key={c.id} onClick={() => setOpen(c)}>
-            <Avatar name={c.name} color={c.color} size={48} />
+            <Avatar name={c.name} color="var(--bar)" size={56} />
             <div className="chat-main">
               <div className="chat-name">{c.name}</div>
               <div className="chat-prev">{preview(c)}</div>
             </div>
+            <Icon name="back" size={16} />
           </button>
         ))}
       </div>

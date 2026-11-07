@@ -128,7 +128,7 @@ export default function Casino({ onClose }) {
   return <div className="app casino">
     <AppBar title="Казик" onBack={onClose} />
     <div className="app-body scroll casino-body">
-      <div className="casino-heading"><span>AFTER HOURS / PET COLLECTION</span><b>Кто будет<br />с тобой на сцене?</b><p>Питомцы, дружба и маленький бонус к доходу.</p></div>
+      <div className="casino-heading"><p>Кейсы, спутники и немного удачи.</p></div>
       <ErrorBox message={error?.message} onRetry={load} onHome={() => setError(null)} />
       {!cases && !error && <p className="muted">Загрузка кейсов…</p>}
       {order && <div className="case-pending" role="status">
@@ -147,7 +147,7 @@ export default function Casino({ onClose }) {
           <img src={(CASE_ART[item.id] || CASE_ART.free).image} alt="" /><span>{item.name}<small>{item.price_stars ? `${item.price_stars} ★` : 'Бесплатно'}</small></span>
         </button>)}
       </div>
-      {box && <div className="case-preview" style={{ '--case-accent': art.accent }}>
+      {box && <div className="case-preview" style={{ '--case-accent': 'var(--accent)' }}>
         <div className="case-hero"><span className="case-kicker">КОЛЛЕКЦИЯ СПУТНИКОВ</span><div className="case-art"><img src={art.image} alt={`Кейс ${box.name}`} /></div><h2>{box.name}</h2><p>{art.subtitle}</p><div className="case-price">{box.price_stars ? `${box.price_stars} ★` : 'Бесплатно'}<small>{box.price_stars ? 'Telegram Stars' : 'Раз в 24 часа'}</small></div></div>
         <p className="case-help">Шанс питомца — {(box.pet_chance * 100).toLocaleString('ru-RU', { maximumFractionDigits: 2 })}%. Все три питомца равновероятны. Если питомец не выпал — {box.fallback_coins} монет.</p>
         <div className="case-pets">{petCollection?.pets.map((pet) => <div key={pet.id}><PetArt pet={pet} /><span>{pet.name}</span></div>)}</div>

@@ -160,7 +160,7 @@ export default function App() {
   } else {
     body = (
       <>
-        <ResourceBar />
+        {screen !== 'home' && <ResourceBar />}
         <div className="viewport">
           {screen === 'home' ? (
             <Home onOpen={setScreen} unread={unread} />

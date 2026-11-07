@@ -3,7 +3,7 @@ import Waveform from '../components/Waveform'
 import ProgressBar from '../components/ProgressBar'
 import { isBossUnlocked, opponentDisplayName } from '../displayNames'
 
-const COVERS = ['#FF5500', '#0A84FF', '#30D158', '#AF52DE', '#FF9F0A']
+const COVERS = ['#ff5500', '#bd4000', '#72300f', '#39302b', '#242426']
 
 // Лента треков строится из последних батлов (recent_battles из get-profile).
 export default function Feed() {

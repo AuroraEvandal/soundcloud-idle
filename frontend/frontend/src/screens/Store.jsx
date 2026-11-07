@@ -92,7 +92,7 @@ export default function Store({ onClose }) {
   const owned = (wardrobe?.items || []).filter((i) => i.slot === slot)
 
   return (
-    <div className="app">
+    <div className="app store-app">
       <AppBar title="Магазин" onBack={onClose} />
       <Tabs
         tabs={[
@@ -146,7 +146,7 @@ export default function Store({ onClose }) {
         )}
 
         {shop && tab === 'catalog' && (
-          <div className="list">
+          <div className="catalog-grid">
             {shop.clothing.map((it) => (
               <ItemRow key={it.id} item={it}>
                 {it.owned ? (
