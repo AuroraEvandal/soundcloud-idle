@@ -434,6 +434,14 @@ function popFloor() {
   return Math.max(0, ...OPPONENTS.filter((o) => p >= o.required).map((o) => o.required))
 }
 
+// Только dev-мок: в обычной игре доступность целиком определяет сервер.
+function mockOpponentUnlocked(opponent) {
+  const previous = OPPONENTS.filter((o) => o.id < opponent.id).sort((a, b) => b.id - a.id)[0]
+  return db.player.popularity >= opponent.required && (!previous || Object.values(db.battles).some(
+    (battle) => battle.opp.id === previous.id && battle.status === 'finished' && battle.last_result?.battle?.result === 'win',
+  ))
+}
+
 function mockMiniView(game) {
   const { answer_id, ...view } = game
   return clone({ ...view, server_now: Date.now(),
@@ -471,7 +479,7 @@ const mock = {
       stats: clone(db.stats),
       recent_battles: clone(db.recent.slice(0, 5)),
       opponents: OPPONENTS.map((o) => {
-        const unlocked = db.player.popularity >= o.required
+        const unlocked = mockOpponentUnlocked(o)
         return {
           id: o.id,
           name: o.name,
@@ -563,7 +571,7 @@ const mock = {
     if (!db.player) throw new ApiError('PLAYER_NOT_FOUND')
     const opp = OPPONENTS.find((o) => o.id === opponentId)
     if (!opp) throw new ApiError('INTERNAL')
-    if (db.player.popularity < opp.required) throw new ApiError('OPPONENT_LOCKED')
+    if (!mockOpponentUnlocked(opp)) throw new ApiError('OPPONENT_LOCKED')
     // как сервер: для старта батла нужно минимум 4 рабочие карточки на каждый слот
     for (const slot of SLOT_CODES) {
       const usable = POOL.filter(
@@ -671,6 +679,7 @@ const mock = {
     db.stats[win ? 'wins' : 'losses'] += 1
     db.recent.unshift({
       id: b.id,
+      opponent_id: b.opp.id,
       opponent_name: b.opp.name,
       result: win ? 'win' : 'loss',
       created_at: new Date().toISOString(),

@@ -10,7 +10,7 @@ const TABLE = {
   INVALID_CARDS: ['Собери строчку из 4 карточек', 'stay'],
   CARD_NOT_OWNED: ['Такой карточки у тебя нет', 'resync'],
   CARD_BURNED: ['Карточка сгорела: лимит боёв исчерпан', 'resync'],
-  OPPONENT_LOCKED: ['Соперник откроется при N популярности', 'stay'],
+  OPPONENT_LOCKED: ['Набери нужное число фанатов и победи предыдущего соперника', 'stay'],
   IDEMPOTENCY_CONFLICT: ['Запрос уже использован для другого действия. Обнови игру', 'home'],
   CARD_POOL_TOO_SMALL: ['Для батла пока не хватает карточек в одном из слотов', 'home'],
   MINI_GAME_REQUIRED: ['Сначала пройди проверку концентрации', 'resync'],
@@ -54,7 +54,7 @@ export function errorInfo(err, extra = {}) {
   const code = TABLE[err?.code] ? err.code : 'INTERNAL'
   let [message, action] = TABLE[code]
   if (code === 'OPPONENT_LOCKED' && extra.required != null) {
-    message = `Соперник откроется при ${extra.required} популярности`
+    message = `Нужно ${extra.required} фанатов и победа над предыдущим соперником`
   }
   return { code, message, action }
 }

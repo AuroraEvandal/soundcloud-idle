@@ -284,6 +284,7 @@ export default function Battle() {
               <div className="opp-main">
                 <div className="opp-name">{opponentDisplayName(o, o.unlocked)}</div>
                 <div className="muted small-t">{o.location}</div>
+                {!o.unlocked && <div className="muted small-t">Нужно {o.required_popularity} фанатов и победа над предыдущим соперником</div>}
               </div>
               {o.unlocked ? (
                 <span className="btn small">В бой <Icon name="back" size={16} /></span>

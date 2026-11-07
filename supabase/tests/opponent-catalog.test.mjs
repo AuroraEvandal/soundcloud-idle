@@ -21,6 +21,48 @@ before(async () => {
 
 after(() => db.close())
 
+test('fans alone, a loss, a draw, an active win and another player win do not unlock the next opponent', async () => {
+  const newcomer = '00000000-0000-4000-8000-000000000072'
+  await db.query('insert into players(id,telegram_id,popularity) values($1,72,1000)', [newcomer])
+  await db.query('insert into player_cards(player_id,card_id) select $1,id from cards', [newcomer])
+  const unlocks = async () => (await db.query('select * from opponent_unlocks($1)', [newcomer])).rows
+  assert.deepEqual(await unlocks(), [1, 2, 3, 4, 5].map(id => ({ opponent_id: id, unlocked: id === 1 })))
+  for (const id of [2, 3, 4, 5]) {
+    await assert.rejects(db.query('select create_battle_atomic($1,$2,$3)',
+      [newcomer, id, crypto.randomUUID()]), /OPPONENT_LOCKED/)
+  }
+  const otherWin = (await db.query(`insert into battles(player_id,opponent_id,status,result)
+    values($1,1,'finished','win') returning id`, [player])).rows[0].id
+  assert.equal((await unlocks())[1].unlocked, false)
+  await db.query('delete from battles where id=$1', [otherWin])
+  for (const result of ['lose', 'draw']) {
+    await db.query(`insert into battles(player_id,opponent_id,status,result) values($1,1,'finished',$2)`, [newcomer, result])
+    assert.equal((await unlocks())[1].unlocked, false)
+    await assert.rejects(db.query('select create_battle_atomic($1,2,$2)',
+      [newcomer, crypto.randomUUID()]), /OPPONENT_LOCKED/)
+  }
+  const request = crypto.randomUUID()
+  const battle = (await db.query('select create_battle_atomic($1,1,$2) id', [newcomer, request])).rows[0].id
+  await db.query("update battles set result='win' where id=$1", [battle])
+  assert.equal((await unlocks())[1].unlocked, false)
+  await db.query("update battles set status='finished' where id=$1", [battle])
+  assert.equal((await unlocks())[1].unlocked, true)
+  assert.equal((await unlocks())[2].unlocked, false)
+  await db.query(`insert into battles(player_id,opponent_id,status,result) values($1,1,'finished','lose')`, [newcomer])
+  assert.equal((await unlocks())[1].unlocked, true)
+  await db.query('update players set popularity=29 where id=$1', [newcomer])
+  assert.equal((await unlocks())[1].unlocked, false)
+  await assert.rejects(db.query('select create_battle_atomic($1,2,$2)',
+    [newcomer, crypto.randomUUID()]), /OPPONENT_LOCKED/)
+  // Replaying an old request still returns the original battle.
+  assert.equal((await db.query('select create_battle_atomic($1,1,$2) id', [newcomer, request])).rows[0].id, battle)
+  await db.query('update players set popularity=30 where id=$1', [newcomer])
+  const nextRequest = crypto.randomUUID()
+  const next = (await db.query('select create_battle_atomic($1,2,$2) id', [newcomer, nextRequest])).rows[0].id
+  assert.equal((await db.query('select create_battle_atomic($1,2,$2) id', [newcomer, crypto.randomUUID()])).rows[0].id, next)
+  await db.query('delete from players where id=$1', [newcomer])
+})
+
 test('all five opponents are present and the real battle RPC enforces each fan threshold', async () => {
   const { rows } = await db.query(`select o.id,o.level,l.name,l.required_popularity
     from opponents o join locations l on l.id=o.location_id order by o.id`)
@@ -39,7 +81,7 @@ test('all five opponents are present and the real battle RPC enforces each fan t
     const started = await db.query('select create_battle_atomic($1,$2,$3) id', [player, opponent, crypto.randomUUID()])
     const battleId = started.rows[0].id
     assert.equal((await db.query('select opponent_id from battles where id=$1', [battleId])).rows[0].opponent_id, opponent)
-    await db.query("update battles set status='finished' where id=$1", [battleId])
+    await db.query("update battles set status='finished',result='win' where id=$1", [battleId])
   }
 })
 
@@ -72,4 +114,20 @@ test('replaying the catalog keeps existing opponents, players and battle history
   await db.exec(await readFile(catalog, 'utf8'))
   assert.deepEqual(await snapshot(), before)
   assert.equal((await db.query('select is_boss from opponents where id=5')).rows[0]?.is_boss, true)
+})
+
+test('unlock migration preserves wins on replay and its RPCs are server-only', async () => {
+  const state = async () => (await db.query('select * from opponent_unlocks($1)', [player])).rows
+  const before = await state()
+  await db.exec(await readFile(new URL('../migrations/20261107163027_require_previous_opponent_win.sql', import.meta.url), 'utf8'))
+  assert.deepEqual(await state(), before)
+  for (const role of ['anon', 'authenticated']) {
+    await db.exec(`set role ${role}`)
+    try {
+      await assert.rejects(db.query('select * from opponent_unlocks($1)', [player]), /permission denied/)
+      await assert.rejects(db.query('select create_battle_atomic($1,1,$2)', [player, crypto.randomUUID()]), /permission denied/)
+    } finally {
+      await db.exec('reset role')
+    }
+  }
 })

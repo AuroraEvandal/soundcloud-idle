@@ -37,6 +37,17 @@ test('opponent selection uses the original opponent sprite and display name', ()
   assert.match(html, /\/opponents\/3got2010.png/)
 })
 
+test('a server-locked opponent shows both requirements even with enough fans', () => {
+  const saved = ctx.profile
+  ctx.profile = { ...saved, opponents: [...saved.opponents,
+    { id: 2, name: 'Лёха Бит', level: 2, location: 'Двор', unlocked: false, required_popularity: 30 }] }
+  try {
+    const html = render(battle)
+    assert.match(html, /Нужно 30 фанатов и победа над предыдущим соперником/)
+    assert.match(html, /class="opp locked"/)
+  } finally { ctx.profile = saved }
+})
+
 test('profile retains original player and pet art, progression and companion actions', () => {
   const html = render(profile)
   assert.match(html, /\/player\/freshman.png/)
