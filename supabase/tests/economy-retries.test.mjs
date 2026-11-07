@@ -311,3 +311,110 @@ test('pre-update recordings and saved responses survive the migration', async ()
   assert.equal(await rpc('select energy result from players where id=$1',[owner]),100)
   assert.equal(await rpc('select name result from player_recorded_beats where id=$1',[beat]),'Без названия')
 })
+
+
+test('premium pack costs 500, retries once, and a poor player keeps coins and inventory', async () => {
+  await db.exec('begin');
+  try {
+    await db.query('update packs set clothing_chance=0 where id=2');
+    await db.query('update players set coins=500 where id=$1',[other]);
+    await db.query('delete from player_cards where player_id=$1',[other]);
+    const request=id();
+    const drop=await open(request,2,other);
+    assert.equal(drop.duplicate,false);
+    assert.equal(await balance(other),0);
+    assert.deepEqual(await open(request,2,other),drop);
+    await db.exec('savepoint insufficient_coins');
+    await assert.rejects(open(id(),2,other),/NOT_ENOUGH_COINS/);
+    await db.exec('rollback to savepoint insufficient_coins');
+    assert.equal(await balance(other),0);
+    assert.equal(await rpc('select count(*)::int result from player_cards where player_id=$1',[other]),1);
+    await db.exec('savepoint conflicting_pack');
+    await assert.rejects(open(request,1,other),/IDEMPOTENCY_CONFLICT/);
+    await db.exec('rollback to savepoint conflicting_pack');
+  } finally { await db.exec('rollback'); }
+});
+
+test('premium weights produce 40/40/20 independently of global settings; basic still uses global weights', async () => {
+  await db.exec('begin');
+  try {
+    const {rows}=await db.query('select id,price,common_weight,rare_weight,epic_weight from packs where id in (1,2) order by id');
+    assert.deepEqual(rows.map(r=>[r.id,r.price,...[r.common_weight,r.rare_weight,r.epic_weight].map(v=>v===null?null:Number(v))]),[[1,200,null,null,null],[2,500,40,40,20]]);
+    await db.query('update packs set clothing_chance=0 where id in (1,2)');
+    await db.query('update game_balance set common_weight=100,rare_weight=0,epic_weight=0');
+    await db.query('update players set coins=2000000 where id=$1',[other]);
+    await db.exec('select setseed(0.42)');
+    const counts={common:0,rare:0,epic:0};
+    for(let i=0;i<1200;i++) {
+      const drop=await open(id(),2,other);
+      const rarity=await rpc('select rarity result from cards where id=$1',[drop.card_id]);
+      counts[rarity]++;
+    }
+    for(const [r,chance] of Object.entries({common:0.4,rare:0.4,epic:0.2})) {
+      assert.ok(Math.abs(counts[r]/1200-chance)<0.05,JSON.stringify(counts));
+    }
+    const basic=await open(id(),1,other);
+    assert.equal(await rpc('select rarity result from cards where id=$1',[basic.card_id]),'common');
+    for(const set of ['common_weight=-1','common_weight=0,rare_weight=0,epic_weight=0','epic_weight=null']) {
+      await db.exec('savepoint invalid_weights');
+      await assert.rejects(db.exec('update packs set '+set+' where id=2'),/packs_rarity_weights_check/);
+      await db.exec('rollback to savepoint invalid_weights');
+    }
+  } finally { await db.exec('rollback'); }
+});
+
+
+test('each category pack charges 200 and draws only its slot across all rarities, with stable retries and duplicate refunds', async () => {
+  await db.exec('begin');
+  try {
+    for (const [pack,slot] of [[3,'setup'],[4,'development'],[5,'boost'],[6,'punch']]) {
+      assert.equal(await rpc('select price result from packs where id=$1',[pack]),200);
+      assert.equal(Number(await rpc('select clothing_chance result from packs where id=$1',[pack])),0);
+      for (const rarity of ['common','rare','epic']) {
+        await db.query('update game_balance set common_weight=$1,rare_weight=$2,epic_weight=$3',
+          [rarity==='common'?1:0,rarity==='rare'?1:0,rarity==='epic'?1:0]);
+        await db.query('delete from player_cards where player_id=$1',[other]);
+        await db.query('update players set coins=200,popularity=1000 where id=$1',[other]);
+        const request=id();
+        const drop=await open(request,pack,other);
+        assert.equal(drop.type,'card');
+        assert.equal(drop.duplicate,false);
+        assert.deepEqual((await db.query('select slot,rarity from cards where id=$1',[drop.card_id])).rows[0],{slot,rarity});
+        assert.equal(await balance(other),0);
+        assert.deepEqual(await open(request,pack,other),drop);
+        assert.equal(await balance(other),0);
+        await db.query('insert into player_cards(player_id,card_id,uses_left) select $1,id,0 from cards where slot=$2 on conflict(player_id,card_id) do update set uses_left=0',[other,slot]);
+        await db.query('update players set coins=200 where id=$1',[other]);
+        const dup=await open(id(),pack,other);
+        assert.equal(dup.duplicate,true);
+        assert.equal(dup.refund,Math.round(({common:20,rare:60,epic:150}[rarity])*1.1));
+        assert.equal(await balance(other),dup.refund);
+        assert.equal(await rpc('select uses_left result from player_cards where player_id=$1 and card_id=$2',[other,dup.card_id]),3);
+      }
+    }
+  } finally { await db.exec('rollback'); }
+});
+
+test('slot pack weights exclude unavailable rarities and an empty slot rolls back its charge', async () => {
+  await db.exec('begin');
+  try {
+    await db.query('update players set coins=1000 where id=$1',[other]);
+    await db.query("update cards set slot='boost' where slot='setup' and rarity='epic'");
+    await db.query('update game_balance set common_weight=1,rare_weight=0,epic_weight=1000000');
+    const drop=await open(id(),3,other);
+    assert.deepEqual((await db.query('select slot,rarity from cards where id=$1',[drop.card_id])).rows[0],{slot:'setup',rarity:'common'});
+    await db.query("update cards set slot='boost' where slot='setup'");
+    const coins=await balance(other);
+    const request=id();
+    await db.exec('savepoint empty_slot');
+    await assert.rejects(open(request,3,other),/ITEM_NOT_FOUND/);
+    await db.exec('rollback to savepoint empty_slot');
+    assert.equal(await balance(other),coins);
+    assert.equal(await rpc('select count(*)::int result from pack_requests where player_id=$1 and request_id=$2',[other,request]),0);
+    for (const change of ["card_slot='unknown'",'clothing_chance=0.07']) {
+      await db.exec('savepoint invalid_slot');
+      await assert.rejects(db.exec('update packs set '+change+' where id=3'),/packs_(card_slot|slot_clothing)_check/);
+      await db.exec('rollback to savepoint invalid_slot');
+    }
+  } finally { await db.exec('rollback'); }
+});

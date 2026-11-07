@@ -128,18 +128,27 @@ select setval(pg_get_serial_sequence('public.equipment', 'id'), greatest((select
 
 -- =====================================================
 -- ПАКИ (v0.2). clothing_chance — шанс, что вместо карточки выпадет одежда.
--- Редкость карточки и возврат за дубликат зашиты в функции open-pack:
--- common 70 / rare 24 / epic 6, возврат 20 / 60 / 150.
+-- Базовый пак: game_balance (70/24/6), премиальный: собственные веса.
+-- Возврат за дубликат: 20 / 60 / 150.
 -- =====================================================
-with starter(id, name, price, clothing_chance) as (values
-  (1, 'Базовый пак', 200, 0.07)
+with starter(id, name, price, clothing_chance, common_weight, rare_weight, epic_weight, card_slot) as (values
+  (1, 'Базовый пак', 200, 0.07, null::numeric, null::numeric, null::numeric, null::text),
+  (2, 'Премиальный пак', 500, 0.07, 40, 40, 20, null),
+  (3, 'Пак «Завязка»', 200, 0, null, null, null, 'setup'),
+  (4, 'Пак «Развитие»', 200, 0, null, null, null, 'development'),
+  (5, 'Пак «Усиление»', 200, 0, null, null, null, 'boost'),
+  (6, 'Пак «Панч»', 200, 0, null, null, null, 'punch')
 )
-insert into public.packs (id, name, price, clothing_chance)
-select id, name, price, clothing_chance from starter
+insert into public.packs (id, name, price, clothing_chance, common_weight, rare_weight, epic_weight, card_slot)
+select id, name, price, clothing_chance, common_weight, rare_weight, epic_weight, card_slot from starter
 on conflict (id) do update set
   name = excluded.name,
   price = excluded.price,
-  clothing_chance = excluded.clothing_chance;
+  clothing_chance = excluded.clothing_chance,
+  common_weight = excluded.common_weight,
+  rare_weight = excluded.rare_weight,
+  epic_weight = excluded.epic_weight,
+  card_slot = excluded.card_slot;
 
 select setval(pg_get_serial_sequence('public.packs', 'id'), greatest((select max(id) from public.packs), 1), true);
 

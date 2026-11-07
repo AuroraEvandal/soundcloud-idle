@@ -71,9 +71,42 @@ function dropView(drop) {
     : { label: clothingDisplayName(drop.item), rarity: drop.item.rarity }
 }
 
+function PackOdds({ pack, onClose }) {
+  const dialog = useRef(null)
+  useEffect(() => {
+    const node = dialog.current
+    node.showModal()
+    return () => node.close()
+  }, [])
+  const percent = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 })
+  return (
+    <dialog ref={dialog} className="pack-odds" aria-labelledby="pack-odds-title" onClose={onClose}
+      onClick={(e) => { if (e.target === e.currentTarget) dialog.current.close() }}>
+      <section className="pack-odds-content">
+        <div className="pack-odds-handle" aria-hidden="true" />
+        <h2 id="pack-odds-title">Шансы выпадения</h2>
+        <p className="muted">{pack.name}</p>
+        {pack.drop_chances ? (
+          <>
+            <dl className="pack-odds-list">
+              {[['common', 'Обычная карточка'], ['rare', 'Редкая карточка'], ['epic', 'Эпическая карточка'], ['clothing', 'Одежда']].map(([key, label]) => (
+                <div key={key}><dt>{label}</dt><dd>{percent.format(pack.drop_chances[key])}%</dd></div>
+              ))}
+            </dl>
+            <p className="muted small-t">Шанс на одно открытие, включая дубликаты. Уже полученная одежда не выпадает. Каждое открытие независимо.</p>
+          </>
+        ) : <p className="muted">Шансы временно недоступны. Переоткрой вкладку «Паки».</p>}
+        <button className="btn wide" onClick={() => dialog.current.close()}>Понятно</button>
+      </section>
+    </dialog>
+  )
+}
+
 function Packs() {
   const { player, setPlayer } = useGame()
   const [packs, setPacks] = useState([])
+  const [selectedPackId, setSelectedPackId] = useState(null)
+  const [oddsPack, setOddsPack] = useState(null)
   const [error, setError] = useState(null)
   const [spin, setSpin] = useState(false)
   const [opening, setOpening] = useState(false)
@@ -82,7 +115,7 @@ function Packs() {
   const [result, setResult] = useState(null)
   const box = useRef(null)
   const openingRef = useRef(false)
-  const pack = packs[0]
+  const pack = packs.find((p) => p.id === selectedPackId) || packs[0]
 
   useEffect(() => {
     getShop()
@@ -99,6 +132,9 @@ function Packs() {
     try {
       const r = await openPack(pack.id)
       setPlayer(r.player)
+      getShop().then((shop) => setPacks(shop.packs)).catch(() => {
+        setPacks((current) => current.map((p) => ({ ...p, drop_chances: null })))
+      })
       setDrop(r.drop)
       setSpin(true)
       setGo(false)
@@ -124,6 +160,23 @@ function Packs() {
   return (
     <div className="packs">
       <ErrorBox message={error?.message} onHome={() => setError(null)} />
+      <div className="pack-options" role="group" aria-label="Выбор пака">
+        {packs.map((p) => (
+          <div key={p.id} className={`pack-option${pack?.id === p.id ? ' selected' : ''}`}>
+          <button
+            className={`btn wide${pack?.id === p.id ? '' : ' ghost'}`}
+            aria-pressed={pack?.id === p.id}
+            disabled={opening || spin}
+            onClick={() => { setSelectedPackId(p.id); setResult(null); setError(null) }}
+          >
+            {p.name} · ₽{p.price}
+          </button>
+          {p.description && <p className="pack-description muted small-t">{p.description}</p>}
+          <button className="pack-odds-trigger" onClick={() => setOddsPack(p)}>Шансы выпадения</button>
+          </div>
+        ))}
+      </div>
+      {oddsPack && <PackOdds pack={oddsPack} onClose={() => setOddsPack(null)} />}
       {spin ? (
         <div className="roulette" ref={box} aria-label="Открываем пак">
           <div

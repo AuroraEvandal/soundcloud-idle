@@ -434,6 +434,14 @@ function popFloor() {
   return Math.max(0, ...OPPONENTS.filter((o) => p >= o.required).map((o) => o.required))
 }
 
+// Только dev-мок: в обычной игре доступность целиком определяет сервер.
+function mockOpponentUnlocked(opponent) {
+  const previous = OPPONENTS.filter((o) => o.id < opponent.id).sort((a, b) => b.id - a.id)[0]
+  return db.player.popularity >= opponent.required && (!previous || Object.values(db.battles).some(
+    (battle) => battle.opp.id === previous.id && battle.status === 'finished' && battle.last_result?.battle?.result === 'win',
+  ))
+}
+
 function mockMiniView(game) {
   const { answer_id, ...view } = game
   return clone({ ...view, server_now: Date.now(),
@@ -471,7 +479,7 @@ const mock = {
       stats: clone(db.stats),
       recent_battles: clone(db.recent.slice(0, 5)),
       opponents: OPPONENTS.map((o) => {
-        const unlocked = db.player.popularity >= o.required
+        const unlocked = mockOpponentUnlocked(o)
         return {
           id: o.id,
           name: o.name,
@@ -563,7 +571,7 @@ const mock = {
     if (!db.player) throw new ApiError('PLAYER_NOT_FOUND')
     const opp = OPPONENTS.find((o) => o.id === opponentId)
     if (!opp) throw new ApiError('INTERNAL')
-    if (db.player.popularity < opp.required) throw new ApiError('OPPONENT_LOCKED')
+    if (!mockOpponentUnlocked(opp)) throw new ApiError('OPPONENT_LOCKED')
     // как сервер: для старта батла нужно минимум 4 рабочие карточки на каждый слот
     for (const slot of SLOT_CODES) {
       const usable = POOL.filter(
@@ -671,6 +679,7 @@ const mock = {
     db.stats[win ? 'wins' : 'losses'] += 1
     db.recent.unshift({
       id: b.id,
+      opponent_id: b.opp.id,
       opponent_name: b.opp.name,
       result: win ? 'win' : 'loss',
       created_at: new Date().toISOString(),
@@ -852,7 +861,18 @@ const mock2 = {
       player: clone(db.player),
       equipment: EQUIPMENT.map(eqView),
       clothing: CLOTHING.filter((c) => c.price != null).map(clView),
-      packs: PACKS.map((p) => ({ id: p.id, name: p.name, price: p.price })),
+      packs: PACKS.map((p) => {
+        const slotNames = { setup: 'завязка', development: 'развитие', boost: 'усиление', punch: 'панч' }
+        const pool = POOL.filter((c) => !p.card_slot || c.slot === p.card_slot)
+        const weights = Object.fromEntries(Object.entries(p.rarity_weights || RARITY_W)
+          .map(([r, w]) => [r, pool.some((c) => c.card.rarity === r) ? w : 0]))
+        const total = Object.values(weights).reduce((a, b) => a + b, 0)
+        const clothing = !p.card_slot && CLOTHING.some((c) => !db.studio.clothing.includes(c.id)) ? p.clothing_chance * 100 : 0
+        return { id: p.id, name: p.name, price: p.price,
+          description: p.description || `Только карточка слота «${slotNames[p.card_slot]}». Без одежды.`,
+          drop_chances: total ? { ...Object.fromEntries(Object.entries(weights).map(([r, w]) => [r, (100 - clothing) * w / total])), clothing } : null,
+        }
+      }),
     }
   },
 
@@ -897,6 +917,8 @@ const mock2 = {
     need()
     const pack = PACKS.find((p) => p.id === packId)
     if (!pack) throw new ApiError('ITEM_NOT_FOUND')
+    const pool = POOL.filter((p) => !pack.card_slot || p.slot === pack.card_slot)
+    if (!pool.length) throw new ApiError('ITEM_NOT_FOUND')
     const st = db.studio
     if (db.player.coins < pack.price) throw new ApiError('NOT_ENOUGH_COINS')
     db.player.coins -= pack.price
@@ -908,21 +930,25 @@ const mock2 = {
       st.clothing.push(c.id)
       drop = { type: 'clothing', item: clView(c), duplicate: false, refund: 0 }
     } else {
-      const fresh = POOL.filter((p) => !st.cards.has(p.card.id))
-      const cand = fresh.length ? fresh : POOL
-      const total = cand.reduce((n, p) => n + RARITY_W[p.card.rarity], 0)
+      const weights = pack.rarity_weights || RARITY_W
+      const categories = Object.keys(weights).filter((r) => weights[r] > 0 && pool.some((p) => p.card.rarity === r))
+      const total = categories.reduce((n, r) => n + weights[r], 0)
       let roll = Math.random() * total
-      let pick = cand[0]
-      for (const p of cand) {
-        roll -= RARITY_W[p.card.rarity]
+      let rarity = categories[0]
+      for (const r of categories) {
+        roll -= weights[r]
         if (roll <= 0) {
-          pick = p
+          rarity = r
           break
         }
       }
+      const category = pool.filter((p) => p.card.rarity === rarity)
+      const fresh = category.filter((p) => !st.cards.has(p.card.id))
+      const cand = fresh.length ? fresh : category
+      const pick = cand[rndInt(0, cand.length - 1)]
       const duplicate = st.cards.has(pick.card.id)
       const refund = duplicate ? DUP_REFUND[pick.card.rarity] : 0
-      if (!duplicate) st.uses[pick.card.id] = 3
+      st.uses[pick.card.id] = 3
       st.cards.add(pick.card.id)
       db.player.coins += refund
       drop = { type: 'card', card: { ...withUses(pick.card), slot: pick.slot }, duplicate, refund }

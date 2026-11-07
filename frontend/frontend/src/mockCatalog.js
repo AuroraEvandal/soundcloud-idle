@@ -50,7 +50,17 @@ export const CLOTHING = [
     description: 'Шарф с бахромой. Выпадает только из паков.', bonus: { type: 'income_pct', value: 8 } },
 ]
 
-export const PACKS = [{ id: 1, name: 'Базовый пак', price: 200, clothing_chance: 0.07 }]
+export const PACKS = [
+  { id: 1, name: 'Базовый пак', price: 200, clothing_chance: 0.07,
+    description: 'Карточка любого слота или предмет одежды. Для пополнения колоды.' },
+  { id: 2, name: 'Премиальный пак', price: 500, clothing_chance: 0.07,
+    rarity_weights: { common: 40, rare: 40, epic: 20 },
+    description: 'Карточка любого слота с повышенным шансом редкой и эпической. Может выпасть одежда.' },
+  { id: 3, name: 'Пак «Завязка»', price: 200, clothing_chance: 0, card_slot: 'setup' },
+  { id: 4, name: 'Пак «Развитие»', price: 200, clothing_chance: 0, card_slot: 'development' },
+  { id: 5, name: 'Пак «Усиление»', price: 200, clothing_chance: 0, card_slot: 'boost' },
+  { id: 6, name: 'Пак «Панч»', price: 200, clothing_chance: 0, card_slot: 'punch' },
+]
 
 // Стартовая колода игрока (id карточек). Остальные карточки добываются в паках.
 export const START_CARD_IDS = [
