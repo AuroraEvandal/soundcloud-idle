@@ -263,7 +263,7 @@ export default function Battle() {
   // ---------- Выбор соперника ----------
   if (phase === 'list') {
     return (
-      <div className="pad scroll">
+      <div className="pad scroll opponent-selection">
         <h2 className="h2">Выбери соперника</h2>
         <div className="muted small-t">
           Открыто: {unlocked} из {profile?.opponents?.length || 0}
@@ -272,7 +272,7 @@ export default function Battle() {
         {note && <div className="note">{note}</div>}
         {restoring && <div className="note">Восстанавливаю незавершённый батл…</div>}
         <ErrorBox message={error?.message} onRetry={error?.retry} onHome={() => setError(null)} />
-        <div className="list">
+        <div className="list opponent-list">
           {(profile?.opponents || []).map((o) => (
             <button
               key={o.id}
@@ -280,13 +280,13 @@ export default function Battle() {
               onClick={() => begin(o)}
               disabled={busy || restoring}
             >
-              <div className="opp-lvl">{o.level}</div>
+              <div className="opp-portrait">{opponentArt(o.id) && <img src={opponentArt(o.id)} alt="" />}<span className="opp-lvl">{o.level}</span></div>
               <div className="opp-main">
                 <div className="opp-name">{opponentDisplayName(o, o.unlocked)}</div>
                 <div className="muted small-t">{o.location}</div>
               </div>
               {o.unlocked ? (
-                <span className="btn small">В БОЙ</span>
+                <span className="btn small">В бой <Icon name="back" size={16} /></span>
               ) : (
                 <span className="opp-lock">
                   <Icon name="lock" size={18} />

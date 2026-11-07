@@ -101,7 +101,7 @@ export default function Studio({ onClose }) {
         {!studio && !error && <div className="center-fill muted">Загрузка…</div>}
         {studio && tab === 'rec' && (
           <div className="studio-rec">
-            <div className="studio-title">ЗАПИСЬ СНИППЕТА</div>
+            <div className="studio-title">Твой следующий сниппет</div>
             <button
               className={'mic' + (tap ? ' tap' : '')}
               onPointerDown={() => {
@@ -113,9 +113,9 @@ export default function Studio({ onClose }) {
               disabled={!recording.canTap || busy}
               aria-label="Микрофон: тапай, чтобы набрать хайп"
             >
-              <Icon name="mic" size={96} color="#fff" stroke={1.6} />
+              <Icon name="mic" size={84} stroke={1.8} />
             </button>
-            <div className="studio-sub" role="status">{releasing ? 'ВЫПУСКАЕМ СНИППЕТ…' : 'ТАПАЙ ЧТОБЫ НАБРАТЬ ХАЙП'}</div>
+            <div className="studio-sub" role="status">{releasing ? 'Выпускаем сниппет…' : 'Тапай, чтобы набрать хайп'}</div>
             <PetCompanion pose={tap ? 'music' : studio.energy <= 0 ? 'sleep' : releases.length ? 'happy' : 'idle'} />
             <div className="meter">
               <div className="row-between small-t">

@@ -1,5 +1,5 @@
-.mini-game { background: #080808; border: 1px solid var(--line); padding: 20px; border-radius: 16px; margin: 12px 0; outline: none; }
-.mini-eyebrow, .mini-clock, .mini-heading > span, .mini-footer { font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: .09em; color: var(--text2); }
+.mini-game { background: #080808; border: 1px solid var(--line); padding: 20px; border-radius: 26px; margin: 12px 0; outline: none; }
+.mini-eyebrow, .mini-clock, .mini-heading > span, .mini-footer { font: 11px/1.5 var(--font); font-variant-numeric: tabular-nums; letter-spacing: .09em; color: var(--text2); }
 .mini-eyebrow { color: var(--accent); }
 .mini-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
 .mini-heading h2 { font-size: 24px; letter-spacing: -.7px; margin: 0; }
@@ -15,7 +15,7 @@
 .mini-timer-track > div { background: var(--accent); height: 100%; transform-origin: left; }
 .mini-prompt { padding: 22px 0; min-height: 96px; font-size: 20px; font-weight: 700; line-height: 1.4; }
 .mini-options { display: grid; gap: 8px; min-height: 172px; }
-.mini-options button { display: flex; gap: 16px; align-items: center; text-align: left; padding: 14px; border: 1px solid var(--line); background: #151515; border-radius: 9px; min-height: 52px; touch-action: manipulation; }
+.mini-options button { display: flex; gap: 16px; align-items: center; text-align: left; padding: 14px; border: 1px solid var(--line); background: #151515; border-radius: 18px; min-height: 52px; touch-action: manipulation; }
 .mini-options button span { color: var(--accent); font: 12px ui-monospace, monospace; }
 .mini-options button:not(:disabled):active { background: #282828; }
 .mini-wave { position: relative; height: 150px; margin: 22px 4px; border-bottom: 1px solid #333; }

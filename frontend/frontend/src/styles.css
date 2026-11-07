@@ -1,18 +1,18 @@
 /* Все цвета и отступы в одном месте: дизайнеру достаточно поменять переменные. */
 :root {
-  --bg: #000000;
-  --card: #121212;
-  --bar: #181818;
+  --bg: #080809;
+  --card: #1c1c1e;
+  --bar: #242426;
   --line: #2a2a2a;
-  --text: #ffffff;
-  --text2: #a0a0a0;
+  --text: #f5f5f7;
+  --text2: #a1a1a6;
   --accent: #ff5500;
   --win: #30d158;
   --loss: #ff453a;
-  --rare: #0a84ff;
-  --epic: #bf5af2;
+  --rare: #ff9a66;
+  --epic: #ffc4a6;
   --gap: 12px;
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', sans-serif;
 }
 
 * {
@@ -28,6 +28,8 @@ body,
   color: var(--text);
   font-family: var(--font);
   font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
   overflow: hidden;
 }
 button {
@@ -110,7 +112,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: width 0.25s steps(5), height 0.25s steps(5);
+  transition: width 0.25s ease, height 0.25s ease;
 }
 .island.open {
   width: 250px;
@@ -130,13 +132,11 @@ button:disabled {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  height: 30px;
-  margin: 2px auto 6px;
-  padding: 0 14px;
-  background: var(--bg);
-  border: 1px solid var(--bar);
-  border-radius: 15px;
-  font-size: 13px;
+  min-height: 30px;
+  margin: 2px 16px 4px;
+  padding: 4px 8px;
+  color: var(--text2);
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -163,39 +163,46 @@ button:disabled {
 
 /* ---------- Рабочий стол ---------- */
 .home {
+  position: relative;
+  isolation: isolate;
   flex: 1;
-  padding: 8px 16px 0;
-  overflow-y: auto;
+  min-height: 0;
+  padding: 16px 20px 32px;
 }
 .home-hello {
-  color: var(--text2);
-  font-size: 13px;
-  text-align: center;
-  margin-bottom: 18px;
+  margin: 4px 0 20px;
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 100px;
-  gap: 4px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  row-gap: 24px;
+  column-gap: 8px;
+  margin-top: 28px;
 }
 .appicon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
   min-height: 44px;
 }
 .appicon-sq {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 16px;
-  border: 1px solid transparent;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border-radius: 25%;
+  background: linear-gradient(145deg, #323235, #202022);
+  color: var(--accent);
+  box-shadow: inset 0 1px 1px #ffffff12, 0 4px 12px #0003;
+  transition: transform .18s ease;
 }
 .appicon-label {
+  max-width: 100%;
   font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -.02em;
 }
 .badge {
   position: absolute;
@@ -204,7 +211,7 @@ button:disabled {
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
-  border-radius: 10px;
+  border-radius: 20px;
   background: var(--loss);
   color: #fff;
   font-size: 12px;
@@ -212,14 +219,16 @@ button:disabled {
   text-align: center;
 }
 .dock {
+  position: relative;
   flex: none;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  margin: 0 12px;
-  padding: 12px 8px;
-  background: var(--bar);
-  border-radius: 28px;
+  margin: 0 12px 4px;
+  padding: 18px 8px;
+  background: #242426ed;
+  border: 1px solid #ffffff08;
+  border-radius: 34px;
 }
 
 /* ---------- Общие элементы ---------- */
@@ -231,7 +240,7 @@ button:disabled {
   background: var(--bg);
 }
 .app.sw {
-  background: var(--card);
+  background: var(--bg);
 }
 .app-body {
   flex: 1;
@@ -249,30 +258,42 @@ button:disabled {
 .appbar {
   flex: none;
   display: grid;
-  grid-template-columns: 56px 1fr 56px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  height: 48px;
+  padding: 0 20px 12px;
+  gap: 2px 12px;
 }
 .appbar-btn {
-  width: 56px;
-  height: 48px;
+  justify-self: start;
+  min-height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 2px;
+  color: var(--accent);
+  font-size: 15px;
 }
 .appbar-title {
-  text-align: center;
-  font-weight: 600;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.16;
+  font-weight: 750;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
 }
 .appbar-right {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-end;
 }
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 700;
+  gap: 10px;
 }
 .tg-bar {
   background: var(--bg);
@@ -280,43 +301,54 @@ button:disabled {
 .tabs {
   flex: none;
   display: flex;
-  border-bottom: 1px solid var(--line);
+  gap: 4px;
+  margin: 0 16px 12px;
+  padding: 4px;
+  background: var(--card);
+  border-radius: 24px;
 }
 .tab {
   flex: 1;
-  height: 44px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 4px;
   color: var(--text2);
+  font-size: 13px;
   font-weight: 600;
-  border-bottom: 2px solid transparent;
+  border-radius: 20px;
+  transition: background .18s ease;
 }
 .tab.active {
-  color: var(--text);
-  border-color: var(--accent);
+  color: #180900;
+  background: var(--accent);
 }
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 48px;
-  padding: 0 20px;
+  padding: 10px 20px;
   background: var(--accent);
-  color: #fff;
+  color: #180900;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  border-radius: 10px;
+  letter-spacing: -.015em;
+  border-radius: 24px;
+  text-align: center;
 }
 .btn:disabled {
   background: var(--bar);
   color: #5a5a5a;
 }
 .btn.small {
-  min-height: 36px;
-  padding: 0 14px;
-  font-size: 13px;
-  border-radius: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 12px;
+  border-radius: 22px;
 }
 .btn.dark {
   background: var(--bar);
+  color: var(--text);
 }
 .btn.ghost {
   background: transparent;
@@ -327,12 +359,12 @@ button:disabled {
 }
 .input {
   width: 100%;
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 48px;
+  padding: 0 16px;
   background: var(--bar);
   color: var(--text);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 24px;
   font: inherit;
   font-size: 16px;
 }
@@ -347,26 +379,27 @@ button:disabled {
   font-size: 13px;
 }
 .h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
+  margin: 4px 0 6px;
+  font-size: 24px;
+  letter-spacing: -.035em;
 }
 .section {
-  margin: 14px 0 8px;
-  color: var(--text2);
-  font-size: 13px;
-  font-weight: 600;
+  margin: 24px 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.025em;
 }
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 12px;
+  margin-top: 16px;
 }
 .row,
 .panel {
   background: var(--card);
-  border-radius: 12px;
-  padding: 12px 14px;
+  padding: 16px;
+  border-radius: 24px;
 }
 .row.bar,
 .row {
@@ -380,14 +413,16 @@ button:disabled {
 }
 .row-main {
   flex: 1;
+  min-width: 0;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 .price {
   color: var(--text2);
 }
 .panel {
-  background: var(--bar);
-  margin-bottom: 12px;
+  background: var(--card);
+  margin-bottom: 16px;
 }
 .row-between {
   display: flex;
@@ -436,17 +471,19 @@ button:disabled {
   justify-content: center;
   border-radius: 50%;
   font-weight: 700;
-  color: #fff;
+  color: var(--text);
 }
 .pbar {
   width: 100%;
-  background: var(--line);
-  border-radius: 3px;
+  background: #3a3a3d;
+  border-radius: 8px;
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .pbar-fill {
   height: 100%;
+  border-radius: inherit;
+  transition: width .2s ease;
 }
 .loader {
   width: 28px;
@@ -481,7 +518,7 @@ button:disabled {
   padding: 12px 14px;
   background: var(--bar);
   border-left: 3px solid var(--loss);
-  border-radius: 6px;
+  border-radius: 14px;
 }
 .errbox-actions {
   display: flex;
@@ -493,9 +530,9 @@ button:disabled {
 .track {
   display: flex;
   gap: 12px;
-  padding: 10px;
-  background: var(--bg);
-  border-radius: 10px;
+  padding: 14px;
+  background: var(--card);
+  border-radius: 24px;
 }
 .cover {
   flex: none;
@@ -532,28 +569,29 @@ button:disabled {
 
 /* ---------- SoundWave: батл ---------- */
 .opp {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 10px 12px;
-  background: var(--bg);
-  border-radius: 10px;
+  gap: 14px;
+  min-height: 112px;
+  padding: 16px;
+  background: var(--card);
+  border-radius: 26px;
   text-align: left;
+  overflow: hidden;
 }
 .opp.locked {
   opacity: 0.7;
 }
 .opp-lvl {
   flex: none;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: var(--bar);
+  border-radius: 50%;
+  font-size: 11px;
   font-weight: 700;
 }
 .opp-main {
@@ -561,7 +599,10 @@ button:disabled {
   min-width: 0;
 }
 .opp-name {
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
 }
 .opp-lock {
   display: flex;
@@ -578,7 +619,7 @@ button:disabled {
   padding: 14px;
   color: var(--text);
   background: var(--card);
-  border-radius: 10px;
+  border-radius: 20px;
   line-height: 1.5;
 }
 .battle {
@@ -781,15 +822,17 @@ button:disabled {
   gap: 6px;
 }
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
   width: 100%;
-  min-height: 48px;
-  padding: 8px 12px;
+  min-height: 56px;
+  padding: 14px;
   background: var(--card);
+  border: 1px solid #ffffff0d;
   border-left: 3px solid var(--text2);
-  border-radius: 6px;
+  border-radius: 18px;
   text-align: left;
 }
 .card.compact {
@@ -811,8 +854,10 @@ button:disabled {
 }
 .card-meta {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   font-size: 11px;
+  line-height: 1.4;
   color: var(--text2);
 }
 .card-bonus {
@@ -874,7 +919,7 @@ button:disabled {
 }
 .res-side {
   background: var(--card);
-  border-radius: 10px;
+  border-radius: 20px;
   padding: 10px 12px;
 }
 .res-title {
@@ -897,7 +942,7 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   background: var(--bar);
-  border-radius: 6px;
+  border-radius: 14px;
   padding: 4px;
   font-size: 11px;
   color: var(--text2);
@@ -940,30 +985,37 @@ button:disabled {
 
 /* ---------- Студия ---------- */
 .studio-rec {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 16px;
+  gap: 20px;
+  margin: 0 16px 24px;
+  padding: 28px 20px;
+  background: var(--card);
+  border-radius: 30px;
+  text-align: center;
 }
 .studio-title,
 .studio-sub {
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: -.025em;
 }
 .studio-sub {
   font-size: 13px;
 }
 .mic {
-  width: 170px;
-  height: 170px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 164px;
+  height: 164px;
+  display: grid;
+  place-items: center;
   border-radius: 50%;
-  background: var(--card);
+  background: var(--accent);
+  color: #180900;
+  outline: 3px solid #ff550030;
+  outline-offset: 7px;
+  margin: 12px 0;
+  touch-action: manipulation;
+  transition: transform .12s ease;
 }
 .mic.tap {
   transform: scale(0.94);
@@ -988,7 +1040,8 @@ button:disabled {
   background: var(--card);
   border: 1px solid var(--line);
   text-align: center;
-  animation: release-card-in 0.38s steps(5) both;
+  border-radius: 30px;
+  animation: release-card-in 0.3s ease-out both;
 }
 .release-art {
   position: relative;
@@ -1069,6 +1122,7 @@ button:disabled {
   gap: 3px;
   padding: 10px 4px;
   background: var(--bar);
+  border-radius: 16px;
 }
 .release-stats b {
   color: var(--text);
@@ -1101,13 +1155,15 @@ button:disabled {
 /* ---------- Колода и паки ---------- */
 .packs {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 20px;
-  padding: 16px;
+  padding: 24px 16px;
 }
+.packs > * { flex-shrink: 0; }
 .lootbox {
   position: relative;
   width: 160px;
@@ -1146,7 +1202,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   background: var(--bar);
-  border-radius: 6px;
+  border-radius: 14px;
   padding: 6px;
   font-size: 11px;
   line-height: 1.25;
@@ -1176,17 +1232,23 @@ button:disabled {
 .chat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  min-height: 68px;
-  padding: 10px 16px;
+  min-height: 96px;
+  padding: 16px;
+  border-radius: 26px;
+  background: var(--card);
   text-align: left;
 }
 .chat-main {
+  flex: 1;
   min-width: 0;
 }
 .chat-name {
-  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -.02em;
 }
 .chat-prev {
   color: var(--text2);
@@ -1207,21 +1269,22 @@ button:disabled {
   justify-content: flex-start;
 }
 .bubble {
-  max-width: 78%;
-  padding: 8px 12px;
-  line-height: 1.35;
-  border-radius: 0;
-  word-break: break-word;
+  max-width: 86%;
+  padding: 14px 16px;
+  line-height: 1.5;
+  border-radius: 22px;
+  overflow-wrap: anywhere;
 }
 .bubble.them {
   align-self: flex-start;
-  background: var(--bar);
-  border-top-left-radius: 16px;
+  background: var(--card);
+  border-bottom-left-radius: 6px;
 }
 .bubble.me {
   align-self: flex-end;
   background: var(--accent);
-  border-top-right-radius: 16px;
+  color: #180900;
+  border-bottom-right-radius: 6px;
 }
 .telegram-poster {
   margin-top: 10px;
@@ -1355,42 +1418,55 @@ button:disabled {
   margin-bottom: 16px;
 }
 .profile-name {
-  font-size: 22px;
-  font-weight: 700;
+  max-width: 100%;
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
 }
 .career {
-  color: var(--text2);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-.skills {
-  display: flex;
-  justify-content: space-around;
-}
-.skill {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  color: var(--text2);
+  font-size: 13px;
+}
+.skills {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.skill {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 12px;
 }
 .skill-track {
-  width: 18px;
-  height: 100px;
-  background: var(--line);
-  display: flex;
-  align-items: flex-end;
+  grid-column: 2;
+  grid-row: 1;
+  height: 8px;
+  background: #3a3a3d;
+  border-radius: 8px;
+  overflow: hidden;
 }
 .skill-fill {
-  width: 100%;
-  background: #fff;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
 }
 .skill-val {
+  grid-column: 3;
+  grid-row: 1;
+  text-align: right;
   font-weight: 700;
 }
 .skill-label {
-  font-size: 12px;
-  color: var(--text2);
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 13px;
+  color: var(--text);
 }
 .stats {
   display: flex;
@@ -1488,7 +1564,7 @@ button:disabled {
 }
 .rarity-row {
   border-left: 3px solid var(--text2);
-  border-radius: 6px;
+  border-radius: 14px;
 }
 .rarity-row.rarity-rare {
   border-left-color: var(--rare);
@@ -1496,3 +1572,107 @@ button:disabled {
 .rarity-row.rarity-epic {
   border-left-color: var(--epic);
 }
+
+/* Домашний экран и единые детали нового оформления. */
+.home-hello h1 { margin: 0; font-size: 32px; line-height: 1.12; font-weight: 750; letter-spacing: -.045em; overflow-wrap: anywhere; }
+.home-hello p { margin: 10px 0 0; font-size: 14px; color: var(--text2); }
+.home-resources { padding: 20px; border-radius: 28px; background: linear-gradient(120deg, #242426, #1b1b1d); }
+.home-resources strong { font-size: 32px; letter-spacing: -.04em; }
+.level-pill { display: inline-block; flex: none; padding: 7px 12px; border-radius: 20px; color: var(--accent); background: #ff55001a; font-size: 12px; font-weight: 650; }
+.home-resource-detail { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 18px; color: var(--text2); font-size: 11px; }
+.home-resource-detail b { color: var(--text); font-size: 14px; }
+.home-wallpaper { position: absolute; z-index: -1; left: 0; right: 0; bottom: -32px; height: 48%; min-height: 150px; display: flex; justify-content: center; align-items: center; gap: 10px; overflow: hidden; pointer-events: none; opacity: .6; }
+.home-wallpaper i { flex: 1; max-width: 32px; border-radius: 40px; background: linear-gradient(#242426, #121213); }
+.appicon-sq.accent { color: #180900; background: linear-gradient(145deg, #ff742e, #ff5500); }
+.appicon:active .appicon-sq { transform: scale(.92); }
+button, a, input, select { touch-action: manipulation; }
+button:disabled { cursor: default; }
+.section-heading { font-size: 22px; font-weight: 700; letter-spacing: -.035em; margin: 24px 0 12px; }
+.scroll { scrollbar-width: thin; scrollbar-color: #3a3a3d transparent; }
+.cover { border-radius: 18px; }
+.opp-portrait { position: relative; flex: none; width: 72px; height: 88px; border-radius: 22px; background: #ffffff05; }
+.opp-portrait img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; image-rendering: pixelated; }
+.opp-portrait .opp-lvl { position: absolute; bottom: -3px; right: -3px; background: var(--bar); }
+.opp .btn svg, .chat-item > svg { transform: rotate(180deg); flex: none; }
+.opp.locked .opp-portrait img { filter: brightness(0); opacity: .45; }
+.opp-lock { font-size: 12px; }
+.chapter-announcement { min-height: 88px; border-color: var(--line); }
+.chapter-announcement .opp-name { font-size: 16px; }
+.opponent-selection { padding-bottom: 24px; }
+.deck-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.deck-grid .card { min-height: 180px; margin: 0; padding: 16px; justify-content: space-between; border-radius: 24px; background: linear-gradient(145deg, #28282b, #1c1c1e); }
+.deck-grid .card-text { font-size: 18px; font-weight: 650; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.deck-grid .card-meta { gap: 6px; }
+.card-rarity { font-weight: 600; }
+.deck-grid .card-rarity { flex-basis: 100%; }
+.deck-grid .card-uses { margin-left: 0; }
+.deck-collection { padding-bottom: 24px; }
+.studio-title { font-size: 20px; }
+.studio-app .meter { text-align: left; }
+.studio-app .app-body > .pad:empty { padding: 0; }
+.mic:disabled { opacity: .5; }
+.chat-list { padding: 8px 16px 24px; gap: 12px; }
+.chat { padding: 16px; gap: 12px; }
+.chat-head { font-size: 20px; letter-spacing: -.02em; }
+.inputbar { background: var(--bg); }
+.inputbar .icon-btn { flex: none; background: var(--accent); color: #180900; border-radius: 50%; }
+.stats b { font-size: 28px; letter-spacing: -.035em; }
+.eq { border-radius: 18px; min-height: 52px; }
+.mannequin { border-radius: 28px; background: radial-gradient(ellipse, #ff55000c, transparent 70%); }
+.catalog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 4px 0 16px; }
+.catalog-grid .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 4px; padding: 14px; border-radius: 26px; align-content: start; align-items: center; border-left-width: 0; background: var(--card); }
+.catalog-grid .thumb { grid-column: 1 / -1; width: 100%; height: 140px; padding: 8px; border-radius: 18px; background: #ffffff04; }
+.catalog-grid .row-main { grid-column: 1 / -1; align-self: start; font-size: 16px; letter-spacing: -.025em; }
+.catalog-grid .row-main .small-t { font-size: 11px; font-weight: 400; line-height: 1.45; margin-top: 6px; }
+.catalog-grid .price { color: var(--text); font-size: 14px; font-weight: 700; }
+.catalog-grid .btn.small { min-height: 44px; padding: 6px 10px; font-size: 10px; }
+.rarity-row { border-radius: 20px; }
+.empty { background: var(--card); border-radius: 24px; padding: 24px; }
+@media (max-width: 350px) {
+  .home { padding-inline: 16px; }
+  .home-hello h1 { font-size: 28px; }
+  .home-resources { padding: 16px; }
+  .home-resources strong { font-size: 28px; }
+  .home .appicon-sq { width: 56px !important; height: 56px !important; }
+  .home .appicon-sq svg { width: 32px; height: 32px; }
+  .appbar { padding-inline: 16px; }
+  .appbar-title { font-size: 30px; }
+  .opp { gap: 10px; padding: 12px; }
+  .opp-name { font-size: 16px; }
+  .opp-portrait { width: 56px; height: 76px; }
+  .opp .btn.small { padding-inline: 10px; }
+  .deck-grid { gap: 8px; }
+  .deck-grid .card { padding: 12px; }
+  .deck-grid .card-text { font-size: 16px; }
+  .catalog-grid { gap: 8px; }
+  .catalog-grid .row { padding: 10px; }
+  .catalog-grid .btn.small { grid-column: 1 / -1; width: 100%; }
+}
+@media (max-height: 650px) {
+  .appbar { padding-bottom: 8px; }
+  .appbar-btn { min-height: 36px; }
+  .appbar-title { font-size: 26px; }
+  .home { padding-top: 8px; }
+  .home-hello { margin-bottom: 12px; }
+  .home-hello h1 { font-size: 26px; }
+  .home-resources { padding: 14px 16px; }
+  .home-resources strong { font-size: 26px; }
+  .grid { margin-top: 20px; row-gap: 18px; }
+  .dock { padding-block: 12px; }
+}
+
+.opponent-list > .opp:first-child { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 14px; padding: 20px; background: linear-gradient(130deg, #292323, #1c1c1e); }
+.opponent-list > .opp:first-child .opp-portrait { grid-column: 2; grid-row: 1; width: 112px; height: 152px; background: none; }
+.opponent-list > .opp:first-child .opp-main { grid-column: 1; grid-row: 1; }
+.opponent-list > .opp:first-child .opp-name { font-size: 26px; margin-bottom: 10px; }
+.opponent-list > .opp:first-child > .btn { grid-column: 1 / -1; font-size: 15px; }
+@media (max-width: 350px) {
+  .opponent-list > .opp:first-child { grid-template-columns: minmax(0, 1fr) 90px; padding: 18px; }
+  .opponent-list > .opp:first-child .opp-portrait { width: 90px; height: 136px; }
+  .opponent-list > .opp:first-child .opp-name { font-size: 23px; }
+}
+
+/* Во время батла оставляем больше места для выбора карточек. */
+.sw:has(.battle) > .appbar { display: flex; min-height: 44px; padding-block: 0; }
+.sw:has(.battle) .appbar-title { font-size: 22px; margin-left: 12px; }
+.sw:has(.battle) .appbar-right { display: none; }

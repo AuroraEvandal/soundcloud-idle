@@ -1,27 +1,3 @@
-.studio-app > .tabs {
-  gap: 4px;
-  margin: 4px 16px 12px;
-  padding: 4px;
-  border: 1px solid #282828;
-  border-radius: 12px;
-  background: #111;
-}
-
-.studio-app > .tabs .tab {
-  min-width: 0;
-  height: 44px;
-  border: 0;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.studio-app > .tabs .tab.active {
-  background: #2b241f;
-  color: #ffb181;
-  box-shadow: inset 0 0 0 1px #58402e;
-}
-
 .studio-app > .scroll {
   scrollbar-width: thin;
   scrollbar-color: #424242 transparent;
@@ -68,14 +44,14 @@
 .bm-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
 .bm-settings label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #c1beb8; font-size: 12px; }
 .bm-settings label > span { margin-left: auto; color: var(--bm-muted); font-size: 11px; }
-.bm select, .bm input { min-width: 0; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #3c3b38; border-radius: 8px; background: #20201f; color: var(--bm-text); font: inherit; font-size: 16px; color-scheme: dark; }
+.bm select, .bm input { min-width: 0; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #3c3b38; border-radius: 16px; background: #20201f; color: var(--bm-text); font: inherit; font-size: 16px; color-scheme: dark; }
 .bm input { font-variant-numeric: tabular-nums; }
 .bm select:disabled, .bm input:disabled { opacity: .55; }
 
 .bm-sequence > .bm-section-heading { margin-bottom: 8px; }
 .bm-sequence-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 12px 0 8px; }
-.bm-bars { display: flex; gap: 4px; padding: 0; border-radius: 8px; background: #090909; }
-.bm-bars button { min-width: 76px; min-height: 44px; padding: 0 12px; border-radius: 6px; color: var(--bm-muted); font-size: 12px; }
+.bm-bars { display: flex; gap: 4px; padding: 0; border-radius: 16px; background: #090909; }
+.bm-bars button { min-width: 76px; min-height: 44px; padding: 0 12px; border-radius: 18px; color: var(--bm-muted); font-size: 12px; }
 .bm-bars button[aria-pressed=true] { background: #33312e; color: #fff; box-shadow: inset 0 0 0 1px #514b43; }
 .bm-step-count { color: var(--bm-muted); font-size: 12px; white-space: nowrap; }
 .bm-scroll-hint { display: flex; justify-content: space-between; gap: 8px; color: var(--bm-muted); font-size: 11px; }
@@ -96,7 +72,7 @@
 .bm-lane-name small { display: block; margin-top: 4px; color: var(--bm-muted); font-size: 11px; }
 .bm-note { display: flex; align-items: center; gap: 8px; color: var(--bm-muted); font-size: 11px; }
 .bm-note select { width: 72px; padding: 0 8px; font-size: 13px; }
-.bm-grid button { position: relative; width: 44px; height: 44px; border: 1px solid #353431; border-radius: 6px; background: #222220; color: #9a9790; font-size: 12px; font-weight: 600; }
+.bm-grid button { position: relative; width: 44px; height: 44px; border: 1px solid #353431; border-radius: 18px; background: #222220; color: #9a9790; font-size: 12px; font-weight: 600; }
 .bm-grid button:nth-child(8n+5), .bm-grid button:nth-child(8n+6), .bm-grid button:nth-child(8n+7), .bm-grid button:nth-child(8n+8) { background: #2c2b28; }
 .bm-grid button.downbeat { border-left: 2px solid #81715f; }
 .bm-grid button.active { border-color: var(--lane); background: var(--lane); color: #1b1917; }
@@ -106,7 +82,7 @@
 .bm-edit-tools { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .bm-empty-pattern { margin-top: 12px !important; padding: 12px; border-left: 2px solid #bca68b; background: #25221e; color: #c9c1b6; font-size: 12px; }
 
-.bm-button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid #41403c; border-radius: 8px; background: #242321; color: var(--bm-text); font-size: 12px; font-weight: 600; }
+.bm-button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid #41403c; border-radius: 16px; background: #242321; color: var(--bm-text); font-size: 12px; font-weight: 600; }
 .bm-clear { border-color: transparent; background: transparent; color: var(--bm-muted); }
 .bm-transport { position: sticky; bottom: 0; z-index: 2; margin: 0 -16px; padding: 0 16px 12px; border-top: 1px solid #3c352e; background: #171613; box-shadow: 0 -8px 20px #0005; }
 .bm-energy { display: flex; align-items: center; justify-content: space-between; min-height: 44px; color: var(--bm-muted); font-size: 12px; }
@@ -117,11 +93,11 @@
 .bm-play, .bm-record { min-height: 56px; }
 .bm-play > span:last-child, .bm-record > span { display: grid; gap: 4px; }
 .bm-play small { color: var(--bm-muted); font-size: 11px; font-weight: 400; }
-.bm-record { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; border: 1px solid #ff995f; border-radius: 8px; background: #ff9257; color: #21150e; font-size: 13px; font-weight: 600; text-align: left; }
+.bm-record { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; border: 1px solid #ff995f; border-radius: 16px; background: #ff9257; color: #21150e; font-size: 13px; font-weight: 600; text-align: left; }
 .bm-record small { font-size: 11px; font-weight: 400; }
 .bm .bm-record:disabled { border-color: #46413a; background: #39352e; color: #c9c1b6; opacity: 1; }
 .bm-energy-hint { padding-top: 8px; color: #e4bd93; font-size: 12px; }
-.bm-listening { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px; border: 1px solid #52685f; border-radius: 12px; background: #1b2822; color: #c4e2d3; font-size: 12px; }
+.bm-listening { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px; border: 1px solid #52685f; border-radius: 18px; background: #1b2822; color: #c4e2d3; font-size: 12px; }
 .bm-listening > svg { flex: none; }
 .bm-listening > span { flex: 1; min-width: 160px; }
 .bm-listening > button { flex-basis: 100%; }
@@ -155,7 +131,7 @@
 .bm-score-track { height: 3px; margin-top: 8px; border-radius: 2px; background: #35322e; }
 .bm-score-track i { display: block; height: 100%; border-radius: inherit; background: #bca68b; }
 .bm-decisions { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--bm-border); }
-.bm-choice { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 64px; padding: 12px; border: 1px solid #474139; border-radius: 8px; background: #25221e; text-align: left; }
+.bm-choice { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 64px; padding: 12px; border: 1px solid #474139; border-radius: 16px; background: #25221e; text-align: left; }
 .bm-choice b { display: block; font-size: 13px; font-weight: 600; }
 .bm-choice small { display: block; margin-top: 4px; color: var(--bm-muted); font-size: 11px; line-height: 1.4; }
 .bm-choice > svg { flex: none; color: #ccb08f; }
@@ -174,7 +150,7 @@
 .bm-sale { display: flex; align-items: center; gap: 8px; margin-top: 16px !important; padding-top: 16px; border-top: 1px solid var(--bm-border); color: var(--bm-muted); font-size: 12px; }
 .bm-sale svg { color: #a5cbb5; }
 .bm-sale b { margin-left: auto; color: var(--bm-text); font-weight: 600; }
-.bm-empty { display: grid; justify-items: center; gap: 12px; margin-top: 16px; padding: 32px 12px; border: 1px dashed #474139; border-radius: 12px; text-align: center; color: #c7b39d; }
+.bm-empty { display: grid; justify-items: center; gap: 12px; margin-top: 16px; padding: 32px 12px; border: 1px dashed #474139; border-radius: 18px; text-align: center; color: #c7b39d; }
 .bm-empty b { color: var(--bm-text); font-size: 13px; font-weight: 600; }
 .bm-empty p { color: var(--bm-muted); font-size: 12px; }
 .bm-more { margin-top: 12px; }
@@ -197,5 +173,5 @@
 }
 
 .bm-name { display: grid; gap: 8px; margin-bottom: 16px; color: var(--bm-muted); font-size: 13px; }
-.bm-name input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--bm-border); border-radius: 8px; background: #211e1a; color: var(--bm-text); font: inherit; }
+.bm-name input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--bm-border); border-radius: 16px; background: #211e1a; color: var(--bm-text); font: inherit; }
 .bm-beat-heading h4 { overflow-wrap: anywhere; }

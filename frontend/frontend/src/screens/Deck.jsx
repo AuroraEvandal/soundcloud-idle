@@ -14,7 +14,7 @@ import { clothingDisplayName } from '../displayNames'
 export default function Deck({ onClose }) {
   const [tab, setTab] = useState('deck')
   return (
-    <div className="app">
+    <div className="app deck-app">
       <AppBar title="Колода" onBack={onClose} />
       <Tabs
         tabs={[
@@ -40,18 +40,20 @@ function DeckList() {
   if (error) return <div className="pad"><ErrorBox message={error.message} /></div>
   if (!cards) return <div className="pad muted">Загрузка…</div>
   return (
-    <div className="pad scroll">
-      <div className="muted small-t">Карточек: {cards.length}</div>
+    <div className="pad scroll deck-collection">
+      <div className="muted small-t">{cards.length} карточек для твоих батлов</div>
       {SLOTS.map(([s, label]) => (
         <div key={s}>
           <div className="section">
             {label} · {cards.filter((c) => c.slot === s).length}
           </div>
-          {cards
+          <div className="deck-grid">
+            {cards
             .filter((c) => c.slot === s)
             .map((c) => (
               <CardView key={c.id} card={c} compact />
             ))}
+          </div>
         </div>
       ))}
     </div>

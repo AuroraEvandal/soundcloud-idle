@@ -6,52 +6,52 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
-  background: #eeeee4;
-  color: #171a14;
+  background: var(--bg);
+  color: var(--text);
 }
-.header { padding: 12px 20px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; border-bottom: 1px solid #cccec2; }
+.header { padding: 12px 20px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand > b { font-size: 28px; letter-spacing: -3px; line-height: 1; }
 .brand > span { font: 8px/1.5 monospace; letter-spacing: .05em; }
 .header > button { font-size: 11px; min-height: 44px; }
 .progress { display: flex; gap: 5px; grid-column: 1 / -1; }
-.progress > span { height: 3px; flex: 1; background: #c6c9bc; }
-.progress > span[data-active=true] { background: #171a14; }
+.progress > span { height: 3px; flex: 1; background: var(--bar); }
+.progress > span[data-active=true] { background: var(--accent); }
 .body { min-height: 0; min-width: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; padding: 16px 20px 20px; }
-.frame { margin: 0; border: 1px solid #252b20; background: #171c16; color: #f4f4e8; }
+.frame { margin: 0; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); background: var(--card); color: var(--text); }
 .sceneBar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #ffffff24; font: 8px/1.5 monospace; letter-spacing: .05em; }
-.sceneBar > b { color: #d4ff3f; font-size: 14px; }
+.sceneBar > b { color: var(--accent); font-size: 14px; }
 /* Только декорации внутри picture используют абсолютные координаты. */
-.picture { position: relative; isolation: isolate; overflow: hidden; height: 260px; height: clamp(200px, 34vh, 300px); background: radial-gradient(ellipse at 50% 65%, #55693b 0%, transparent 65%), repeating-linear-gradient(0deg, #ffffff04 0 1px, transparent 1px 4px), #1c241a; }
-.picture::after { content: ''; position: absolute; z-index: -1; left: -5%; right: -5%; bottom: 0; height: 24%; background: repeating-linear-gradient(90deg, transparent 0 22px, #a6be6c35 23px 24px); border-top: 1px solid #a6be6c55; transform: perspective(140px) rotateX(30deg); }
-.backdropWord { position: absolute; z-index: -1; left: 0; right: 0; top: 12px; text-align: center; color: #d4ff3f38; font-size: clamp(30px, 12vw, 54px); line-height: 1; font-weight: 950; letter-spacing: -.06em; white-space: nowrap; }
+.picture { position: relative; isolation: isolate; overflow: hidden; height: 260px; height: clamp(200px, 34vh, 300px); background: radial-gradient(ellipse at 50% 65%, #62301c 0%, transparent 65%), repeating-linear-gradient(0deg, #ffffff04 0 1px, transparent 1px 4px), #1c1918; }
+.picture::after { content: ''; position: absolute; z-index: -1; left: -5%; right: -5%; bottom: 0; height: 24%; background: repeating-linear-gradient(90deg, transparent 0 22px, #ff550025 23px 24px); border-top: 1px solid #ff550045; transform: perspective(140px) rotateX(30deg); }
+.backdropWord { position: absolute; z-index: -1; left: 0; right: 0; top: 12px; text-align: center; color: #ff550038; font-size: clamp(30px, 12vw, 54px); line-height: 1; font-weight: 950; letter-spacing: -.06em; white-space: nowrap; }
 .performers { position: relative; display: flex; align-items: flex-end; justify-content: center; height: 100%; padding: 25px 18px 28px; gap: 0; }
 .performers > img { display: block; min-width: 0; max-width: 62%; height: 100%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(8px 4px 0 #0004); animation: idle 2.5s ease-in-out infinite; }
 .performers[data-paused=true] > img { animation-play-state: paused; }
-.vs { align-self: center; color: #d4ff3f; font-size: 25px; font-style: italic; }
+.vs { align-self: center; color: var(--accent); font-size: 25px; font-style: italic; }
 .cameraFrame { position: absolute; pointer-events: none; inset: 15px 24px 38px; border: 1px solid #eeeee473; }
 .cameraFrame > span { position: absolute; top: 8px; left: 9px; font: 9px monospace; color: #ff8a71; }
 .cameraFrame > b { position: absolute; top: 8px; right: 9px; font-size: 12px; }
 .cameraFrame > small { position: absolute; bottom: 8px; left: 9px; max-width: calc(100% - 18px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 9px monospace; }
-.sceneTag { position: absolute; bottom: 9px; left: 12px; right: 12px; width: fit-content; max-width: calc(100% - 24px); padding: 5px 7px; color: #171a14; background: #d4ff3f; font: bold 8px/1.3 monospace; letter-spacing: .04em; }
-.caption { position: relative; margin: 0; padding: 12px; border-top: 1px solid #ffffff24; font: 10px/1.6 monospace; color: #d8decb; overflow-wrap: anywhere; }
+.sceneTag { position: absolute; bottom: 9px; left: 12px; right: 12px; width: fit-content; max-width: calc(100% - 24px); padding: 6px 10px; border-radius: 12px; color: #180900; background: var(--accent); font: bold 8px/1.3 monospace; letter-spacing: .04em; }
+.caption { position: relative; margin: 0; padding: 12px; border-top: 1px solid #ffffff24; font: 13px/1.6 var(--font); color: var(--text2); overflow-wrap: anywhere; }
 .frame[data-scene=silence] .picture { background-color: #292632; filter: saturate(.35); }
 .frame[data-scene=viral] .picture { background: radial-gradient(ellipse at center, #704d8d, #241a32); }
 .frame[data-scene=challenge] .picture { background: radial-gradient(ellipse at center, #88523b, #291f1a); }
 .frame[data-scene=challenge] .performers > img { max-width: 44%; width: 44%; }
 .copy { padding: 20px 0 0; min-width: 0; }
-.eyebrow { display: block; color: #536047; font: bold 9px/1.5 monospace; letter-spacing: .12em; }
+.eyebrow { display: block; color: var(--accent); font: 600 11px/1.5 var(--font); letter-spacing: .12em; }
 .copy > h1 { margin: 10px 0 12px; font-size: clamp(25px, 7.6vw, 34px); font-weight: 850; letter-spacing: -.045em; line-height: 1.08; white-space: pre-line; overflow-wrap: anywhere; }
-.copy > p { margin: 0; color: #515748; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
-.footer { position: relative; padding: 0 20px 16px; padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid #cccec2; background: #eeeee4; }
-.transport { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; font: 10px monospace; }
+.copy > p { margin: 0; color: var(--text2); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.footer { position: relative; padding: 0 20px 16px; padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--bg); }
+.transport { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; font: 12px var(--font); }
 .transport > button { min-height: 44px; text-align: left; font-size: 10px; }
 .transport > button:last-child { text-align: right; }
 .transport > button:disabled { opacity: .35; }
-.transport > span { color: #6c7461; }
-.next { width: 100%; min-height: 50px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; background: #1c2517; color: #d4ff3f; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-align: left; }
+.transport > span { color: var(--text2); }
+.next { width: 100%; min-height: 50px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; background: var(--accent); color: #180900; border-radius: 26px; font-size: 13px; font-weight: 700; letter-spacing: -.015em; text-align: left; }
 .next > span { font-size: 23px; }
-.intro button:focus-visible { outline: 2px solid #627e26; outline-offset: 2px; }
+.intro button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @keyframes idle { 50% { transform: translateY(-3px); } }
 @media (max-height: 700px) { .picture { height: 200px; } .header { padding-top: 4px; padding-bottom: 10px; gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { .performers > img { animation: none; } }

@@ -29,14 +29,56 @@ export default function Profile({ onClose, onReplayIntro }) {
   const st = profile?.stats || { battles_played: 0, wins: 0, losses: 0 }
 
   return (
-    <div className="app">
+    <div className="app profile-app">
       <AppBar title="Профиль" onBack={onClose} />
       <div className="app-body scroll pad">
         <div className="profile-top">
           <Avatar name={nick} color="var(--card)" size={96} player />
           <div className="profile-name">{nick}</div>
           <div className="career">
-            {location.toUpperCase()} (УР. {player.level})
+            <span className="level-pill">Уровень {player.level}</span><span>{location}</span>
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="row-between">
+            <span>Опыт</span>
+            <span className="muted">
+              {player.xp} / {player.xp_to_next}
+            </span>
+          </div>
+          <ProgressBar value={player.xp} max={player.xp_to_next} />
+          <div className="row-between mt">
+            <span>Популярность</span>
+            <span className="muted">{player.popularity}</span>
+          </div>
+        </div>
+
+        <h2 className="section-heading">Твой стиль</h2>
+        <div className="panel skills">
+          {SKILLS.map(([k, label]) => (
+            <div className="skill" key={k}>
+              <div className="skill-track">
+                <div className="skill-fill" style={{ width: `${(player.skills[k] / max) * 100}%` }} />
+              </div>
+              <div className="skill-val">{player.skills[k]}</div>
+              <div className="skill-label">{label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="panel stats">
+          <div>
+            <b>{st.battles_played}</b>
+            <span>батлов</span>
+          </div>
+          <div>
+            <b>{st.wins}</b>
+            <span>побед</span>
+          </div>
+          <div>
+            <b>{st.losses}</b>
+            <span>поражений</span>
           </div>
         </div>
 
@@ -61,47 +103,6 @@ export default function Profile({ onClose, onReplayIntro }) {
             </div>
           </div>)}
           <p>Дружба: +1 за релиз, +3 за батл. Новые стадии при 20 и 60. Бонус действует на доход сниппетов.</p>
-        </div>
-
-        <div className="panel">
-          <div className="row-between">
-            <span>Опыт</span>
-            <span className="muted">
-              {player.xp} / {player.xp_to_next}
-            </span>
-          </div>
-          <ProgressBar value={player.xp} max={player.xp_to_next} />
-          <div className="row-between mt">
-            <span>Популярность</span>
-            <span className="muted">{player.popularity}</span>
-          </div>
-        </div>
-
-        <div className="panel skills">
-          {SKILLS.map(([k, label]) => (
-            <div className="skill" key={k}>
-              <div className="skill-track">
-                <div className="skill-fill" style={{ height: `${(player.skills[k] / max) * 100}%` }} />
-              </div>
-              <div className="skill-val">{player.skills[k]}</div>
-              <div className="skill-label">{label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="panel stats">
-          <div>
-            <b>{st.battles_played}</b>
-            <span>батлов</span>
-          </div>
-          <div>
-            <b>{st.wins}</b>
-            <span>побед</span>
-          </div>
-          <div>
-            <b>{st.losses}</b>
-            <span>поражений</span>
-          </div>
         </div>
 
         {!!profile?.recent_battles?.length && (

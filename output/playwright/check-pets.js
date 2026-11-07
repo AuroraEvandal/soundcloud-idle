@@ -7,7 +7,7 @@ async page => {
  const pattern=/\/functions\/v1\//;
  const handler=async route=>{
   if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*'}});
-  const name=route.request().url().split('/').at(-1),body=route.request().postDataJSON();let data;
+  const name=new URL(route.request().url()).pathname.split('/').at(-1),body=route.request().postDataJSON();let data;
   if(name==='login')data={is_new:false,player};
   else if(name==='get-profile')data={player,stats:{battles_played:2,wins:1,losses:1},opponents:[],recent_battles:[]};
   else if(name==='get-pets')data=collection;
@@ -21,7 +21,7 @@ async page => {
  };
  await page.route(pattern,handler);
  try{
-  await page.addInitScript(()=>{window.Telegram={WebApp:{initData:'fixture-only',openInvoice:(_url,callback)=>callback('paid')}}});
+  await page.addInitScript(()=>{window.Telegram={WebApp:{initData:'fixture-only',ready(){},expand(){},openInvoice:(_url,callback)=>callback('paid')}}});
   await page.setViewportSize({width:390,height:844});await page.reload();
   await page.getByRole('button',{name:'Профиль',exact:true}).first().click();
   await page.getByText('Твоя команда',{exact:true}).waitFor();
