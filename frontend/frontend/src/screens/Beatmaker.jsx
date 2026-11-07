@@ -3,21 +3,15 @@ import { getBeatmaker, recordBeat, sellBeat, releaseBeat, collectBeat } from '..
 import { useGame } from '../GameContext'
 import { errorInfo } from '../errors'
 import { initialComposition, createBeatPlayer, NOTE_NAMES, noteName } from '../beatAudio'
+import { BEAT_KITS, genreName } from '../beatKits'
+import { draftKey, readDraft } from '../beatDraft'
 import ErrorBox from '../components/ErrorBox'
 import Icon from '../components/Icon'
 import './Beatmaker.css'
 
-const LANES = [['kick','Бочка','Kick · низкий удар'],['snare','Малый барабан','Snare · акцент'],['hihat','Хай-хэт','Hi-hat · пульс'],['piano','Пианино','Основа гармонии'],['melody','Мелодия','Верхняя линия']]
+const LANES = [['kick','Бочка','Kick · низкий удар'],['snare','Малый барабан','Snare / clap · акцент'],['hihat','Хай-хэт','Hi-hat · пульс'],['piano','Клавиши','Основа гармонии'],['melody','Мелодия','Верхняя линия']]
 const CRITERIA = [['rhythm','Ритм',35],['harmony','Гармония',30],['arrangement','Аранжировка',25],['density','Плотность',10]]
 const STATUS = { draft:'Записан', sold:'Продан', streaming:'На стриминге', complete:'Стриминг завершён' }
-const draftKey = (id) => `sw_beat_draft:${id}`
-function readDraft(id) {
-  try {
-    const saved = JSON.parse(localStorage.getItem(draftKey(id)))
-    if (['kick','snare','hihat'].every(lane=>Array.isArray(saved?.pattern?.drums?.[lane])) && Array.isArray(saved.pattern.piano) && Array.isArray(saved.pattern.melody)) return saved
-  } catch { /* private mode or invalid local draft */ }
-  return initialComposition()
-}
 
 export default function Beatmaker({ onEnergyChange }) {
   const { player, setPlayer, notify } = useGame()
@@ -25,12 +19,15 @@ export default function Beatmaker({ onEnergyChange }) {
   const [data,setData] = useState(null), [error,setError] = useState(null), [busy,setBusy] = useState(false)
   const [bar,setBar] = useState(0), [pitch,setPitch] = useState({piano:12,melody:19})
   const [playing,setPlaying] = useState(false), [step,setStep] = useState(-1), [result,setResult] = useState(null)
+  const [loadingAudio,setLoadingAudio] = useState(false)
   const [playback,setPlayback] = useState(null)
-  const listening = playing && playback?.id != null
-  const displayed = listening ? playback.composition : composition
+  const viewingSaved = playback?.id != null
+  const displayed = viewingSaved ? playback.composition : composition
+  const hasPattern = Object.values(displayed.pattern.drums).some(notes=>notes.length>0) || displayed.pattern.piano.length>0 || displayed.pattern.melody.length>0
   const busyRef = useRef(false), mounted = useRef(false), audio = useRef(null)
+  const sequenceRef = useRef(null)
   const loadVersion = useRef(0)
-  const stop = useCallback(() => { audio.current?.stop(); setPlaying(false); setStep(-1); setPlayback(null) },[])
+  const stop = useCallback(() => { audio.current?.stop(); setPlaying(false); setLoadingAudio(false); setStep(-1) },[])
   const load = useCallback(async (before = null) => {
     try {
       const version = ++loadVersion.current
@@ -40,10 +37,26 @@ export default function Beatmaker({ onEnergyChange }) {
       setPlayer(response.player); setError(null)
     } catch(e) { if (mounted.current) setError(errorInfo(e)) }
   },[setPlayer])
-  useEffect(() => { mounted.current=true; load(); return () => { mounted.current=false; audio.current?.stop() } },[load])
+  useEffect(() => {
+    mounted.current=true; load()
+    const onHidden = () => { if (document.hidden) stop() }
+    document.addEventListener('visibilitychange', onHidden)
+    return () => { mounted.current=false; document.removeEventListener('visibilitychange', onHidden); audio.current?.dispose() }
+  },[load,stop])
   useEffect(() => { try { localStorage.setItem(draftKey(player.id),JSON.stringify(composition)) } catch {} },[composition,player.id])
+  useEffect(() => {
+    if (playback?.id != null) sequenceRef.current?.scrollIntoView({block:'start'})
+  },[playback?.id])
+  useEffect(() => {
+    const grid = sequenceRef.current.querySelector('.bm-sequencer')
+    // Container sizing collapsed this grid on mobile Chromium when playback changed.
+    const observer = new ResizeObserver(([entry]) => grid.style.setProperty('--bm-track-width',`${entry.contentRect.width}px`))
+    observer.observe(grid)
+    return () => observer.disconnect()
+  },[])
 
-  function edit(next) { stop(); setComposition(next) }
+  function edit(next) { stop(); setPlayback(null); if (error?.retry) setError(null); setComposition(next) }
+  function returnToEditor() { stop(); setPlayback(null); setBar(0); if (error?.retry) setError(null) }
   function toggle(lane,at) {
     const next = structuredClone(composition)
     if (lane in next.pattern.drums) {
@@ -58,15 +71,17 @@ export default function Beatmaker({ onEnergyChange }) {
     edit(next)
   }
   async function preview(value, id = null) {
-    if (playing && playback?.id === id) { stop(); return }
+    if ((playing || loadingAudio) && playback?.id === id) { stop(); return }
     stop()
     try {
       audio.current ||= createBeatPlayer()
       setPlayback({id,composition:structuredClone(value)})
       setBar(0)
-      setPlaying(true)
-      await audio.current.play(value,at=>{ if(mounted.current) { setStep(at); setBar(Math.floor(at/16)) } })
-    } catch(e) { stop(); setError({message:e.message}) }
+      setError(null)
+      setLoadingAudio(true)
+      const started = await audio.current.play(value,at=>{ if(mounted.current) { setStep(at); setBar(Math.floor(at/16)) } })
+      if (started && mounted.current) { setPlaying(true); setLoadingAudio(false) }
+    } catch(e) { if(mounted.current) { stop(); setError({message:e.message,retry:()=>preview(value,id)}) } }
   }
   async function act(operation) {
     if (busyRef.current) return
@@ -92,13 +107,13 @@ export default function Beatmaker({ onEnergyChange }) {
     <div className="bm-beat-heading">
       <div>
         <span className={`bm-status bm-status-${beat.status}`}>{STATUS[beat.status]}</span>
-        <h4>{beat.genre.toUpperCase()} <span>/ {beat.bpm} BPM</span></h4>
+        <h4>{genreName(beat.genre)} <span>/ {beat.bpm} BPM</span></h4>
         <time dateTime={beat.created_at}>{new Date(beat.created_at).toLocaleString('ru-RU')}</time>
       </div>
       <div className="bm-quality" aria-label={`Качество: ${beat.quality_score} из 100`}><strong>{beat.quality_score}</strong><span>/ 100</span></div>
     </div>
     <div className="bm-beat-tools">
-      <button className="bm-button" disabled={busy} aria-pressed={playing && playback?.id===beat.id} onClick={()=>preview({...beat,key:beat.musical_key},beat.id)}><span aria-hidden="true">{playing && playback?.id===beat.id?'■':'▶'}</span>{playing && playback?.id===beat.id?'Стоп':'Слушать'}</button>
+      <button className="bm-button" disabled={busy} aria-pressed={(playing || loadingAudio) && playback?.id===beat.id} onClick={()=>preview({...beat,key:beat.musical_key},beat.id)}><span aria-hidden="true">{(playing || loadingAudio) && playback?.id===beat.id?'■':'▶'}</span>{(playing || loadingAudio) && playback?.id===beat.id?'Стоп':'Слушать'}</button>
       <details className="bm-score-details">
         <summary>Разбор оценки</summary>
         <div className="bm-scores">{CRITERIA.map(([key,label,max])=><div key={key}><span>{label}<b>{beat.score_breakdown[key]} <small>/ {max}</small></b></span><div className="bm-score-track"><i style={{width:`${beat.score_breakdown[key]/max*100}%`}} /></div></div>)}</div>
@@ -114,23 +129,24 @@ export default function Beatmaker({ onEnergyChange }) {
     {['streaming','complete'].includes(beat.status) && <button className="bm-button bm-collect" disabled={busy} onClick={()=>act(()=>collectBeat(beat.id))}>Собрать стримы<Icon name="back" size={16} /></button>}
   </article>
   return <div className="bm">
-    <header className="bm-heading"><div className="bm-eyebrow">BEAT LAB <span>2 такта · 5 дорожек</span></div><h2>Собери бит</h2><p>Сначала послушай. Меняй клетки на дорожках и записывай, когда понравится результат.</p></header>
-    <ErrorBox message={error?.message} onRetry={()=>load()} />
+    <header className="bm-heading"><div className="bm-eyebrow">BEAT LAB <span>2 такта · 5 дорожек</span></div><h2>Собери бит</h2><p>Добавь звуки на пустые дорожки, послушай свой рисунок и запиши готовый бит.</p></header>
+    <ErrorBox message={error?.message} onRetry={error?.retry || (()=>load())} />
     <fieldset disabled={busy} className="bm-editor">
-      {listening && <p className="bm-listening" role="status"><Icon name="headphones" size={20} /><span>Играет запись: {displayed.genre.toUpperCase()} / {displayed.bpm} BPM.<br/><small>Останови её, чтобы вернуться к своему рисунку.</small></span></p>}
       <details className="bm-panel bm-sound-settings">
-        <summary><span className="bm-section-index">01</span><span><b>Настройки звука</b><small>{displayed.genre.toUpperCase()} · {displayed.bpm} BPM · {NOTE_NAMES[displayed.key]} {displayed.scale==='minor'?'минор':'мажор'}</small></span></summary>
-        <fieldset className="bm-settings" disabled={listening}>
-          <label>Стиль<select value={displayed.genre} onChange={e=>edit({...composition,genre:e.target.value})}>{['trap','drill','phonk'].map(v=><option key={v} value={v}>{v.toUpperCase()}</option>)}</select></label>
+        <summary><span className="bm-section-index">01</span><span><b>Настройки звука</b><small>{genreName(displayed.genre)} · {displayed.bpm} BPM · {NOTE_NAMES[displayed.key]} {displayed.scale==='minor'?'минор':'мажор'}</small></span></summary>
+        <fieldset className="bm-settings" disabled={viewingSaved}>
+          <label>Стиль<select value={displayed.genre} onChange={e=>edit({...composition,genre:e.target.value})}>{!Object.hasOwn(BEAT_KITS,displayed.genre)&&<option value={displayed.genre}>{genreName(displayed.genre)} · архивный</option>}{Object.entries(BEAT_KITS).map(([value,kit])=><option key={value} value={value}>{kit.name}</option>)}</select></label>
           <label>Темп <span>BPM</span><input type="number" inputMode="numeric" min="60" max="180" value={displayed.bpm} onChange={e=>edit({...composition,bpm:Number(e.target.value)})}/></label>
           <label>Тональность<select value={displayed.key} onChange={e=>edit({...composition,key:Number(e.target.value)})}>{NOTE_NAMES.map((v,i)=><option key={v} value={i}>{v}</option>)}</select></label>
           <label>Лад<select value={displayed.scale} onChange={e=>edit({...composition,scale:e.target.value})}><option value="minor">Минор</option><option value="major">Мажор</option></select></label>
         </fieldset>
         <p className="bm-caption">BPM — скорость бита. Тональность и лад задают его настроение.</p>
       </details>
-      <section className="bm-panel bm-sequence" aria-labelledby="bm-sequence-title">
-        <div className="bm-section-heading"><span className="bm-section-index">02</span><h3 id="bm-sequence-title">Собери рисунок</h3></div>
+      <section ref={sequenceRef} className="bm-panel bm-sequence" aria-labelledby="bm-sequence-title">
+        {viewingSaved && <div className="bm-listening"><Icon name="headphones" size={20} /><span role="status">{loadingAudio?'Загружаем запись':playing?'Играет запись':'Запись на паузе'}: {genreName(displayed.genre)} / {displayed.bpm} BPM.<br/><small>Сохранённый рисунок · только просмотр</small></span><button className="bm-button" onClick={returnToEditor}>Вернуться в редактор</button></div>}
+        <div className="bm-section-heading"><span className="bm-section-index">02</span><h3 id="bm-sequence-title">{viewingSaved?'Рисунок записи':'Собери рисунок'}</h3></div>
         <p className="bm-description">Цветная клетка — звук. Пустая — пауза.</p>
+        {!hasPattern && !viewingSaved && <p className="bm-empty-pattern">Пока пусто. Для записи добавь минимум по два удара бочки, малого барабана и хай-хэта, а также две ноты клавиш или мелодии.</p>}
         <div className="bm-sequence-toolbar">
           <div className="bm-bars" role="group" aria-label="Такт">{[0,1].map(v=><button key={v} aria-pressed={bar===v} onClick={()=>setBar(v)}>Такт {v+1}</button>)}</div>
           <span className="bm-step-count">16 шагов</span>
@@ -140,20 +156,20 @@ export default function Beatmaker({ onEnergyChange }) {
           <div className="bm-sequence-content">
             <div className="bm-ruler" aria-hidden="true">{Array.from({length:16},(_,i)=><span key={i} className={i%4===0?'downbeat':''}>{i%4===0?`${i/4+1}`:'·'}</span>)}</div>
             {LANES.map(([lane,label,hint])=><div className={`bm-lane bm-lane-${lane}`} key={lane}>
-              <div className="bm-lane-heading"><div className="bm-lane-name"><i aria-hidden="true"/><span><b>{label}</b><small>{hint}</small></span></div>{['piano','melody'].includes(lane)&&<label className="bm-note">Нота<select disabled={listening} aria-label={`Нота: ${label}`} value={pitch[lane]} onChange={e=>setPitch({...pitch,[lane]:Number(e.target.value)})}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{noteName(i)}</option>)}</select></label>}</div>
+              <div className="bm-lane-heading"><div className="bm-lane-name"><i aria-hidden="true"/><span><b>{label}</b><small>{BEAT_KITS[displayed.genre]?.[lane] || hint}</small></span></div>{['piano','melody'].includes(lane)&&<label className="bm-note">Нота<select disabled={viewingSaved} aria-label={`Нота: ${label}`} value={pitch[lane]} onChange={e=>setPitch({...pitch,[lane]:Number(e.target.value)})}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{noteName(i)}</option>)}</select></label>}</div>
               <div className="bm-grid">{Array.from({length:16},(_,i)=>{
                 const at=bar*16+i, note=displayed.pattern[lane]?.find(n=>n.step===at)
                 const active=lane in displayed.pattern.drums ? displayed.pattern.drums[lane].includes(at) : Boolean(note)
-                return <button key={at} disabled={listening} className={`${active?'active ':''}${step===at?'cursor ':''}${i%4===0?'downbeat':''}`} aria-label={`${label}, шаг ${at+1}${note?`, ${noteName(note.note)}`:''}`} aria-pressed={active} onClick={()=>toggle(lane,at)}>{note?NOTE_NAMES[note.note%12]:<span aria-hidden="true">{active?'•':'·'}</span>}</button>
+                return <button key={at} disabled={viewingSaved} className={`${active?'active ':''}${step===at?'cursor ':''}${i%4===0?'downbeat':''}`} aria-label={`${label}, шаг ${at+1}${note?`, ${noteName(note.note)}`:''}`} aria-pressed={active} onClick={()=>toggle(lane,at)}>{note?NOTE_NAMES[note.note%12]:<span aria-hidden="true">{active?'•':'·'}</span>}</button>
               })}</div>
             </div>)}
           </div>
         </div>
-        <div className="bm-edit-tools"><button className="bm-button" disabled={listening} onClick={()=>edit(initialComposition())}>Вернуть шаблон</button><button className="bm-button bm-clear" disabled={listening} onClick={()=>edit({...composition,pattern:{drums:{kick:[],snare:[],hihat:[]},piano:[],melody:[]}})}>Очистить всё</button></div>
+        {!viewingSaved && <div className="bm-edit-tools"><button className="bm-button bm-clear" disabled={!hasPattern} onClick={()=>edit({...composition,pattern:initialComposition().pattern})}>Очистить всё</button></div>}
       </section>
       <div className="bm-transport">
         <div className="bm-energy"><span>Энергия <b>{data?.energy ?? '…'} <small>/ 100</small></b></span><button className="bm-link" onClick={()=>load()}>Обновить</button></div>
-        <div className="bm-transport-buttons"><button className="bm-button bm-play" aria-pressed={playing} onClick={()=>playing?stop():preview(composition)}><span aria-hidden="true">{playing?'■':'▶'}</span><span>{playing?'Стоп':'Слушать'}<small>Бесплатно</small></span></button><button className="bm-record" disabled={listening || !data || data.energy<data.energy_cost} onClick={()=>act(()=>recordBeat(composition))}><Icon name="mic" size={20}/><span>{busy?'Сохраняем…':'Записать бит'}<small>{data?.energy_cost ?? 50} энергии</small></span></button></div>
+        <div className="bm-transport-buttons"><button className="bm-button bm-play" disabled={!hasPattern} aria-pressed={playing || loadingAudio} onClick={()=>playing || loadingAudio?stop():preview(displayed,viewingSaved?playback.id:null)}><span aria-hidden="true">{playing || loadingAudio?'■':'▶'}</span><span>{playing || loadingAudio?'Стоп':'Слушать'}<small>{loadingAudio?'Загрузка…':'Бесплатно'}</small></span></button><button className="bm-record" disabled={viewingSaved || !hasPattern || !data || data.energy<data.energy_cost} onClick={()=>act(()=>recordBeat(composition))}><Icon name="mic" size={20}/><span>{busy?'Сохраняем…':'Записать бит'}<small>{data?.energy_cost ?? 50} энергии</small></span></button></div>
         {data && data.energy<data.energy_cost && <p className="bm-energy-hint" role="status">Нужно {data.energy_cost} энергии. Дождись восстановления и нажми «Обновить».</p>}
       </div>
     </fieldset>

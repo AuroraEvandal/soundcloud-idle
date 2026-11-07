@@ -34,7 +34,7 @@ export function scoreBeat(input: Record<string, unknown>) {
   const bpm = Number(input.bpm)
   const key = Number(input.key)
   const scale = input.scale
-  if (!['trap', 'drill', 'phonk'].includes(String(genre)) || !Number.isInteger(bpm) || bpm < 60 || bpm > 180 ||
+  if (!['trap', 'plugg', 'cloud_rap', 'drill', 'phonk'].includes(String(genre)) || !Number.isInteger(bpm) || bpm < 60 || bpm > 180 ||
       !Number.isInteger(key) || key < 0 || key > 11 || !Object.hasOwn(SCALES, String(scale))) {
     throw new GameError('INVALID_BEAT')
   }
@@ -54,10 +54,12 @@ export function scoreBeat(input: Record<string, unknown>) {
 
   const kickAnchors: Record<string, number[]> = {
     trap: [0, 8, 16, 24, 6, 14, 22, 30],
+    plugg: [0, 6, 8, 16, 22, 24],
+    cloud_rap: [0, 8, 16, 24],
     drill: [0, 6, 12, 20, 26],
     phonk: [0, 4, 8, 16, 20, 24],
   }
-  const bpmRanges: Record<string, [number, number]> = { trap: [120, 160], drill: [130, 155], phonk: [100, 140] }
+  const bpmRanges: Record<string, [number, number]> = { trap: [120, 160], plugg: [120, 160], cloud_rap: [90, 150], drill: [130, 155], phonk: [100, 140] }
   const [bpmMin, bpmMax] = bpmRanges[String(genre)]
   const bpmFit = bpm >= bpmMin && bpm <= bpmMax ? 8 : bpm >= bpmMin - 12 && bpm <= bpmMax + 12 ? 5 : 2
   const kickFit = Math.min(12, pattern.drums.kick.filter((s) => kickAnchors[String(genre)].includes(s)).length * 3)
