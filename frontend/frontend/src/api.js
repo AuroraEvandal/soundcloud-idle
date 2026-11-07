@@ -852,7 +852,18 @@ const mock2 = {
       player: clone(db.player),
       equipment: EQUIPMENT.map(eqView),
       clothing: CLOTHING.filter((c) => c.price != null).map(clView),
-      packs: PACKS.map((p) => ({ id: p.id, name: p.name, price: p.price })),
+      packs: PACKS.map((p) => {
+        const slotNames = { setup: 'завязка', development: 'развитие', boost: 'усиление', punch: 'панч' }
+        const pool = POOL.filter((c) => !p.card_slot || c.slot === p.card_slot)
+        const weights = Object.fromEntries(Object.entries(p.rarity_weights || RARITY_W)
+          .map(([r, w]) => [r, pool.some((c) => c.card.rarity === r) ? w : 0]))
+        const total = Object.values(weights).reduce((a, b) => a + b, 0)
+        const clothing = !p.card_slot && CLOTHING.some((c) => !db.studio.clothing.includes(c.id)) ? p.clothing_chance * 100 : 0
+        return { id: p.id, name: p.name, price: p.price,
+          description: p.description || `Только карточка слота «${slotNames[p.card_slot]}». Без одежды.`,
+          drop_chances: total ? { ...Object.fromEntries(Object.entries(weights).map(([r, w]) => [r, (100 - clothing) * w / total])), clothing } : null,
+        }
+      }),
     }
   },
 

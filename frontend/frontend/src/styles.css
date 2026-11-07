@@ -1154,6 +1154,19 @@ button:disabled {
 
 /* ---------- Колода и паки ---------- */
 .pack-options { display: grid; gap: 8px; width: 100%; }
+.pack-option { padding: 12px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); }
+.pack-option.selected { border-color: var(--accent); }
+.pack-description { margin: 12px 4px 8px; line-height: 1.5; }
+.pack-odds-trigger { padding: 8px 4px; color: var(--accent); font-size: 13px; font-weight: 600; min-height: 44px; }
+.pack-odds { width: min(398px, calc(100% - 24px)); max-height: calc(100dvh - 32px); margin: auto auto 16px; padding: 0; border: 1px solid var(--line); border-radius: 28px; background: var(--card); color: var(--text); overflow-y: auto; }
+.pack-odds::backdrop { background: #000a; }
+.pack-odds-content { padding: 12px 20px 20px; }
+.pack-odds-handle { width: 36px; height: 4px; margin: 0 auto 20px; border-radius: 4px; background: var(--text2); }
+.pack-odds h2 { margin: 0; font-size: 22px; }
+.pack-odds-content > p { line-height: 1.5; }
+.pack-odds-list { margin: 20px 0; }
+.pack-odds-list > div { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.pack-odds-list dd { margin: 0; font-weight: 700; white-space: nowrap; }
 .packs {
   flex: 1;
   min-height: 0;
