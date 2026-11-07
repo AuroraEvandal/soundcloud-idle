@@ -10,7 +10,7 @@ Deno.serve((req) => handle(req, async (body) => {
   if (order.invoice_url) return { invoice_url: order.invoice_url, order_id: order.id }
   const invoice = await telegramPaymentApi('createInvoiceLink', {
     title: body.caseId === 'underground' ? 'Андеграунд' : 'Хранилище подарков',
-    description: `Кейс: шанс питомца ${body.caseId === 'underground' ? '1' : '3'}%, иначе ${body.caseId === 'underground' ? 150 : 600} монет.`,
+    description: `Кейс: шанс питомца ${body.caseId === 'underground' ? '1' : '3'}%, иначе ${body.caseId === 'underground' ? 150 : 600} монет до бонуса фанатов (+1% за каждые 100).`,
     payload: `case:${order.id}`, currency: 'XTR', provider_token: '',
     prices: [{ label: 'Кейс', amount: order.price_stars }],
   })

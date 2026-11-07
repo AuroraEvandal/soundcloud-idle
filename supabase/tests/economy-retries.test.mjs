@@ -88,7 +88,7 @@ test('Beatmaker shares energy with snippets and records/sells exactly once', asy
   assert.equal(snippet.player.energy, 40)
   const sellRequest = id()
   const sold = await rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [other, recorded.beat.id, sellRequest])
-  assert.equal(sold.coins_earned, 26)
+  assert.equal(sold.coins_earned, 84)
   assert.deepEqual(await rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [other, recorded.beat.id, sellRequest]), sold)
   await assert.rejects(rpc('select release_recorded_beat_atomic($1,$2,$3) result', [other, recorded.beat.id, id()]), /BEAT_ALREADY_PROCESSED/)
   await assert.rejects(rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [player, recorded.beat.id, id()]), /BEAT_NOT_FOUND/)
@@ -163,4 +163,89 @@ test('beat history paginates beyond 100 per owner, including equal creation time
   assert.equal(first.length,100)
   assert.equal(rest.length,5)
   assert.equal(new Set([...first,...rest].map(b=>b.id)).size,105)
+})
+
+
+test('Beatmaker rewards quality with the shared fan multiplier and keeps release tiers', async () => {
+  for (const fans of [0, 99, 100, 400, 1000, 4000, 10000]) {
+    await db.query('update players set popularity=$2 where id=$1', [other, fans])
+    for (const quality of [0, 70, 80, 100]) {
+      const draft = () => rpc(`insert into player_recorded_beats(player_id,genre,bpm,musical_key,scale,pattern,quality_score,score_breakdown)
+        values($1,'trap',140,0,'minor','{}',$2,'{}') returning id result`, [other, quality])
+      const before = await balance(other)
+      const beat = await draft()
+      const request = id()
+      const sold = await rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [other, beat, request])
+      const expected = Math.round((20 + Math.round(quality * 0.8)) * (1 + Math.floor(fans / 100) / 100))
+      assert.equal(sold.coins_earned, expected)
+      assert.equal(sold.beat.sale_coins, expected)
+      assert.equal(await balance(other), before + expected)
+      assert.deepEqual(await rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [other, beat, request]), sold)
+      assert.equal(await balance(other), before + expected)
+      await assert.rejects(rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [other, beat, id()]), /BEAT_ALREADY_PROCESSED/)
+      const releaseId = id()
+      const released = await rpc('select release_recorded_beat_atomic($1,$2,$3) result', [other, await draft(), releaseId])
+      assert.equal(released.max_streams, Math.round((200 + quality * 10) * (1 + Math.floor(fans / 100) / 100) * 2 ** released.viral_tier))
+      assert.equal(released.duration_hours, 24)
+      assert.ok(released.viral_tier >= 0 && released.viral_tier <= released.max_tier)
+      assert.deepEqual(await rpc('select release_recorded_beat_atomic($1,$2,$3) result', [other, released.beat.id, releaseId]), released)
+      await db.query("update player_recorded_beats set released_at=clock_timestamp()-interval '24 hours' where id=$1", [released.beat.id])
+      const collected = await rpc('select collect_recorded_beat_atomic($1,$2,$3) result', [other, released.beat.id, id()])
+      assert.equal(collected.coins_earned, Math.floor(released.max_streams / 10))
+    }
+  }
+  for (const fn of ['sell_recorded_beat_atomic(uuid,uuid,uuid)', 'release_recorded_beat_atomic(uuid,uuid,uuid)']) {
+    for (const role of ['anon', 'authenticated']) {
+      assert.equal(await rpc("select has_function_privilege($1,$2,'execute') result", [role, fn]), false)
+    }
+    assert.equal(await rpc("select has_function_privilege('service_role',$1,'execute') result", [fn]), true)
+  }
+})
+
+
+test('all coin sources use full hundreds of fans, with no former 400-fan cap', async () => {
+  const owner=id()
+  await db.query('insert into players(id,telegram_id,coins,selected_beat_id) values($1,96,10000,1)',[owner])
+  await db.query('insert into player_cards(player_id,card_id) select $1,id from cards',[owner])
+  await db.query("insert into player_pets(player_id,pet_id,level) values($1,'soundity',3)",[owner])
+  for (const fans of [0,99,100,199,200,999,1000,10000]) {
+    const multiplier=1+Math.floor(fans/100)/100
+    await db.query('update players set popularity=$2,energy=100,energy_updated_at=clock_timestamp(),hype=0 where id=$1',[owner,fans])
+    assert.equal(Number(await rpc('select fan_income_multiplier($1) result',[fans])),multiplier)
+    const snippetRequest=id()
+    const snippet=await rpc('select record_snippet_atomic($1,20,$2) result',[owner,snippetRequest])
+    assert.equal(snippet.released[0].streams,150)
+    assert.equal(snippet.released[0].coins,Math.round(15*multiplier))
+    await db.query('update players set popularity=$2 where id=$1',[owner,fans])
+    const cases=await rpc('select cases_view($1) result',[owner])
+    for (const [caseId,base] of [['free',25],['underground',150],['gift-vault',600]]) {
+      const drop=await rpc('select award_case_drop($1,$2,0.99,0) result',[owner,caseId])
+      assert.equal(drop.coins,Math.round(base*multiplier))
+      assert.equal(cases.cases.find(c=>c.id===caseId).fallback_coins,drop.coins)
+    }
+    const pet=await rpc("select award_case_drop($1,'free',0,0) result",[owner])
+    assert.equal(pet.refund,Math.round(300*multiplier))
+    const pack=await open(id(),91,owner)
+    const rarity=await rpc('select rarity result from cards where id=$1',[pack.card_id])
+    assert.equal(pack.refund,Math.round(({common:20,rare:60,epic:150}[rarity])*multiplier))
+    await db.query('update player_cards set uses_left=3 where player_id=$1',[owner])
+    // Seed the state immediately before a deciding win; round 1 needs no mini-game.
+    const battle=await rpc(`insert into battles(player_id,opponent_id,current_round,player_rounds_won,themes,current_hand)
+      values($1,1,1,1,array['деньги'],array[140,141,143,142]) returning id result`,[owner])
+    const side={lines:['a','b','c','d'],scores:{rhyme:7,flow:7,punch:7,meaning:7},points:70}
+    const data={round:{number:1,theme:'деньги',player:side,opponent:{...side,points:60},winner:'player'}}
+    const request=id()
+    const args=[owner,battle,request,JSON.stringify(data)]
+    const query='select submit_round_atomic($1,$2,1,$3,array[140,141,143,142],$4::jsonb) result'
+    const won=await rpc(query,args)
+    assert.equal(won.rewards.coins_change,Math.round(50*multiplier))
+    const after=await balance(owner)
+    await db.query('update players set popularity=20000 where id=$1',[owner])
+    assert.deepEqual(await rpc(query,args),won)
+    assert.deepEqual(await rpc('select record_snippet_atomic($1,20,$2) result',[owner,snippetRequest]),snippet)
+    assert.equal(await balance(owner),after)
+  }
+  for (const fn of ['fan_income_multiplier(integer)','fan_income_coins(numeric,integer)']) {
+    for (const role of ['anon','authenticated']) assert.equal(await rpc("select has_function_privilege($1,$2,'execute') result",[role,fn]),false)
+  }
 })

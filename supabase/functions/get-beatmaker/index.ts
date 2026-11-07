@@ -20,7 +20,7 @@ Deno.serve((req) => handle(req, async (body) => {
   const page = (data || []).slice(0, 100)
   const last = page[page.length - 1]
   const beats = page.map((beat: any) => {
-    const instant_sale_coins = 10 + Math.round(beat.quality_score * 0.2) + Math.floor(Math.min(fresh.popularity, 400) / 40)
+    const instant_sale_coins = Math.round((20 + Math.round(beat.quality_score * 0.8)) * (1 + Math.floor(Math.max(fresh.popularity, 0) / 100) / 100))
     if (!beat.stream_cap || !beat.released_at || !['streaming', 'complete'].includes(beat.status)) {
       return { ...beat, instant_sale_coins, collectable_streams: 0, collectable_coins: 0 }
     }
