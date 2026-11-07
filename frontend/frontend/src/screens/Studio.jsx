@@ -81,14 +81,14 @@ export default function Studio({ onClose }) {
     })
 
   return (
-    <div className="app">
+    <div className="app studio-app">
       <AppBar title="Студия" onBack={onClose} />
       <Tabs
         tabs={[
           ['rec', 'Запись'],
           ['maker', 'Beat Lab'],
           ['beats', 'Биты'],
-          ['gear', 'Оборудование'],
+          ['gear', 'Техника'],
         ]}
         value={tab}
         onChange={setTab}

@@ -11,6 +11,22 @@ const rpc = async (sql, args = []) => (await db.query(sql, args)).rows[0].result
 const balance = async (owner = player) => rpc('select coins result from players where id=$1', [owner])
 const open = (request, pack = 91, owner = player) => rpc('select open_pack_idempotent($1,$2,$3) result', [owner, pack, request])
 
+test('new Beat Lab styles persist and charge 50 energy exactly once; unknown styles do not charge', async () => {
+  for (const genre of ['trap','plugg','cloud_rap']) {
+    await db.query('update players set energy=100,energy_updated_at=clock_timestamp() where id=$1',[player])
+    const request=id()
+    const sql="select record_beat_atomic($1,$2,$3,140,0,'minor','{}',80,'{}') result"
+    const first=await rpc(sql,[player,request,genre])
+    assert.equal(first.beat.genre,genre)
+    assert.equal(first.energy_cost,50)
+    assert.equal(first.player.energy,50)
+    assert.deepEqual(await rpc(sql,[player,request,genre]),first)
+  }
+  const energy=await rpc('select energy result from players where id=$1',[player])
+  await assert.rejects(rpc("select record_beat_atomic($1,$2,'unknown',140,0,'minor','{}',80,'{}') result",[player,id()]),/INVALID_BEAT/)
+  assert.equal(await rpc('select energy result from players where id=$1',[player]),energy)
+})
+
 before(async () => {
   await db.exec('create role anon; create role authenticated; create role service_role;')
   await db.exec(await readFile(new URL('../../backend/schema.sql', import.meta.url), 'utf8'))

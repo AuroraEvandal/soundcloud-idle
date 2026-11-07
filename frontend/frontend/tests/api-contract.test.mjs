@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createServer } from 'vite'
+import { composedBeat } from './fixtures/beat.mjs'
 
 let vite, api, invoke
 const originalWindow = globalThis.window
@@ -155,8 +156,7 @@ test('Beatmaker sends compositions for server scoring and stable IDs for mutatio
   invoke=async(name,{body})=>{ calls.push({name,body}); if(name==='record-beat' && calls.filter(c=>c.name===name).length===1) throw new TypeError('lost'); return {data:{}} }
   const cursor={created_at:'2026-11-05T12:00:00.123456+00:00',id:battleId}
   await api.getBeatmaker(cursor)
-  const { initialComposition }=await import('../src/beatAudio.js')
-  const composition=initialComposition()
+  const composition=composedBeat()
   await assert.rejects(()=>api.recordBeat(composition),e=>e.network)
   await api.recordBeat(composition)
   assert.deepEqual(calls[1],calls[2])
