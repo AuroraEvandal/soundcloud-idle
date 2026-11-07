@@ -226,6 +226,7 @@ create table if not exists packs (
 create table if not exists player_recorded_beats (
   id uuid primary key default gen_random_uuid(),
   player_id uuid not null references players(id) on delete cascade,
+  name text not null default 'Без названия' check (char_length(name) between 1 and 60 and name=btrim(name)),
   genre text not null check (genre in ('trap','plugg','cloud_rap','drill','phonk')),
   bpm int not null check (bpm between 60 and 180),
   musical_key int not null check (musical_key between 0 and 11),

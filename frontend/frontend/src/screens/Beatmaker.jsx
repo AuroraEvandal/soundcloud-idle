@@ -107,7 +107,8 @@ export default function Beatmaker({ onEnergyChange }) {
     <div className="bm-beat-heading">
       <div>
         <span className={`bm-status bm-status-${beat.status}`}>{STATUS[beat.status]}</span>
-        <h4>{genreName(beat.genre)} <span>/ {beat.bpm} BPM</span></h4>
+        <h4>{beat.name || 'Без названия'}</h4>
+        <p>{genreName(beat.genre)} · {beat.bpm} BPM</p>
         <time dateTime={beat.created_at}>{new Date(beat.created_at).toLocaleString('ru-RU')}</time>
       </div>
       <div className="bm-quality" aria-label={`Качество: ${beat.quality_score} из 100`}><strong>{beat.quality_score}</strong><span>/ 100</span></div>
@@ -143,7 +144,7 @@ export default function Beatmaker({ onEnergyChange }) {
         <p className="bm-caption">BPM — скорость бита. Тональность и лад задают его настроение.</p>
       </details>
       <section ref={sequenceRef} className="bm-panel bm-sequence" aria-labelledby="bm-sequence-title">
-        {viewingSaved && <div className="bm-listening"><Icon name="headphones" size={20} /><span role="status">{loadingAudio?'Загружаем запись':playing?'Играет запись':'Запись на паузе'}: {genreName(displayed.genre)} / {displayed.bpm} BPM.<br/><small>Сохранённый рисунок · только просмотр</small></span><button className="bm-button" onClick={returnToEditor}>Вернуться в редактор</button></div>}
+        {viewingSaved && <div className="bm-listening"><Icon name="headphones" size={20} /><span role="status">{loadingAudio?'Загружаем запись':playing?'Играет запись':'Запись на паузе'}: {displayed.name || 'Без названия'} · {genreName(displayed.genre)} / {displayed.bpm} BPM.<br/><small>Сохранённый рисунок · только просмотр</small></span><button className="bm-button" onClick={returnToEditor}>Вернуться в редактор</button></div>}
         <div className="bm-section-heading"><span className="bm-section-index">02</span><h3 id="bm-sequence-title">{viewingSaved?'Рисунок записи':'Собери рисунок'}</h3></div>
         <p className="bm-description">Цветная клетка — звук. Пустая — пауза.</p>
         {!hasPattern && !viewingSaved && <p className="bm-empty-pattern">Пока пусто. Для записи добавь минимум по два удара бочки, малого барабана и хай-хэта, а также две ноты клавиш или мелодии.</p>}
@@ -168,6 +169,7 @@ export default function Beatmaker({ onEnergyChange }) {
         {!viewingSaved && <div className="bm-edit-tools"><button className="bm-button bm-clear" disabled={!hasPattern} onClick={()=>edit({...composition,pattern:initialComposition().pattern})}>Очистить всё</button></div>}
       </section>
       <div className="bm-transport">
+        {!viewingSaved && <label className="bm-name">Название бита<input type="text" maxLength={60} placeholder="Без названия" value={composition.name || ''} onChange={e=>edit({...composition,name:e.target.value})}/></label>}
         <div className="bm-energy"><span>Энергия <b>{data?.energy ?? '…'} <small>/ 100</small></b></span><button className="bm-link" onClick={()=>load()}>Обновить</button></div>
         <div className="bm-transport-buttons"><button className="bm-button bm-play" disabled={!hasPattern} aria-pressed={playing || loadingAudio} onClick={()=>playing || loadingAudio?stop():preview(displayed,viewingSaved?playback.id:null)}><span aria-hidden="true">{playing || loadingAudio?'■':'▶'}</span><span>{playing || loadingAudio?'Стоп':'Слушать'}<small>{loadingAudio?'Загрузка…':'Бесплатно'}</small></span></button><button className="bm-record" disabled={viewingSaved || !hasPattern || !data || data.energy<data.energy_cost} onClick={()=>act(()=>recordBeat(composition))}><Icon name="mic" size={20}/><span>{busy?'Сохраняем…':'Записать бит'}<small>{data?.energy_cost ?? 50} энергии</small></span></button></div>
         {data && data.energy<data.energy_cost && <p className="bm-energy-hint" role="status">Нужно {data.energy_cost} энергии. Дождись восстановления и нажми «Обновить».</p>}

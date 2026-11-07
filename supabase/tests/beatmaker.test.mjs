@@ -10,7 +10,7 @@ const hooks = registerHooks({ resolve(specifier, context, next) {
   }
   return next(specifier, context)
 } })
-const { scoreBeat } = await import('../functions/_shared/beatmaker.ts')
+const { scoreBeat, beatName } = await import('../functions/_shared/beatmaker.ts')
 hooks.deregister()
 
 test('Trap, Plugg and Cloud rap are scored by the server with unchanged criterion caps', () => {
@@ -32,4 +32,12 @@ test('unknown styles and malformed patterns remain rejected', () => {
   assert.throws(()=>scoreBeat({...composedBeat(),genre:'plugg',bpm:200}),/INVALID_BEAT/)
   const value=composedBeat();value.pattern.drums.kick=[32]
   assert.throws(()=>scoreBeat({...value,genre:'cloud_rap'}),/INVALID_PATTERN/)
+})
+
+test('beat names are optional, trimmed and validated before recording',()=>{
+  assert.equal(beatName(undefined),null)
+  assert.equal(beatName('   '),null)
+  assert.equal(beatName('  Ночь  '),'Ночь')
+  assert.equal(beatName('я'.repeat(60)).length,60)
+  for(const value of [123,{},'я'.repeat(61)]) assert.throws(()=>beatName(value),/INVALID_BEAT_NAME/)
 })

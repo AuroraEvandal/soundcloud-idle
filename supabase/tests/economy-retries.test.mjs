@@ -109,7 +109,7 @@ test('Beatmaker shares energy with snippets and records/sells exactly once', asy
   await assert.rejects(rpc('select release_recorded_beat_atomic($1,$2,$3) result', [other, recorded.beat.id, id()]), /BEAT_ALREADY_PROCESSED/)
   await assert.rejects(rpc('select sell_recorded_beat_atomic($1,$2,$3) result', [player, recorded.beat.id, id()]), /BEAT_NOT_FOUND/)
   await db.query('update players set energy=49,energy_updated_at=clock_timestamp() where id=$1',[other])
-  await assert.rejects(rpc(sql,[other,id()]), /NO_ENERGY/)
+  await assert.rejects(rpc(sql.replace('140','141'),[other,id()]), /NO_ENERGY/)
   assert.equal(await rpc('select energy result from players where id=$1',[other]),49)
 })
 
@@ -264,4 +264,50 @@ test('all coin sources use full hundreds of fans, with no former 400-fan cap', a
   for (const fn of ['fan_income_multiplier(integer)','fan_income_coins(numeric,integer)']) {
     for (const role of ['anon','authenticated']) assert.equal(await rpc("select has_function_privilege($1,$2,'execute') result",[role,fn]),false)
   }
+})
+
+
+test('identical beats cannot be recorded again, renamed or reordered, across the full history', async () => {
+  const owner=id(), second=id()
+  await db.query('insert into players(id,telegram_id) values($1,991),($2,992)',[owner,second])
+  const pattern={drums:{kick:[16,0],snare:[12,4],hihat:[8,0]},piano:[{step:16,note:12},{step:0,note:15}],melody:[]}
+  const sql="select record_beat_atomic($1,$2,'trap',140,0,'minor',$3,80,'{}',$4) result"
+  const request=id()
+  const first=await rpc(sql,[owner,request,pattern,'  Ночной район  '])
+  assert.equal(first.beat.name,'Ночной район')
+  assert.deepEqual(await rpc(sql,[owner,request,pattern,'Ночной район']),first)
+  await assert.rejects(rpc(sql,[owner,request,pattern,'Другое имя']),/IDEMPOTENCY_CONFLICT/)
+  const reordered=structuredClone(pattern)
+  for(const lane of Object.values(reordered.drums)) lane.reverse()
+  reordered.piano.reverse()
+  for(const status of ['draft','sold','streaming','complete']) {
+    await db.query('update player_recorded_beats set status=$2 where id=$1',[first.beat.id,status])
+    await assert.rejects(rpc(sql,[owner,id(),reordered,'Новое имя']),/DUPLICATE_BEAT/)
+  }
+  assert.equal(await rpc('select energy result from players where id=$1',[owner]),50)
+  assert.equal(await rpc('select count(*)::int result from player_recorded_beats where player_id=$1',[owner]),1)
+  assert.equal(await rpc('select count(*)::int result from beatmaker_requests where player_id=$1',[owner]),1)
+  assert.equal((await rpc(sql,[second,id(),pattern,''])).beat.name,'Без названия')
+  const changed=structuredClone(pattern);changed.piano[0].note=14
+  assert.ok((await rpc(sql,[owner,id(),changed,null])).beat.id)
+  await assert.rejects(rpc(sql,[owner,id(),pattern,'x'.repeat(61)]),/INVALID_BEAT_NAME/)
+  for(const role of ['anon','authenticated']) assert.equal(await rpc("select has_function_privilege($1,'record_beat_atomic(uuid,uuid,text,integer,integer,text,jsonb,integer,jsonb,text)','execute') result",[role]),false)
+})
+
+
+test('pre-update recordings and saved responses survive the migration', async () => {
+  const owner=id(), request=id()
+  await db.query('insert into players(id,telegram_id) values($1,993)',[owner])
+  const pattern={drums:{kick:[16,0],snare:[12,4],hihat:[8,0]},piano:[{step:16,note:12},{step:0,note:15}],melody:[]}
+  // Direct insertion models an old recording, without passing through the new RPC.
+  const beat=await rpc("insert into player_recorded_beats(player_id,genre,bpm,musical_key,scale,pattern,quality_score,score_breakdown,status) values($1,'trap',140,0,'minor',$2,80,'{}','sold') returning id result",[owner,pattern])
+  const payload={genre:'trap',bpm:140,key:0,scale:'minor',pattern}
+  const response={beat:{id:beat},energy_cost:50}
+  await db.query("insert into beatmaker_requests(player_id,request_id,action,payload,response) values($1,$2,'record',$3,$4)",[owner,request,payload,response])
+  const sql="select record_beat_atomic($1,$2,'trap',140,0,'minor',$3,80,'{}') result"
+  assert.deepEqual(await rpc(sql,[owner,request,pattern]),response)
+  pattern.piano.reverse();pattern.drums.kick.reverse()
+  await assert.rejects(rpc(sql,[owner,id(),pattern]),/DUPLICATE_BEAT/)
+  assert.equal(await rpc('select energy result from players where id=$1',[owner]),100)
+  assert.equal(await rpc('select name result from player_recorded_beats where id=$1',[beat]),'Без названия')
 })

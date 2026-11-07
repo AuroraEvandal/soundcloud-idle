@@ -5,7 +5,7 @@ Deno.serve((req) => handle(req, async (body) => {
   const { player } = await authPlayer(body)
   const fresh = await refreshEnergy(player)
   let query = db.from('player_recorded_beats').select(
-    'id,genre,bpm,musical_key,scale,pattern,quality_score,score_breakdown,status,sale_coins,stream_cap,streams_paid,released_at,created_at',
+    'id,name,genre,bpm,musical_key,scale,pattern,quality_score,score_breakdown,status,sale_coins,stream_cap,streams_paid,released_at,created_at',
   ).eq('player_id', player.id).order('created_at', { ascending: false }).order('id', { ascending: false }).limit(101)
   if (body.before != null) {
     const cursor = body.before as { created_at?: unknown; id?: unknown }
