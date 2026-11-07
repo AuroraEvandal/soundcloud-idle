@@ -897,6 +897,8 @@ const mock2 = {
     need()
     const pack = PACKS.find((p) => p.id === packId)
     if (!pack) throw new ApiError('ITEM_NOT_FOUND')
+    const pool = POOL.filter((p) => !pack.card_slot || p.slot === pack.card_slot)
+    if (!pool.length) throw new ApiError('ITEM_NOT_FOUND')
     const st = db.studio
     if (db.player.coins < pack.price) throw new ApiError('NOT_ENOUGH_COINS')
     db.player.coins -= pack.price
@@ -909,7 +911,7 @@ const mock2 = {
       drop = { type: 'clothing', item: clView(c), duplicate: false, refund: 0 }
     } else {
       const weights = pack.rarity_weights || RARITY_W
-      const categories = Object.keys(weights).filter((r) => weights[r] > 0 && POOL.some((p) => p.card.rarity === r))
+      const categories = Object.keys(weights).filter((r) => weights[r] > 0 && pool.some((p) => p.card.rarity === r))
       const total = categories.reduce((n, r) => n + weights[r], 0)
       let roll = Math.random() * total
       let rarity = categories[0]
@@ -920,7 +922,7 @@ const mock2 = {
           break
         }
       }
-      const category = POOL.filter((p) => p.card.rarity === rarity)
+      const category = pool.filter((p) => p.card.rarity === rarity)
       const fresh = category.filter((p) => !st.cards.has(p.card.id))
       const cand = fresh.length ? fresh : category
       const pick = cand[rndInt(0, cand.length - 1)]

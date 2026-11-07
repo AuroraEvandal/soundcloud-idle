@@ -220,6 +220,8 @@ create table if not exists packs (
   name text not null,
   price int not null,
   clothing_chance numeric(3,2) not null default 0.07, -- шанс одежды
+  card_slot text constraint packs_card_slot_check check (card_slot in ('setup','development','boost','punch')),
+  constraint packs_slot_clothing_check check (card_slot is null or clothing_chance = 0),
   common_weight numeric,
   rare_weight numeric,
   epic_weight numeric,

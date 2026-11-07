@@ -54,6 +54,10 @@ export const PACKS = [
   { id: 1, name: 'Базовый пак', price: 200, clothing_chance: 0.07 },
   { id: 2, name: 'Премиальный пак', price: 500, clothing_chance: 0.07,
     rarity_weights: { common: 40, rare: 40, epic: 20 } },
+  { id: 3, name: 'Пак «Завязка»', price: 200, clothing_chance: 0, card_slot: 'setup' },
+  { id: 4, name: 'Пак «Развитие»', price: 200, clothing_chance: 0, card_slot: 'development' },
+  { id: 5, name: 'Пак «Усиление»', price: 200, clothing_chance: 0, card_slot: 'boost' },
+  { id: 6, name: 'Пак «Панч»', price: 200, clothing_chance: 0, card_slot: 'punch' },
 ]
 
 // Стартовая колода игрока (id карточек). Остальные карточки добываются в паках.
