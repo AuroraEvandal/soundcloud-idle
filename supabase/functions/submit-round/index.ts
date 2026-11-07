@@ -1,5 +1,6 @@
 import { authPlayer, db, GameError, handle, requestId, rpcError } from '../_shared/common.ts'
 import { scoreRound, type ThemeRelations } from '../_shared/scoring.ts'
+import { opponentVerse } from '../_shared/opponentVerses.js'
 
 let relationCache: { expiresAt: number; rows: { theme_a: string; theme_b: string; strength: number }[] } | null = null
 let relationLoad: Promise<{ theme_a: string; theme_b: string; strength: number }[]> | null = null
@@ -87,6 +88,7 @@ Deno.serve((req) => handle(req, async (body) => {
   }, 0)
   const scoredRound = await scoreRound(cards as Record<string, unknown>[], theme, Number((Array.isArray(battle.opponents) ? battle.opponents[0] : battle.opponents)?.level || 1), relations,
     { player, clothingCharisma, balance: balance.data })
+  scoredRound.round.opponent.lines = opponentVerse(battle.opponent_id, battle.id, roundNumber) || scoredRound.round.opponent.lines
   const scored = { round: { number: roundNumber, ...scoredRound.round } }
   const result = await db.rpc('submit_round_atomic', {
     p_player_id: player.id,
