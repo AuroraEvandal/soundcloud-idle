@@ -13,6 +13,7 @@ import Telegram from './screens/Telegram'
 import Profile from './screens/Profile'
 import Store from './screens/Store'
 import Casino from './screens/Casino'
+import Concert from './concert/Concert'
 import StoryIntro from './components/StoryIntro'
 import { initialTelegramMessages } from './telegramMessages'
 import { readIntro, saveIntro } from './storage'
@@ -26,6 +27,7 @@ const SCREENS = {
   profile: Profile,
   store: Store,
   casino: Casino,
+  concert: Concert,
 }
 
 export default function App() {

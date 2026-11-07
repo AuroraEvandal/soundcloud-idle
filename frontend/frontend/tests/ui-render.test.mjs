@@ -24,11 +24,11 @@ before(async () => {
 })
 after(async () => vite?.close())
 
-test('home shows actual player resources and all seven app launchers', () => {
+test('home shows actual player resources and all eight app launchers', () => {
   const html = render(home)
   assert.match(html, /Тестовый артист/)
   assert.match(html.replaceAll(/\s|&nbsp;/g, ''), /2450/)
-  for (const name of ['SoundWave', 'Студия', 'Колода', 'ТГ', 'Профиль', 'Магазин', 'Казик']) assert.ok(html.includes(`aria-label="${name}"`))
+  for (const name of ['SoundWave', 'Студия', 'Колода', 'ТГ', 'Профиль', 'Магазин', 'Казик', 'Концерт']) assert.ok(html.includes(`aria-label="${name}"`))
 })
 
 test('opponent selection uses the original opponent sprite and display name', () => {
