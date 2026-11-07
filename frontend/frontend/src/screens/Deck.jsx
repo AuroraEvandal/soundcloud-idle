@@ -74,6 +74,7 @@ function dropView(drop) {
 function Packs() {
   const { player, setPlayer } = useGame()
   const [packs, setPacks] = useState([])
+  const [selectedPackId, setSelectedPackId] = useState(null)
   const [error, setError] = useState(null)
   const [spin, setSpin] = useState(false)
   const [opening, setOpening] = useState(false)
@@ -82,7 +83,7 @@ function Packs() {
   const [result, setResult] = useState(null)
   const box = useRef(null)
   const openingRef = useRef(false)
-  const pack = packs[0]
+  const pack = packs.find((p) => p.id === selectedPackId) || packs[0]
 
   useEffect(() => {
     getShop()
@@ -124,6 +125,22 @@ function Packs() {
   return (
     <div className="packs">
       <ErrorBox message={error?.message} onHome={() => setError(null)} />
+      <div className="pack-options" role="group" aria-label="Выбор пака">
+        {packs.map((p) => (
+          <button
+            key={p.id}
+            className={`btn wide${pack?.id === p.id ? '' : ' ghost'}`}
+            aria-pressed={pack?.id === p.id}
+            disabled={opening || spin}
+            onClick={() => { setSelectedPackId(p.id); setResult(null); setError(null) }}
+          >
+            {p.name} · ₽{p.price}
+          </button>
+        ))}
+      </div>
+      {pack?.id === 2 && (
+        <div className="muted small-t">Повышенный шанс редких и эпических карточек</div>
+      )}
       {spin ? (
         <div className="roulette" ref={box} aria-label="Открываем пак">
           <div

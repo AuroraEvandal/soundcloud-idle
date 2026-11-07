@@ -908,21 +908,25 @@ const mock2 = {
       st.clothing.push(c.id)
       drop = { type: 'clothing', item: clView(c), duplicate: false, refund: 0 }
     } else {
-      const fresh = POOL.filter((p) => !st.cards.has(p.card.id))
-      const cand = fresh.length ? fresh : POOL
-      const total = cand.reduce((n, p) => n + RARITY_W[p.card.rarity], 0)
+      const weights = pack.rarity_weights || RARITY_W
+      const categories = Object.keys(weights).filter((r) => weights[r] > 0 && POOL.some((p) => p.card.rarity === r))
+      const total = categories.reduce((n, r) => n + weights[r], 0)
       let roll = Math.random() * total
-      let pick = cand[0]
-      for (const p of cand) {
-        roll -= RARITY_W[p.card.rarity]
+      let rarity = categories[0]
+      for (const r of categories) {
+        roll -= weights[r]
         if (roll <= 0) {
-          pick = p
+          rarity = r
           break
         }
       }
+      const category = POOL.filter((p) => p.card.rarity === rarity)
+      const fresh = category.filter((p) => !st.cards.has(p.card.id))
+      const cand = fresh.length ? fresh : category
+      const pick = cand[rndInt(0, cand.length - 1)]
       const duplicate = st.cards.has(pick.card.id)
       const refund = duplicate ? DUP_REFUND[pick.card.rarity] : 0
-      if (!duplicate) st.uses[pick.card.id] = 3
+      st.uses[pick.card.id] = 3
       st.cards.add(pick.card.id)
       db.player.coins += refund
       drop = { type: 'card', card: { ...withUses(pick.card), slot: pick.slot }, duplicate, refund }

@@ -219,7 +219,16 @@ create table if not exists packs (
   id serial primary key,
   name text not null,
   price int not null,
-  clothing_chance numeric(3,2) not null default 0.07   -- шанс, что вместо карточки выпадет одежда
+  clothing_chance numeric(3,2) not null default 0.07, -- шанс одежды
+  common_weight numeric,
+  rare_weight numeric,
+  epic_weight numeric,
+  constraint packs_rarity_weights_check check (
+    (common_weight is null and rare_weight is null and epic_weight is null)
+    or (common_weight is not null and rare_weight is not null and epic_weight is not null
+      and common_weight >= 0 and rare_weight >= 0 and epic_weight >= 0
+      and common_weight + rare_weight + epic_weight > 0)
+  )
 );
 
 -- Записи игрока в Beatmaker, их серверная оценка и продажа/стриминг.

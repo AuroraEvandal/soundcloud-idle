@@ -1153,6 +1153,7 @@ button:disabled {
 }
 
 /* ---------- Колода и паки ---------- */
+.pack-options { display: grid; gap: 8px; width: 100%; }
 .packs {
   flex: 1;
   min-height: 0;
