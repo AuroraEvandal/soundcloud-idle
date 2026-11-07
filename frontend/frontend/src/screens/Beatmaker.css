@@ -195,3 +195,7 @@
   .bm-eyebrow { letter-spacing: .08em; }
   .bm-step-count { font-size: 11px; }
 }
+
+.bm-name { display: grid; gap: 8px; margin-bottom: 16px; color: var(--bm-muted); font-size: 13px; }
+.bm-name input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--bm-border); border-radius: 8px; background: #211e1a; color: var(--bm-text); font: inherit; }
+.bm-beat-heading h4 { overflow-wrap: anywhere; }

@@ -90,3 +90,9 @@ export function scoreBeat(input: Record<string, unknown>) {
   return { genre, bpm, key, scale, pattern, quality_score: total,
     score_breakdown: { rhythm, harmony, arrangement, density } }
 }
+
+export function beatName(value: unknown): string | null {
+  if (value == null) return null
+  if (typeof value !== 'string' || [...value.trim()].length > 60) throw new GameError('INVALID_BEAT_NAME')
+  return value.trim() || null
+}

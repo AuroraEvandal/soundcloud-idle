@@ -1,10 +1,11 @@
 import { authPlayer, db, handle, GameError, playerView, requestId, rpcError } from '../_shared/common.ts'
-import { scoreBeat } from '../_shared/beatmaker.ts'
+import { scoreBeat, beatName } from '../_shared/beatmaker.ts'
 
 Deno.serve((req) => handle(req, async (body) => {
   const { player } = await authPlayer(body)
   const scored = scoreBeat(body)
   const { data, error } = await db.rpc('record_beat_atomic', {
+    p_name: beatName(body.name),
     p_player_id: player.id,
     p_request_id: requestId(body.requestId),
     p_genre: scored.genre,
