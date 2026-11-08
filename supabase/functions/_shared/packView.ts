@@ -20,7 +20,7 @@ export function packView(pack: Pack, balance: Weights, cards: Card[], hasUnowned
       ? 'Карточка любого слота с повышенным шансом редкой и эпической. Может выпасть одежда.'
       : 'Карточка любого слота или предмет одежды. Для пополнения колоды.'
   return {
-    id: pack.id, name: pack.name, price: pack.price, description,
+    id: pack.id, name: pack.name, price: pack.price, description: description + (weights[3] > 0 ? ' Может выпасть легендарная карточка; точный шанс указан ниже.' : ''),
     drop_chances: total > 0 ? {
       common: percent((100 - clothing) * weights[0] / total),
       rare: percent((100 - clothing) * weights[1] / total),

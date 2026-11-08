@@ -36,6 +36,8 @@ test('slot odds match available categories and never show clothing', () => {
 test('legendary odds use an additional weight of one and respect slot availability', () => {
   const pool = [...cards, { slot: 'setup', rarity: 'legendary' }]
   const all = packView(basic, balance, pool, true).drop_chances
+  assert.match(packView(basic, balance, pool, true).description, /легендарная/);
+  assert.doesNotMatch(packView({ ...basic, card_slot: 'development' }, balance, pool, true).description, /легендарная/);
   assert.equal(all.legendary, Number((93 / 101).toFixed(8)))
   assert.ok(Math.abs(Object.values(all).reduce((a, b) => a + b, 0) - 100) < 1e-6)
   const slot = packView({ ...basic, card_slot: 'punch', clothing_chance: 0 }, balance, pool, true).drop_chances
