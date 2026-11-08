@@ -1,5 +1,3 @@
-// shortcut: this standalone prototype uses temporary demo state; move judging and money to the server before release.
-export const DURATION = 180
 export const BEAT = .5
 export const EPISODES = [
   { title: 'Пока горит свет', artist: 'ЛЕВЫЙ БЕРЕГ', track: 'Не выключай', venue: 'Клуб «Контур»', crowd: 38, color: '#ff641a',
@@ -47,72 +45,9 @@ export const EPISODES = [
     midway: 'Ирина: «Чайник я привезла. Он в гримёрке. Не подключён. Почти».' },
 ]
 export const GEAR = [
-  { id: 'marks', name: 'Метки на пульте', price: 250, icon: 'compose', description: 'Нужный канал заметнее. Меньше суеты в авариях.' },
-  { id: 'knobs', name: 'Точные регуляторы', price: 450, icon: 'headphones', description: 'Зона настройки шире на 4 пункта.' },
-  { id: 'guard', name: 'Защита от перегруза', price: 800, icon: 'lock', description: 'Смягчает первую ошибку каждого концерта.' },
-  { id: 'effects', name: 'Панель эффектов', price: 1200, icon: 'cloud', description: 'Открывает эхо и фильтр для свободных переходов.' },
-  { id: 'amber', name: 'Янтарный пульт', price: 300, icon: 'crown', description: 'Тёплая подсветка. Тот же звук, другое настроение.' },
+  { id: 'marks', name: 'Метки на пульте', price: 250, icon: 'compose', description: 'Нужный канал заметнее. Зоны настройки шире на 2 пункта.' },
+  { id: 'knobs', name: 'Точные регуляторы', price: 450, icon: 'headphones', description: 'Нужно удерживать чистый сигнал на 0,15 секунды меньше.' },
+  { id: 'guard', name: 'Защита от перегруза', price: 800, icon: 'lock', description: 'Даёт дополнительную секунду на каждую сцену.' },
+  { id: 'effects', name: 'Панель эффектов', price: 1200, icon: 'cloud', description: 'Эхо и фильтр плюс секунда на команды артиста и пэды.' },
+  { id: 'amber', name: 'Янтарный пульт', price: 300, icon: 'crown', description: 'Тёплая подсветка. Лампы при блэкауте видны на 0,4 секунды дольше.' },
 ]
-export const MECHANICS = {
-  frequency: { label: 'Убери гул', subtitle: 'Поверни ручку. Найди чистый голос и удержи 0,5 сек.', tag: 'ЧАСТОТА', icon: 'headphones' },
-  level: { label: 'Поймай уровень', subtitle: 'Держи фейдер в движущейся зоне 1 секунду.', tag: 'ГРОМКОСТЬ', icon: 'cloud' },
-  pads: { label: 'Собери бит', subtitle: 'Нажми подсвеченные пэды по порядку, попадая в пульс.', tag: 'СЭМПЛЕР', icon: 'cards' },
-  crossfade: { label: 'Сведи треки', subtitle: 'Веди фейдер за меткой. Не бросай переход.', tag: 'ПЕРЕХОД', icon: 'cloud' },
-  feedback: { label: 'Убери свист', subtitle: 'Найди перегруженный канал. Приглуши, затем верни.', tag: 'АВАРИЯ', icon: 'mic' },
-  artist: { label: 'Дай залу спеть', subtitle: 'Убери голос на одну фразу, потом верни в пульс.', tag: 'КОМАНДА АРТИСТА', icon: 'person' },
-}
-export function initialCareer() { return { coins: 200, reputation: 0, completed: [], goals: [], upgrades: [], claimed: [], trust: 0, reliability: 0 } }
-export function makeShow(episode, choice, upgrades = []) {
-  const kinds = ['frequency', 'pads', 'level', 'feedback', 'crossfade', 'artist']
-  const events = Array.from({ length: 24 }, (_, i) => {
-    const kind = kinds[i % 6]
-    return { id: `cue-${i}`, kind, at: 3 + i * 7, duration: 6.2, target: [63, 57, 70, 45][i % 4],
-      moving: episode >= 2 && kind === 'level', channel: (i + episode) % 3,
-      sequence: choice === 'artist' ? [0, 1, 2, 3] : [0, 1, 2],
-      request: choice === 'artist' && i % 12 === 11 ? 'loop' : 'crowd',
-      secondary: episode >= 2 && kind === 'level' && i >= 8 }
-  })
-  return { id: globalThis.crypto.randomUUID(), episode, choice, events, outcomes: {}, quality: 70, energy: 35, combo: 0, bestCombo: 0, misses: 0, assisted: false, guard: upgrades.includes('guard'), failed: false }
-}
-export function targetAt(event, elapsed) {
-  if (event.kind === 'crossfade') return Math.min(95, 8 + Math.max(0, elapsed - event.at) / 4.5 * 87)
-  return event.target + (event.moving ? Math.sin((elapsed - event.at) * 2) * 12 : 0)
-}
-export function timingResult(elapsed, offsetMs) {
-  const beat = ((elapsed - offsetMs / 1000) % BEAT + BEAT) % BEAT
-  const error = Math.min(beat, BEAT - beat)
-  return error <= .09 ? 'perfect' : error <= .22 ? 'good' : 'miss'
-}
-export function resolveEvent(show, id, outcome) {
-  const event = show.events.find(e => e.id === id)
-  if (!event || Object.hasOwn(show.outcomes, id) || !['perfect', 'good', 'miss'].includes(outcome)) return show
-  const failed = outcome === 'miss', guarded = failed && show.guard
-  const quality = failed ? (event.kind === 'feedback' ? -12 : -7) : outcome === 'perfect' ? 3 : 1
-  const combo = failed ? 0 : show.combo + 1, misses = failed ? show.misses + 1 : 0
-  return { ...show, outcomes: { ...show.outcomes, [id]: outcome },
-    quality: Math.max(0, Math.min(100, show.quality + (guarded ? -2 : quality) + (!failed && show.assisted ? 4 : 0))),
-    energy: Math.max(0, Math.min(100, show.energy + (failed ? event.kind === 'feedback' ? -8 : -5 : outcome === 'perfect' ? 5 : 2))),
-    combo, bestCombo: Math.max(combo, show.bestCombo), misses, assisted: misses >= 2, guard: show.guard && !guarded }
-}
-export function finishShow(career, show) {
-  const points = Object.values(show.outcomes).reduce((sum, o) => sum + ({ perfect: 100, good: 70, miss: 0 }[o] || 0), 0)
-  const accuracy = Math.round(points / show.events.length)
-  const rank = show.failed ? '—' : accuracy >= 90 ? 'S' : accuracy >= 75 ? 'A' : accuracy >= 55 ? 'B' : 'C'
-  const goal = !show.failed && show.bestCombo >= 6
-  const first = !show.failed && !career.completed.includes(show.episode)
-  const goalFirst = goal && !career.goals.includes(show.episode)
-  const base = ({ S: 140, A: 120, B: 100, C: 80, '—': 30 }[rank])
-  const bonus = (first ? 100 : 0) + (goalFirst ? 50 : 0)
-  const reputation = ({ S: 25, A: 20, B: 15, C: 10, '—': 0 }[rank])
-  const result = { rank, accuracy, base, bonus, reputation, goal, first, goalFirst }
-  if (career.claimed.includes(show.id)) return { career, result: { ...result, bonus: 0 } }
-  return { result, career: { ...career, coins: career.coins + base + bonus, reputation: career.reputation + reputation,
-    completed: first ? [...career.completed, show.episode] : career.completed,
-    goals: goalFirst ? [...career.goals, show.episode] : career.goals, claimed: [...career.claimed, show.id],
-    trust: career.trust + (first && show.choice === 'artist' ? 1 : 0), reliability: career.reliability + (first && show.choice === 'owner' ? 1 : 0) } }
-}
-export function buyUpgrade(career, id) {
-  const item = GEAR.find(g => g.id === id)
-  if (!item || career.upgrades.includes(id) || career.coins < item.price) return career
-  return { ...career, coins: career.coins - item.price, upgrades: [...career.upgrades, id] }
-}

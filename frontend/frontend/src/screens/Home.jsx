@@ -10,7 +10,7 @@ export const APPS = [
   { id: 'profile', label: 'Профиль', icon: 'person' },
   { id: 'store', label: 'Магазин', icon: 'cart', accent: true },
   { id: 'casino', label: 'Казик', icon: 'gift' },
-  { id: 'concert', label: 'Концерт · демо', icon: 'headphones', accent: true },
+  { id: 'concert', label: 'Концерт', icon: 'headphones', accent: true },
 ]
 
 export function AppIcon({ app, onOpen, size = 64, showLabel = true, badge }) {

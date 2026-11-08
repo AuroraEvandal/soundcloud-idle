@@ -1,6 +1,11 @@
 // Таблица ошибок из frontend-AGENTS.md (раздел 9). Коды берём только из docs/api.md.
 // action: stop | relogin | home | resync | stay | retry
 const TABLE = {
+  CONCERT_NOT_FOUND: ['Выступление не найдено. Восстанови соединение', 'retry'],
+  CONCERT_LOCKED: ['Сначала успешно закончи предыдущую смену', 'stay'],
+  CONCERT_INVALID_ACTION: ['Действие уже не относится к текущей сцене. Восстанови соединение', 'retry'],
+  CONCERT_SCENE_ACTIVE: ['Сначала закончи текущую сцену', 'stay'],
+  CONCERT_PAUSED: ['Сначала продолжи выступление', 'stay'],
   PLAYER_NOT_FOUND: ['', 'relogin'],
   BATTLE_NOT_FOUND: ['Этот батл не найден', 'home'],
   BATTLE_FINISHED: ['Батл уже закончен', 'home'],

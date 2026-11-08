@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createServer } from 'vite'
 import { composedBeat } from './fixtures/beat.mjs'
+import { createConcertSession } from '../src/concert/session.js'
 
 let vite, api, invoke
 const originalWindow = globalThis.window
@@ -40,6 +41,38 @@ test('login and mini-games send the documented IDs and initData without client s
     { name: 'start-mini-game', body: { initData: 'test-init-data', battleId, roundNumber: 2, actionId: 'start' } },
     { name: 'finish-mini-game', body: { initData: 'test-init-data', battleId, miniGameId, actionId: 'tap-1' } },
   ])
+})
+
+test('concert requests carry IDs and preserve their delivery ID after an uncertain response', async () => {
+  const calls = []
+  invoke = async (name, { body }) => { calls.push({ name, body }); if (calls.length === 1) throw new Error('lost response'); return { data: { show: null } } }
+  await assert.rejects(api.concertAction('input', { showId: battleId, sceneId: miniGameId, actionId: 'dial-63' }))
+  await api.concertAction('input', { showId: battleId, sceneId: miniGameId, actionId: 'dial-63' })
+  assert.deepEqual(calls[0], calls[1])
+  assert.equal(calls[1].name, 'concert')
+  assert.deepEqual(Object.keys(calls[1].body).sort(), ['action','actionId','initData','requestId','sceneId','showId'])
+})
+
+test('concert session reconciles a committed next after reopening before issuing a fresh next', async () => {
+  const values = new Map(), seen = new Set(), calls = []
+  const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) }
+  let scene = 0, lose = true
+  invoke = async (_name, { body }) => {
+    calls.push(body)
+    if (body.action === 'next' && !seen.has(body.requestId)) {
+      seen.add(body.requestId); scene++
+      if (lose) { lose = false; throw new Error('lost after commit') }
+    }
+    return { data: { show: { scene_index: scene } } }
+  }
+  const original = createConcertSession(api.concertAction, () => {}, () => storage)
+  await assert.rejects(original.run('next', { showId: battleId, sceneId: 'scene-1' }))
+  const reopened = createConcertSession(api.concertAction, () => {}, () => storage)
+  assert.equal((await reopened.run('get')).show.scene_index, 1)
+  assert.deepEqual(calls.map(body => body.action), ['next', 'next', 'get'])
+  assert.deepEqual(calls[0], calls[1])
+  assert.equal((await reopened.run('next', { showId: battleId, sceneId: 'scene-2' })).show.scene_index, 2)
+  assert.notEqual(calls[0].requestId, calls[3].requestId)
 })
 
 test('HTTP errors keep their game code instead of becoming a network error', async () => {

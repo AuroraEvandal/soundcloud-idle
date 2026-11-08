@@ -118,6 +118,13 @@ export async function getProfile() {
   return call('get-profile', {})
 }
 
+export async function concertAction(action, ids = {}) {
+  const started = performance.now()
+  const response = await (action === 'get' ? call('concert', { action })
+    : ids.requestId ? call('concert', { action, ...ids }) : callIdempotent('concert', { action, ...ids }))
+  return { ...response, client_rtt_ms: performance.now() - started }
+}
+
 export async function getHand(battleId) {
   if (useMock('getHand')) {
     await wait(rndInt(300, 500))

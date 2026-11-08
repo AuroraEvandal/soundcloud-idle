@@ -84,3 +84,6 @@ verify_jwt = false
 
 [functions.telegram-payments-webhook]
 verify_jwt = false
+
+[functions.concert]
+verify_jwt = false
