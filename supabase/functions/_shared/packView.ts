@@ -3,7 +3,7 @@ type Pack = Weights & { id: number; name: string; price: number; clothing_chance
 type Card = { slot: string; rarity: string }
 
 const slots: Record<string, string> = { setup: 'завязка', development: 'развитие', boost: 'усиление', punch: 'панч' }
-const rarities = ['common', 'rare', 'epic'] as const
+const rarities = ['common', 'rare', 'epic', 'legendary'] as const
 const percent = (value: number) => Number(value.toFixed(8))
 
 // The same category weights and available-card filters as open_pack_atomic.
@@ -11,7 +11,7 @@ const percent = (value: number) => Number(value.toFixed(8))
 export function packView(pack: Pack, balance: Weights, cards: Card[], hasUnownedClothing: boolean) {
   const pool = cards.filter((c) => !pack.card_slot || c.slot === pack.card_slot)
   const weights = rarities.map((r) => pool.some((c) => c.rarity === r)
-    ? Number(pack[`${r}_weight`] ?? balance[`${r}_weight`]) : 0)
+    ? (r === 'legendary' ? 1 : Number(pack[`${r}_weight`] ?? balance[`${r}_weight`])) : 0)
   const total = weights.reduce((sum, weight) => sum + weight, 0)
   const clothing = !pack.card_slot && hasUnownedClothing ? percent(Number(pack.clothing_chance) * 100) : 0
   const description = pack.card_slot
@@ -25,6 +25,7 @@ export function packView(pack: Pack, balance: Weights, cards: Card[], hasUnowned
       common: percent((100 - clothing) * weights[0] / total),
       rare: percent((100 - clothing) * weights[1] / total),
       epic: percent((100 - clothing) * weights[2] / total),
+      legendary: percent((100 - clothing) * weights[3] / total),
       clothing,
     } : null,
   }

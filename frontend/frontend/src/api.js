@@ -402,7 +402,7 @@ function scorePlayer(cards, theme) {
   }
   const s = cards.map((c) => c.syllables)
   const flow = 10 - (Math.max(...s) - Math.min(...s)) * 1.2
-  const base = { common: 5, rare: 6.5, epic: 8 }[cards[3].rarity]
+  const base = { common: 5, rare: 6.5, epic: 8, legendary: 10 }[cards[3].rarity]
   const punch = base + (cards[3].theme === theme ? 1.5 : 0) + rnd(0, 1.2)
   const matches = cards.filter((c) => c.theme === theme).length
   const meaning = 4 + matches * 1.2 + rnd(0, 1.2)
@@ -736,8 +736,8 @@ const ENERGY_MAX = 100
 const HYPE_MAX = 20
 const REGEN_MS = 3000
 const MAX_TAPS_PER_REQUEST = 200
-const RARITY_W = { common: 70, rare: 24, epic: 6 }
-const DUP_REFUND = { common: 20, rare: 60, epic: 150 }
+const RARITY_W = { common: 70, rare: 24, epic: 6, legendary: 1 }
+const DUP_REFUND = { common: 20, rare: 60, epic: 150, legendary: 300 }
 
 function pctOf(type) {
   const st = db.studio

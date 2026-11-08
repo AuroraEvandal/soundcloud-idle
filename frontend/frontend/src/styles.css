@@ -1690,3 +1690,6 @@ button:disabled { cursor: default; }
 .sw:has(.battle) > .appbar { display: flex; min-height: 44px; padding-block: 0; }
 .sw:has(.battle) .appbar-title { font-size: 22px; margin-left: 12px; }
 .sw:has(.battle) .appbar-right { display: none; }
+
+.card.rarity-legendary, .rarity-row.rarity-legendary { border-left-color: #ffd700; }
+.roulette-item.rarity-legendary { border-color: #ffd700; }
