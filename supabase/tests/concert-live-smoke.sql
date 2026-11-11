@@ -5,7 +5,7 @@ declare
   v_player uuid:=gen_random_uuid(); v_show uuid; v_terminal uuid:=gen_random_uuid(); v_buy uuid:=gen_random_uuid();
   v_state jsonb; v_event jsonb; v_payload jsonb; v_finished jsonb; v_replayed jsonb;
   v_kind text; v_prefix text; v_action text; v_stage text:='create fixture'; v_error text; v_context text;
-  v_sample int; v_elapsed int; v_target int; v_index int; v_step int; v_count int;
+  v_sample int; v_elapsed int; v_target int; v_index int; v_count int;
 begin
   insert into public.players(id,telegram_id,username,coins,xp,level)
     values(v_player,-(('x'||substr(replace(v_player::text,'-',''),1,14))::bit(56)::bigint),'concert_rollback_smoke',1000,0,1);
@@ -13,8 +13,8 @@ begin
   v_stage:='start';
   v_state:=public.concert_action(v_player,'start','{"episodeId":0,"choiceId":"artist"}',gen_random_uuid());
   v_show:=(v_state->'show'->>'id')::uuid;
-  if jsonb_array_length(v_state->'show'->'events')<>12 then raise exception 'expected 12 events'; end if;
-  for v_index in 0..11 loop
+  if jsonb_array_length(v_state->'show'->'events')<>18 then raise exception 'expected 18 events'; end if;
+  for v_index in 0..17 loop
     v_event:=v_state->'show'->'events'->v_index;
     v_kind:=v_event->>'kind';
     v_stage:=format('scene %s %s',v_index,v_kind);
@@ -29,7 +29,7 @@ begin
         if v_sample>0 then
           update public.concert_shows set progress=jsonb_set(progress,'{last_at}',to_jsonb(extract(epoch from clock_timestamp())*1000-300)) where id=v_show;
         end if;
-        v_target:=round((v_event->>'target')::numeric+case when (v_event->>'moving')::boolean then sin(v_sample/650.0)*(v_event->>'amplitude')::numeric else 0 end);
+        v_target:=round((v_event->>'target')::numeric+case when (v_event->>'moving')::boolean then sin(v_sample/coalesce((v_event->>'sweep_ms')::numeric,650))*(v_event->>'amplitude')::numeric else 0 end);
         v_prefix:=case when v_kind='frequency' then 'dial-' else 'fader-' end;
         v_state:=public.concert_action(v_player,'input',v_payload||jsonb_build_object('actionId',v_prefix||v_target),gen_random_uuid());
         v_sample:=v_sample+300;
@@ -51,17 +51,15 @@ begin
         v_elapsed:=(v_event->>'reveal_ms')::int+10;
         update public.concert_shows set scene_started_at=clock_timestamp()-make_interval(secs=>v_elapsed::double precision/1000) where id=v_show;
       end if;
-      v_prefix:=case v_kind when 'pads' then 'pad-' when 'patch' then 'patch-' when 'blackout' then 'memory-' when 'power' then 'power-' else null end;
-      if v_prefix is null then raise exception 'unknown kind %',v_kind; end if;
-      for v_step in 0..jsonb_array_length(v_event->'sequence')-1 loop
-        v_state:=public.concert_action(v_player,'input',v_payload||jsonb_build_object('actionId',v_prefix||(v_event->'sequence'->>v_step)),gen_random_uuid());
-      end loop;
+      select 'sequence-'||string_agg(value,'' order by ord) into v_action
+        from jsonb_array_elements_text(v_event->'sequence') with ordinality as e(value,ord);
+      v_state:=public.concert_action(v_player,'input',v_payload||jsonb_build_object('actionId',v_action),gen_random_uuid());
     end if;
     if not coalesce((v_state->'show'->'outcomes'->(v_event->>'id')->>'success')::boolean,false) then
       raise exception 'missing successful outcome, progress=%, outcomes=%, elapsed=%',v_state->'show'->'scene_progress',v_state->'show'->'outcomes',v_state->'show'->'scene_elapsed_ms';
     end if;
     v_stage:=v_stage||' next';
-    v_state:=public.concert_action(v_player,'next',v_payload,case when v_index=11 then v_terminal else gen_random_uuid() end);
+    v_state:=public.concert_action(v_player,'next',v_payload,case when v_index=17 then v_terminal else gen_random_uuid() end);
   end loop;
   v_stage:='assert finish'; v_finished:=v_state->'show'->'result';
   if v_state->'show'->>'status'<>'finished' or v_finished->>'rank'<>'S' or (v_finished->>'coins')::int<>135 or
@@ -93,7 +91,7 @@ begin
     if v_sample>0 then
       update public.concert_shows set progress=jsonb_set(progress,'{last_at}',to_jsonb(extract(epoch from clock_timestamp())*1000-600)) where id=v_show;
     end if;
-    v_target:=round(50+sin(v_elapsed/650.0)*15);
+    v_target:=round(50+sin(v_elapsed/coalesce((v_event->>'sweep_ms')::numeric,650))*15);
     v_state:=public.concert_action(v_player,'input',v_payload||jsonb_build_object('actionId','dial-'||v_target),gen_random_uuid());
   end loop;
   if not coalesce((v_state->'show'->'outcomes'->'scene-1'->>'success')::boolean,false) then
@@ -101,7 +99,7 @@ begin
   end if;
   perform public.concert_action(v_player,'abandon',jsonb_build_object('showId',v_show),gen_random_uuid());
   reset role;
-  perform set_config('concert.smoke_result',jsonb_build_object('ok',true,'player_id',v_player,'rpc_role','service_role','scenes',12,
+  perform set_config('concert.smoke_result',jsonb_build_object('ok',true,'player_id',v_player,'rpc_role','service_role','scenes',18,
     'result',v_finished,'coins_after_purchase',885,'terminal_replay','same result, current coins, no second payout','buy_replay','charged once','moving_600ms_hold','passed')::text,true);
 exception when others then
   get stacked diagnostics v_error=message_text,v_context=pg_exception_context;

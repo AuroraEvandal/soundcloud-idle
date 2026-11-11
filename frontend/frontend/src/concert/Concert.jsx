@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import Icon from '../components/Icon'
 import { createConcertAudio } from './audio.js'
 import { BEAT, EPISODES, GEAR } from './model.js'
@@ -16,7 +16,7 @@ function Wave({ active = true }) {
   return <span className={`ct-wave ${active ? 'is-playing' : ''}`} aria-hidden="true">{Array.from({ length: 28 }, (_, i) => <i key={i} style={{ '--h': `${20 + ((i * 37 + 13) % 77)}%`, '--d': `${i * -.13}s` }} />)}</span>
 }
 
-function Stage({ episode = 0, energy = 35, live = false, failed = false }) {
+const Stage = memo(function Stage({ episode = 0, energy = 35, live = false, failed = false }) {
   const gig = EPISODES[episode]
   return <div className={`ct-stage ${live ? 'ct-stage-live' : ''} ${energy > 79 ? 'ct-stage-hot' : ''} ${failed ? 'ct-stage-dim' : ''}`} aria-label={`Сцена: ${gig.artist}`}>
     <div className="ct-stage-grid" />
@@ -29,7 +29,7 @@ function Stage({ episode = 0, energy = 35, live = false, failed = false }) {
     <div className="ct-stage-top"><span className="ct-live-dot">{live ? 'LIVE' : 'СЕЗОН 01'}</span><span>{gig.crowd.toLocaleString('ru-RU')} в зале</span></div>
     {live && <div className="ct-stage-song"><span>{gig.artist}</span><b>{gig.track}</b></div>}
   </div>
-}
+})
 
 function Meter({ label, value, color }) {
   return <div className="ct-meter"><div><span>{label}</span><b>{value}<small>/100</small></b></div><div className="ct-meter-track" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value}><i style={{ width: `${value}%`, background: color }} /></div></div>
@@ -81,7 +81,7 @@ export default function Concert({ onClose }) {
   const [notice, setNotice] = useState(null), [loading, setLoading] = useState(false), [loadError, setLoadError] = useState('')
   const [audioError, setAudioError] = useState(''), [calibrate, setCalibrate] = useState(false), [offset, setOffset] = useState(0), [mutedMode, setMutedMode] = useState(false)
   const [boosted, setBoosted] = useState(false), [effect, setEffect] = useState(false)
-  const audio = useRef(null), currentShow = useRef(null), mounted = useRef(true), starting = useRef(false), frame = useRef(null), noticeTimer = useRef(null)
+  const audio = useRef(null), currentShow = useRef(null), mounted = useRef(true), starting = useRef(false), pauseIntent = useRef(false), noticeTimer = useRef(null)
   const anchor = useRef({ at: performance.now(), elapsed: 0, scene: 0 }), timeoutSent = useRef(null), session = useRef(null), mode = useRef(screen)
   const stateCallback = useRef(null)
   mode.current = screen
@@ -90,17 +90,21 @@ export default function Concert({ onClose }) {
   const active = show?.events?.[show.scene_index]
   const resolved = active && show?.outcomes?.[active.id]
   const index = show ? Object.keys(show.outcomes || {}).length : 0
-  const phase = index < 3 ? 'Саундчек' : index < 6 ? 'Первый трек' : index < 9 ? 'Аварийный режим' : 'Финальный дроп'
+  const total = show?.events.length || 18
+  const wins = Object.values(show?.outcomes || {}).filter(outcome => outcome.success).length
+  const phase = ['Саундчек', 'Первый трек', 'Аварийный режим', 'Финальный дроп'][Math.min(3, Math.floor(index * 4 / total))]
 
   stateCallback.current = response => {
     if (!mounted.current) return
     const next = response.show ? { ...response.show, failed: response.show.result?.rank === 'C' } : null
     setCareer(response.career); setShow(next); currentShow.current = next
     anchor.current = { at: performance.now(), ...concertClock(response) }
-    setPaused(Boolean(next?.paused) || (mode.current === 'live' && Boolean(audio.current?.suspended))); setLoadError('')
-    if (response.player) game?.setPlayer(response.player)
+    setTime(anchor.current.elapsed); setSceneTime(anchor.current.scene)
+    setPaused(Boolean(next?.paused) || pauseIntent.current); setLoadError('')
+    if (response.player && game?.player && ['coins', 'xp', 'level'].some(key => response.player[key] !== game.player[key])) game.setPlayer(response.player)
     if (next?.status === 'active') setEpisode(next.episode)
     if (next?.status === 'finished' && mode.current === 'live') {
+      pauseIntent.current = false
       audio.current?.dispose(); audio.current = null; setPaused(false); setScreen('result')
       game?.refreshProfile().catch(() => {})
     }
@@ -112,12 +116,19 @@ export default function Concert({ onClose }) {
   }
   async function retry() {
     setLoading(true)
-    try { await session.current.retry() } catch (e) { if (mounted.current) setLoadError(errorInfo(e).message) }
+    try {
+      if (mode.current === 'live' && paused && !pauseIntent.current) await audio.current?.resume()
+      const response = await session.current.retry()
+      if (mode.current === 'live' && response.show?.status === 'active') {
+        if (!response.show.paused && (pauseIntent.current || document.hidden)) pause()
+        if (response.show.paused) audio.current?.pause()
+      }
+    } catch (e) { if (mounted.current) setLoadError(errorInfo(e).message) }
     finally { if (mounted.current) setLoading(false) }
   }
   useEffect(() => {
     command('get').catch(() => {})
-    return () => { mounted.current = false; audio.current?.dispose(); cancelAnimationFrame(frame.current); clearTimeout(noticeTimer.current) }
+    return () => { mounted.current = false; audio.current?.dispose(); clearTimeout(noticeTimer.current) }
   }, [])
   useEffect(() => {
     if (!paused && !calibrate) return
@@ -141,23 +152,25 @@ export default function Concert({ onClose }) {
   useEffect(() => {
     if (screen !== 'live' || paused) return
     function tick() {
-      if (!mounted.current) return
+      if (!mounted.current || pauseIntent.current) return
       const delta = (performance.now() - anchor.current.at) / 1000
       setTime(anchor.current.elapsed + delta); setSceneTime(anchor.current.scene + delta)
       const s = currentShow.current, e = s?.events[s.scene_index]
-      if (e && !s.outcomes[e.id] && anchor.current.scene + delta > e.duration + .25 && timeoutSent.current !== s.id + ':' + e.id && !loadError) {
+      if (e && !s.outcomes[e.id] && anchor.current.scene + delta > e.duration + 1 && timeoutSent.current !== s.id + ':' + e.id && !loadError) {
         timeoutSent.current = s.id + ':' + e.id
-        command('input', { showId: s.id, sceneId: e.id, actionId: 'timeout' }).catch(() => {})
+        command('input', { showId: s.id, sceneId: e.id, actionId: 'timeout' })
+          .catch(() => {}).finally(() => { timeoutSent.current = null })
       }
-      frame.current = requestAnimationFrame(tick)
     }
-    frame.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame.current)
+    tick()
+    const clockTimer = setInterval(tick, 50)
+    return () => clearInterval(clockTimer)
   }, [screen, paused, loadError])
   useEffect(() => {
     if (screen !== 'live' || !resolved || paused || loadError) return
     const success = resolved.success
-    flash(success ? 'Чисто. Держим темп!' : 'Сбой. Следующая сцена — твоя.', success ? 'good' : 'miss')
+    const miss = { timeout: 'Время вышло', sequence: 'Порядок не совпал', channel: 'Выбран другой канал', request: 'Команда не совпала' }
+    flash(success ? 'Сервер засчитал сцену' : (miss[resolved.reason] || 'Сцена не засчитана'), success ? 'good' : 'miss')
     audio.current?.set('damage', !success); vibrate(success ? 15 : [20,35,20])
     const advance = setTimeout(() => command('next', { showId: show.id, sceneId: active.id }).catch(() => {}), 650)
     return () => clearTimeout(advance)
@@ -175,26 +188,35 @@ export default function Concert({ onClose }) {
         ? await command(existing.paused ? 'resume' : 'get', existing.paused ? { showId: existing.id } : {})
         : await command('start', { episodeId: episode, choiceId: choice })
       if (!mounted.current) { player?.dispose(); return }
+      if (!response.show || response.show.status === 'abandoned') { player?.dispose(); return }
       setChoice(response.show.choice); setEpisode(response.show.episode)
+      if (response.show.status === 'finished') { player?.dispose(); setScreen('result'); return }
       setMutedMode(silent); setBoosted(false); setEffect(false); setNotice(null); setScreen('live')
-      if (document.hidden) { player?.pause(); await command('pause', { showId: response.show.id }) }
+      if (document.hidden) pause()
     } catch (e) { player?.dispose(); if (mounted.current) setAudioError(e.code ? errorInfo(e).message : e.message) }
     finally { starting.current = false; if (mounted.current) setLoading(false) }
   }
   function pause() {
+    pauseIntent.current = true
     audio.current?.pause(); setPaused(true)
     const s = currentShow.current
     if (s?.status === 'active' && !s.paused) command('pause', { showId: s.id }).catch(() => {})
   }
   async function resume() {
+    pauseIntent.current = false
     setLoading(true)
-    try { await audio.current?.resume(); await command('resume', { showId: show.id }); setAudioError('') }
-    catch (e) { setAudioError(e.code ? errorInfo(e).message : e.message) }
+    try {
+      await audio.current?.resume()
+      const response = await command('resume', { showId: show.id })
+      if (pauseIntent.current || document.hidden) { pause(); return }
+      setPaused(Boolean(response.show?.paused)); setAudioError('')
+    }
+    catch (e) { audio.current?.pause(); setAudioError(e.code ? errorInfo(e).message : e.message) }
     finally { setLoading(false) }
   }
   async function leave() {
     setLoading(true)
-    try { await command('abandon', { showId: show.id }); audio.current?.dispose(); audio.current = null; setPaused(false); setScreen('hub'); setAudioError('') }
+    try { await command('abandon', { showId: show.id }); pauseIntent.current = false; audio.current?.dispose(); audio.current = null; setPaused(false); setScreen('hub'); setAudioError('') }
     catch {} finally { if (mounted.current) setLoading(false) }
   }
   async function buy(id) {
@@ -204,7 +226,7 @@ export default function Concert({ onClose }) {
   }
   async function onAction(actionId) {
     const s = currentShow.current, e = s?.events[s.scene_index]
-    if (!s || !e || loadError || paused || s.outcomes[e.id]) return
+    if (!s || !e || loadError || paused || pauseIntent.current || s.outcomes[e.id]) return
     return command('input', { showId: s.id, sceneId: e.id, actionId })
   }
   const header = <header className="ct-header" inert={paused || calibrate}><button className="ct-icon-button" disabled={loading} aria-label={screen === 'hub' ? 'Закрыть концерт' : 'Назад'} onClick={() => screen === 'hub' ? onClose?.() : screen === 'live' ? pause() : setScreen('hub')}><Icon name="back" size={22} /></button><div className="ct-wordmark"><Icon name="cloud" size={22} /><b>SOUNDWAVE<span>BACKSTAGE</span></b></div><button className="ct-icon-button" aria-label="Настроить задержку звука" onClick={() => setCalibrate(true)} disabled={screen === 'live' || loading}><Icon name="headphones" size={21} /></button></header>
@@ -216,9 +238,12 @@ export default function Concert({ onClose }) {
     {screen === 'hub' && <main className="ct-scroll ct-hub-scroll" inert={calibrate}>
       {audioError && <div className="ct-error" role="alert">{audioError}<button disabled={loading} onClick={() => start(true)}>Продолжить с визуальным пульсом</button></div>}
       <div className="ct-hub-heading"><span className="ct-eyebrow">ИНТЕРАКТИВНАЯ МУЗЫКАЛЬНАЯ ИСТОРИЯ</span><h1>Спаси<br /><em>концерт.</em></h1><p>Они выходят на сцену.<br />Ты делаешь так, чтобы их услышали.</p></div>
-      <div className="ct-poster"><Stage episode={episode} /><div className="ct-poster-caption"><span>ГЛАВА 01 / ПОСЛЕДНИЙ СЕЗОН</span><strong>Пока здесь<br />есть звук.</strong><div><span><Icon name="mic" size={14} />6 выступлений</span><span>12 сцен / концерт</span></div></div></div>
+      <div className="ct-poster"><Stage episode={episode} /><div className="ct-poster-caption"><span>ГЛАВА 01 / ПОСЛЕДНИЙ СЕЗОН</span><strong>Пока здесь<br />есть звук.</strong><div><span><Icon name="mic" size={14} />6 выступлений</span><span>{show?.status === 'active' ? `${total} сцен в текущей попытке` : '18 сцен / концерт'}</span></div></div></div>
       <div className="ct-wallet"><div><span>Твой баланс</span><b>{career.coins.toLocaleString('ru-RU')} <small>₽</small></b></div><div><span>Репутация</span><b>{career.reputation} <small>REP</small></b></div><Icon name="headphones" size={30} /></div>
       <div className="ct-save-label">ПРОГРЕСС СОХРАНЯЕТСЯ · ОБЩИЙ КОШЕЛЁК ИГРОКА</div>
+      {show?.status === 'finished' && result && <button className="ct-last-result" onClick={() => { setEpisode(show.episode); setChoice(show.choice); setScreen('result') }}>
+        <span>Последний концерт</span><b>{result.rank} · {wins}/{total} зачтено</b>
+      </button>}
       <nav className="ct-tabs" aria-label="Разделы концерта"><button className={tab === 'shows' ? 'is-active' : ''} onClick={() => setTab('shows')}>Выступления <span>06</span></button><button className={tab === 'gear' ? 'is-active' : ''} onClick={() => setTab('gear')}>Твой пульт <span>{career.upgrades.length}/5</span></button></nav>
       {tab === 'shows' ? <section className="ct-episodes" aria-label="Сюжетные концерты">{EPISODES.map((item, i) => {
         const unlocked = i === 0 || career.completed.includes(i - 1), completed = career.completed.includes(i)
@@ -234,20 +259,23 @@ export default function Concert({ onClose }) {
 
     {screen === 'live' && show && <main className="ct-live" inert={paused}>
       <div className="ct-show-top"><div><span className="ct-eyebrow">СМЕНА {String(episode + 1).padStart(2, '0')} · {phase.toUpperCase()}</span><b>{gig.venue}</b></div><button className="ct-pause" aria-label="Пауза" onClick={pause}>Ⅱ</button></div>
-      <div className="ct-live-scene"><Stage episode={episode} energy={show.energy} live failed={show.quality < 20 || (active?.kind === 'blackout' && sceneTime * 1000 > active.reveal_ms)} /><div className="ct-time"><span>{formatTime(time)}</span><i><b style={{ width: `${(show.scene_index / show.events.length) * 100}%` }} /></i><span>{index}/12</span></div></div>
+      <div className="ct-live-scene"><Stage episode={episode} energy={show.energy} live failed={show.quality < 20 || (active?.kind === 'blackout' && sceneTime * 1000 > active.reveal_ms)} /><div className="ct-time"><span>{formatTime(time)}</span><i><b style={{ width: `${(show.scene_index / show.events.length) * 100}%` }} /></i><span>{index}/{total}</span></div></div>
       <div className="ct-meters"><Meter label="Качество звука" value={show.quality} color="var(--accent)" /><Meter label="Энергия зала" value={show.energy} color="#b9e579" /></div>
       <div className="ct-desk"><div className="ct-desk-top"><span>КОНТУР / MIXING DESK</span><span className="ct-pulse" style={{ opacity: time % BEAT < .12 ? 1 : .3 }}>● <b>120 BPM</b></span></div>
-        {notice && <div className={`ct-feedback ct-feedback-${notice.type}`} role="status">{notice.text}</div>}
+        <div className={`ct-scene-status ${notice?.type === 'miss' ? 'is-miss' : ''}`}>
+          <span role="status">{notice?.text || `Сцена ${Math.min(index + 1, total)} из ${total}`}</span><b>{wins} зачтено</b>
+        </div>
         {show.assisted && <div className="ct-assist">Ника рядом · зона попадания расширена</div>}
-        {active && !resolved ? <Controls event={active} time={sceneTime} onAction={onAction} audio={audio.current} upgrades={career.upgrades} paused={paused || Boolean(loadError)} state={show} /> : <div className="ct-breathe"><Wave active={!paused} /><span className="ct-eyebrow">{index === 12 ? 'ПОСЛЕДНИЙ УДАР' : 'ПЕРЕСТРАИВАЕМ ПУЛЬТ'}</span><h2>{resolved?.success ? 'Держим этот звук.' : 'Следующая сцена.'}</h2><p>{index >= 6 ? gig.midway : 'Ника: «Дыши. Смотри на руки. Всё слышно».'}</p></div>}
+        {active && !resolved ? <Controls key={show.id + active.id} event={active} time={sceneTime} onAction={onAction} audio={audio.current} upgrades={career.upgrades} paused={paused || Boolean(loadError)} state={show} /> : <div className="ct-breathe"><Wave active={!paused} /><span className="ct-eyebrow">{index === total ? 'ПОСЛЕДНИЙ УДАР' : 'ПЕРЕСТРАИВАЕМ ПУЛЬТ'}</span><h2>{resolved?.success ? 'Держим этот звук.' : 'Следующая сцена.'}</h2><p>{index >= 6 ? gig.midway : 'Ника: «Дыши. Смотри на руки. Всё слышно».'}</p></div>}
         <div className="ct-desk-bottom"><span><i className={mutedMode ? '' : 'is-online'} />{mutedMode ? 'ВИЗУАЛЬНЫЙ РЕЖИМ' : 'MASTER OUT'}</span><span>{String(index).padStart(2, '0')} / {show.events.length}</span><b>×{show.combo}</b></div>
       </div>
-      <div className="ct-live-actions"><button className="ct-boost" disabled={show.energy < 80 || boosted || index >= 12} onClick={() => { setBoosted(true); audio.current?.set('boost', true); flash('ЗАЛ С ТОБОЙ · ЕЩЁ ГРОМЧЕ'); vibrate([20, 30, 20]) }}><Icon name="cloud" size={18} />{boosted ? 'Этот зал — твой' : show.energy >= 80 ? 'Зал с тобой · запустить дроп' : 'Особый дроп · от 80 энергии'}</button>{career.upgrades.includes('effects') && <button className={`ct-fx ${effect ? 'is-active' : ''}`} onClick={() => { setEffect(!effect); audio.current?.set('effect', !effect) }} aria-pressed={effect}>FX</button>}</div>
+      <div className="ct-live-actions"><button className="ct-boost" disabled={show.energy < 80 || boosted || index >= total} onClick={() => { setBoosted(true); audio.current?.set('boost', true); flash('ЗАЛ С ТОБОЙ · ЕЩЁ ГРОМЧЕ'); vibrate([20, 30, 20]) }}><Icon name="cloud" size={18} />{boosted ? 'Этот зал — твой' : show.energy >= 80 ? 'Зал с тобой · запустить дроп' : 'Особый дроп · от 80 энергии'}</button>{career.upgrades.includes('effects') && <button className={`ct-fx ${effect ? 'is-active' : ''}`} onClick={() => { setEffect(!effect); audio.current?.set('effect', !effect) }} aria-pressed={effect}>FX</button>}</div>
       <div className="ct-show-story">{time < 60 ? 'Ирина: «Сначала пусть услышат. Потом поверят».' : time < 95 ? gig.midway : time < 140 ? 'Ника: «Смотри на зал. Они уже с нами».' : 'Левый Берег: «Этот последний — для тех, кто остался».'}</div>
     </main>}
 
     {screen === 'result' && result && <main className="ct-scroll ct-result" inert={calibrate}><span className="ct-eyebrow">СМЕНА {String(episode + 1).padStart(2, '0')} ЗАВЕРШЕНА</span><div className={`ct-rank ct-rank-${result.rank}`}><span>ОЦЕНКА ВЫСТУПЛЕНИЯ</span><strong>{result.rank}</strong><Wave active={false} /></div><h1>{show.failed ? 'Сегодня было тяжело.' : episode === 5 ? 'Контур остаётся.' : result.rank === 'C' ? 'Свет ещё горит.' : 'Они нас услышали.'}</h1><p>{show.failed ? 'Ника выключает усилитель и садится рядом. «Плохой вечер не делает тебя плохим техником. Завтра попробуем ещё раз».' : episode === 5 ? 'Ирина читает сообщение от организатора. Потом молча показывает его команде. Клубу предлагают зимнюю резиденцию. Чайник торжественно подключают в другом здании.' : result.rank === 'C' ? '«Было криво. Но было живое». Левый Берег помогает сматывать кабели. Ирина уже пишет дату следующего концерта.' : 'Ирина стоит у выхода и не торопит людей. Ника впервые за вечер снимает наушники. «Вот теперь это место снова звучит».'}</p>
-      <div className="ct-result-stats"><div><b>{result.accuracy}%</b><span>точность</span></div><div><b>×{show.bestCombo}</b><span>лучшая серия</span></div><div><b>+{result.xp || 0}</b><span>опыт</span></div></div>
+      <div className="ct-result-stats"><div><b>{wins}/{total}</b><span>сцен зачтено</span></div><div><b>×{show.bestCombo}</b><span>лучшая серия</span></div><div><b>+{result.xp || 0}</b><span>опыт</span></div></div>
+      <p className="ct-result-rule">{show.failed ? `Для победы нужно зачесть ${Math.ceil(total * .55)} сцен из ${total}.` : !result.paid ? 'Смена засчитана. Сегодня уже оплачены пять концертов.' : 'Смена засчитана. Награда зачислена в общий кошелёк.'}</p>
       <div className="ct-receipt"><span className="ct-eyebrow">РАСЧЁТ ЗА ВЕЧЕР</span><div><span>Гонорар команды</span><b>+{result.base} ₽</b></div>{result.first && result.paid && <div><span>Первое успешное выступление</span><b>+50 ₽</b></div>}{result.goalFirst && result.paid && <div><span>6 действий без ошибки</span><b>+25 ₽</b></div>}<div className="ct-receipt-total"><span>В твой кошелёк</span><b>+{result.coins} ₽</b></div></div>
       <div className="ct-dialogue"><div className="ct-avatar">{choice === 'artist' ? 'Л' : 'И'}</div><div><span>{choice === 'artist' ? gig.artist : 'Ирина'}</span><p>{show.failed ? 'Мы ещё сыграем.' : choice === 'artist' ? '«Ты слышишь, что я хочу сказать. Это редкость».' : '«На тебя можно положиться. Сейчас это важнее всего».'}</p></div></div>
       <button className="ct-primary" onClick={() => { if (!show.failed && episode < 5) setEpisode(episode + 1); setTab('shows'); setScreen('hub') }}>{episode === 5 && !show.failed ? 'Вернуться в «Контур»' : show.failed ? 'Собраться и попробовать снова' : 'Следующая смена'}<span>↗</span></button><button className="ct-text-button" onClick={() => { setTab('gear'); setScreen('hub') }}>Обновить пульт · {career.coins} ₽</button>

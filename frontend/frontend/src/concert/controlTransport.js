@@ -2,7 +2,7 @@ export const clampControl = value => Math.max(0, Math.min(100, value))
 
 // This is a visual guide; only the server measures a successful hold.
 export function targetPosition(event, seconds) {
-  return clampControl(event.target + (event.moving ? Math.sin(seconds * 1000 / 650) * event.amplitude : 0))
+  return clampControl(event.target + (event.moving ? Math.sin(seconds * 1000 / (event.sweep_ms || 650)) * event.amplitude : 0))
 }
 
 export function controlAction(kind, value) {

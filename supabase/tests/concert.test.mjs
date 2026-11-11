@@ -23,7 +23,7 @@ test('career starts with real player money; show restarts restore the same attem
   assert.equal(initial.career.coins,1000)
   const request = id()
   const start = await act('start',{episodeId:0,choiceId:'artist'},request)
-  assert.equal(start.show.events.length,12)
+  assert.equal(start.show.events.length,18)
   assert.equal(start.show.quality,70)
   assert.equal(start.show.energy,35)
   assert.equal((await act('get')).show.id,start.show.id)
@@ -41,18 +41,18 @@ const input = (show, actionId, owner = player, request = id()) => act('input',{s
 const next = (show, request = id(), owner = player) => act('next',{showId:show.id,sceneId:show.events[show.scene_index].id},request,owner)
 const solve = async (initial, owner = player, fail = new Set(), finalRequest = id()) => {
   let current = initial
-  for (let scene = 0; scene < 12; scene++) {
+  for (let scene = 0; scene < current.show.events.length; scene++) {
     let show = current.show
     const event = show.events[show.scene_index]
     if (fail.has(scene)) {
-      await setElapsed(show,event.duration*1000+1)
+      await setElapsed(show,event.duration*1000+751)
       current = await act('get',{},null,owner)
     } else if (['frequency','level','crossfade'].includes(event.kind)) {
       if (event.secondary) current = await input(show,'monitor',owner)
       for (let ms = 0; ms <= event.hold_ms+600 && !current.show.outcomes[event.id]; ms += 300) {
         await setElapsed(show,ms)
         if (ms) await db.query("update concert_shows set progress=jsonb_set(progress,'{last_at}',to_jsonb(extract(epoch from clock_timestamp())*1000-300)) where id=$1",[show.id])
-        const target = Math.round(event.target+(event.moving ? Math.sin(ms/650)*event.amplitude : 0))
+        const target = Math.round(event.target+(event.moving ? Math.sin(ms/(event.sweep_ms || 650))*event.amplitude : 0))
         current = await input(show,`${event.kind === 'frequency' ? 'dial' : 'fader'}-${target}`,owner)
       }
     } else if (event.kind === 'feedback') {
@@ -65,12 +65,14 @@ const solve = async (initial, owner = player, fail = new Set(), finalRequest = i
       current = await input(show,event.request === 'voice-off' ? 'voice-on' : 'loop-off',owner)
     } else {
       if (event.kind === 'blackout') await setElapsed(show,event.reveal_ms+1)
-      const prefix = {pads:'pad',patch:'patch',blackout:'memory',power:'power'}[event.kind]
-      for (const n of event.sequence) current = await input(show,`${prefix}-${n}`,owner)
+      current = await input(show,`sequence-${event.sequence.join('')}`,owner)
     }
     assert.ok(current.show.outcomes[event.id],`${event.kind} must have server outcome`)
     if (!fail.has(scene)) assert.equal(current.show.outcomes[event.id].success,true,`${event.kind} succeeds`)
-    current = await next(show,scene === 11 ? finalRequest : id(),owner)
+    if (!fail.has(scene) && scene === show.events.length - 1) {
+      assert.equal(current.show.status,'finished','final input settles the show even if the player closes the screen')
+    }
+    current = await next(show,scene === show.events.length - 1 ? finalRequest : id(),owner)
   }
   return current
 }
@@ -99,7 +101,7 @@ test('one teleport or fast packet burst cannot forge a hold; accepted continuity
   assert.ok(current.show.scene_progress.hold_ms<900,'packet count alone cannot satisfy the hold duration')
   assert.deepEqual(current.show.outcomes,{})
   await assert.rejects(input(show,'dial-101'),/CONCERT_INVALID_ACTION/)
-  await db.query("update concert_shows set progress=jsonb_set(progress,'{last_at}',to_jsonb(extract(epoch from clock_timestamp())*1000-900)) where id=$1",[show.id])
+  await db.query("update concert_shows set progress=jsonb_set(progress,'{last_at}',to_jsonb(extract(epoch from clock_timestamp())*1000-1400)) where id=$1",[show.id])
   current = await input(show,'dial-50')
   assert.equal(current.show.scene_progress.hold_ms,0,'a missing keepalive resets continuity')
   await input(show,'dial-0')
@@ -129,7 +131,7 @@ test('feedback and artist require timed second actions; blackout must reveal bef
   current = await act('get')
   let event = current.show.events[3]
   current = await input(current.show,`mute-${event.channel}`)
-  await assert.rejects(input(current.show,`unmute-${event.channel}`),/CONCERT_INVALID_ACTION/)
+  assert.equal((await input(current.show,`unmute-${event.channel}`)).show.scene_progress.step,1)
   await setElapsed(show,current.show.scene_progress.release_at_ms+20)
   current = await input(current.show,`unmute-${event.channel}`)
   assert.equal(current.show.outcomes[event.id].success,true)
@@ -138,14 +140,14 @@ test('feedback and artist require timed second actions; blackout must reveal bef
   event = current.show.events[5]
   current = await input(current.show,event.request)
   const release = event.request === 'voice-off' ? 'voice-on' : 'loop-off'
-  await assert.rejects(input(current.show,release),/CONCERT_INVALID_ACTION/)
+  assert.equal((await input(current.show,release)).show.scene_progress.step,1)
   await setElapsed(show,current.show.scene_progress.release_at_ms+20)
   current = await input(current.show,release)
   assert.equal(current.show.outcomes[event.id].success,true)
   await db.query('update concert_shows set scene_index=7,scene_started_at=clock_timestamp(),scene_base_ms=0,progress=concert_progress(events->7) where id=$1',[show.id])
   current = await act('get')
   event = current.show.events[7]
-  await assert.rejects(input(current.show,`memory-${event.sequence[0]}`),/CONCERT_INVALID_ACTION/)
+  assert.equal((await input(current.show,`memory-${event.sequence[0]}`)).show.scene_progress.step,0)
   await setElapsed(show,event.reveal_ms+1)
   for (const index of event.sequence) current = await input(current.show,`memory-${index}`)
   assert.equal(current.show.outcomes[event.id].success,true)
@@ -227,7 +229,7 @@ test('a month-old active or paused show recovers as a bounded timeout and can be
 test('next is bound to the resolved scene and replaying a lost response never skips another scene', async () => {
   let current = await start()
   const oldShow = current.show
-  await setElapsed(oldShow,oldShow.events[0].duration*1000+1)
+  await setElapsed(oldShow,oldShow.events[0].duration*1000+751)
   await act('get')
   const request = id()
   current = await next(oldShow,request)
@@ -235,7 +237,7 @@ test('next is bound to the resolved scene and replaying a lost response never sk
   assert.equal((await next(oldShow,request)).show.scene_index,1)
   await assert.rejects(next(oldShow),/CONCERT_INVALID_ACTION/)
   await assert.rejects(next(current.show,request),/IDEMPOTENCY_CONFLICT/)
-  await setElapsed(current.show,current.show.events[1].duration*1000+1)
+  await setElapsed(current.show,current.show.events[1].duration*1000+751)
   await act('get')
   await assert.rejects(next(oldShow),/CONCERT_INVALID_ACTION/)
   assert.equal((await next(current.show)).show.scene_index,2)
@@ -270,7 +272,7 @@ test('successful concert pays and levels once, first goals persist, final respon
 
 test('C grants no money or opening; UTC five-show cap preserves progress and reputation', async () => {
   const initial = await start(1)
-  const failed = await solve(initial,player,new Set([0,1,2,3,4,5,6,7,8,9,10,11]))
+  const failed = await solve(initial,player,new Set(initial.show.events.keys()))
   assert.equal(failed.show.result.rank,'C')
   assert.equal(failed.player.coins,initial.player.coins)
   assert.equal(failed.show.result.xp,0)
@@ -306,7 +308,7 @@ test('purchases use main coins with idempotent charging; insufficient funds neve
 })
 
 test('migration replays; browser roles have no access and service_role calls invoker RPC with RLS bypass', async () => {
-  for (const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>/_concert_(career|hold_network_tolerance)\.sql$/.test(file)).sort()) {
+  for (const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>/_concert_(career|hold_network_tolerance|responsive_rounds)\.sql$/.test(file)).sort()) {
     await db.exec(await readFile(new URL(`../migrations/${file}`,import.meta.url),'utf8'))
   }
   for (const role of ['anon','authenticated']) {
@@ -319,4 +321,31 @@ test('migration replays; browser roles have no access and service_role calls inv
   assert.equal(await rpc("select prosecdef result from pg_proc where oid='concert_action(uuid,text,jsonb,uuid)'::regprocedure"),false)
   await db.exec('set role service_role')
   try { assert.equal((await act('get')).player.id,player) } finally { await db.exec('reset role') }
+})
+
+test('an early timeout does not forfeit a valid batch still in transit', async () => {
+  const current = await start()
+  await db.query('update concert_shows set scene_index=1,progress=concert_progress(events->1) where id=$1',[current.show.id])
+  const { show } = await act('get')
+  const event = show.events[1]
+  await setElapsed(show,event.duration*1000+200)
+  assert.equal((await input(show,'timeout')).show.outcomes[event.id],undefined)
+  const request = id()
+  const action = `sequence-${event.sequence.join('')}`
+  assert.equal((await input(show,action,player,request)).show.outcomes[event.id].success,true)
+  assert.equal((await input(show,action,player,request)).show.combo,1)
+  await act('abandon',{showId:show.id})
+})
+
+test('saved twelve-scene shows finish at their own boundary', async () => {
+  const { show } = await start()
+  await db.query(`update concert_shows set events=(
+    select jsonb_agg(value order by ord) from jsonb_array_elements(events) with ordinality as e(value,ord) where ord<=12
+  ) where id=$1`,[show.id])
+  const saved = await act('get')
+  assert.equal(saved.show.events.length,12)
+  const result = await solve(saved)
+  assert.equal(result.show.status,'finished')
+  assert.equal(Object.keys(result.show.outcomes).length,12)
+  assert.equal(result.show.result.rank,'S')
 })

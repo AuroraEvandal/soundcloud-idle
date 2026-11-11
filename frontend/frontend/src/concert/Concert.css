@@ -1936,3 +1936,32 @@ body:has(.ct-standalone) {
 
 .ct-network-error{position:absolute;z-index:20;top:64px;left:12px;right:12px;box-shadow:0 8px 24px #0008}
 .ct-load-message{font-size:13px;line-height:1.6;color:var(--text2);max-width:300px;text-align:center}
+.ct-scene-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #3c352c;
+  color: #eadaca;
+  font-size: 12px;
+}
+.ct-scene-status b { color: #abe9ad; white-space: nowrap; }
+.ct-scene-status.is-miss span { color: #ffc2a1; }
+.ct-result-rule { color: #f1d7b7; font-size: 13px; line-height: 1.45; }
+.ct-last-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 1px solid #514132;
+  border-radius: 10px;
+  color: #f2ddc7;
+  background: #241d16;
+  font-size: 12px;
+}

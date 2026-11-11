@@ -84,3 +84,32 @@
   .ct-controls .ct-secondary-cue { font-size:9px }
   .ct-secondary-cue small { font-size:6px }
 }
+.ct-controls .ct-input-state {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #27241f;
+  color: #f1d7b7;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ct-controls .ct-input-state.is-in-zone {
+  background: #203225;
+  color: #abedb8;
+}
+.ct-controls .ct-fader-zone.is-in-zone > i {
+  background: #367847;
+  border-color: #90dc9e;
+}
+.ct-controls .ct-control-frequency {
+  min-height: 150px;
+}
+.ct-frequency-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ct-frequency-value b { color: #fff3e2; font-size: 23px; }
+.ct-frequency-value span { color: #cab9a3; font-size: 11px; }
