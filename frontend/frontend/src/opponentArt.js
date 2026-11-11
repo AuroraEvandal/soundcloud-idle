@@ -9,10 +9,10 @@ export const OPPONENT_ART = {
 export const opponentArt = (id) => OPPONENT_ART[id] || null
 
 const OPPONENT_PORTRAITS = {
-  1: '/opponents/3got2010-cutout.png',
-  2: '/opponents/arlekin40tysh-cutout.png',
-  3: '/opponents/puzo80-cutout.png',
-  4: '/opponents/xviiroyal-cutout.png',
+  1: '/opponents/3got2010-cutout.webp',
+  2: '/opponents/arlekin40tysh-cutout.webp',
+  3: '/opponents/puzo80-cutout.webp',
+  4: '/opponents/xviiroyal-cutout.webp',
   5: '/opponents/final-emblem.jpg',
 }
 

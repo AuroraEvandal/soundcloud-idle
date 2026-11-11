@@ -36,7 +36,7 @@ test('home shows actual player resources and all eight app launchers', () => {
 test('opponent selection uses the supplied photograph and display name', () => {
   const html = render(battle)
   assert.match(html, /3гот2010/)
-  assert.match(html, /\/opponents\/3got2010-cutout\.png/)
+  assert.match(html, /\/opponents\/3got2010-cutout\.webp/)
   assert.match(html, /Начать батл/)
 })
 
