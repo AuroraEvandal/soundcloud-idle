@@ -157,7 +157,7 @@ test('pack rarity settings act on categories and prefer unowned cards within tha
     await db.query('delete from player_cards where player_id=$1',[other])
     await db.query('update players set coins=1000 where id=$1',[other])
     const first = await open(id(),91,other)
-    assert.equal(await rpc('select rarity result from cards where id=$1',[first.card_id]),rarity)
+    assert.ok([rarity,'legendary'].includes(await rpc('select rarity result from cards where id=$1',[first.card_id])))
     const second = await open(id(),91,other)
     assert.notEqual(second.card_id,first.card_id)
     assert.equal(second.duplicate,false)
@@ -243,7 +243,7 @@ test('all coin sources use full hundreds of fans, with no former 400-fan cap', a
     assert.equal(pet.refund,Math.round(300*multiplier))
     const pack=await open(id(),91,owner)
     const rarity=await rpc('select rarity result from cards where id=$1',[pack.card_id])
-    assert.equal(pack.refund,Math.round(({common:20,rare:60,epic:150}[rarity])*multiplier))
+    assert.equal(pack.refund,Math.round(({common:20,rare:60,epic:150,legendary:300}[rarity])*multiplier))
     await db.query('update player_cards set uses_left=3 where player_id=$1',[owner])
     // Seed the state immediately before a deciding win; round 1 needs no mini-game.
     const battle=await rpc(`insert into battles(player_id,opponent_id,current_round,player_rounds_won,themes,current_hand)
@@ -379,7 +379,9 @@ test('each category pack charges 200 and draws only its slot across all rarities
         const drop=await open(request,pack,other);
         assert.equal(drop.type,'card');
         assert.equal(drop.duplicate,false);
-        assert.deepEqual((await db.query('select slot,rarity from cards where id=$1',[drop.card_id])).rows[0],{slot,rarity});
+        const actual=(await db.query('select slot,rarity from cards where id=$1',[drop.card_id])).rows[0];
+        assert.equal(actual.slot,slot);
+        assert.ok([rarity,'legendary'].includes(actual.rarity));
         assert.equal(await balance(other),0);
         assert.deepEqual(await open(request,pack,other),drop);
         assert.equal(await balance(other),0);
@@ -387,7 +389,9 @@ test('each category pack charges 200 and draws only its slot across all rarities
         await db.query('update players set coins=200 where id=$1',[other]);
         const dup=await open(id(),pack,other);
         assert.equal(dup.duplicate,true);
-        assert.equal(dup.refund,Math.round(({common:20,rare:60,epic:150}[rarity])*1.1));
+        const duplicateRarity=await rpc('select rarity result from cards where id=$1',[dup.card_id]);
+        assert.ok([rarity,'legendary'].includes(duplicateRarity));
+        assert.equal(dup.refund,Math.round(({common:20,rare:60,epic:150,legendary:300}[duplicateRarity])*1.1));
         assert.equal(await balance(other),dup.refund);
         assert.equal(await rpc('select uses_left result from player_cards where player_id=$1 and card_id=$2',[other,dup.card_id]),3);
       }
@@ -399,7 +403,7 @@ test('slot pack weights exclude unavailable rarities and an empty slot rolls bac
   await db.exec('begin');
   try {
     await db.query('update players set coins=1000 where id=$1',[other]);
-    await db.query("update cards set slot='boost' where slot='setup' and rarity='epic'");
+    await db.query("update cards set slot='boost' where slot='setup' and rarity in ('epic','legendary')");
     await db.query('update game_balance set common_weight=1,rare_weight=0,epic_weight=1000000');
     const drop=await open(id(),3,other);
     assert.deepEqual((await db.query('select slot,rarity from cards where id=$1',[drop.card_id])).rows[0],{slot:'setup',rarity:'common'});
@@ -418,3 +422,24 @@ test('slot pack weights exclude unavailable rarities and an empty slot rolls bac
     }
   } finally { await db.exec('rollback'); }
 });
+
+
+test('author import is repeatable and legendary-only slot gives the documented duplicate refund', async () => {
+  await db.exec('begin');
+  try {
+    const count = await rpc('select count(*)::int result from cards');
+    await db.exec(await readFile(new URL('../../backend/author-cards.sql', import.meta.url), 'utf8'));
+    assert.equal(await rpc('select count(*)::int result from cards'), count);
+    assert.equal(await rpc("select count(*)::int result from cards where rarity='legendary'"), 2);
+    await db.query("update cards set slot='boost' where slot='setup' and rarity<>'legendary'");
+    await db.query('delete from player_cards where player_id=$1', [other]);
+    await db.query('update players set coins=1000,popularity=1000 where id=$1', [other]);
+    const first = await open(id(),3,other);
+    assert.equal(await rpc('select rarity result from cards where id=$1',[first.card_id]), 'legendary');
+    const second = await open(id(),3,other);
+    assert.equal(second.card_id,first.card_id);
+    assert.equal(second.duplicate,true);
+    assert.equal(second.refund,330);
+    assert.equal(await balance(other),930);
+  } finally { await db.exec('rollback'); }
+})

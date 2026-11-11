@@ -54,7 +54,7 @@ export const PACKS = [
   { id: 1, name: 'Базовый пак', price: 200, clothing_chance: 0.07,
     description: 'Карточка любого слота или предмет одежды. Для пополнения колоды.' },
   { id: 2, name: 'Премиальный пак', price: 500, clothing_chance: 0.07,
-    rarity_weights: { common: 40, rare: 40, epic: 20 },
+    rarity_weights: { common: 40, rare: 40, epic: 20, legendary: 1 },
     description: 'Карточка любого слота с повышенным шансом редкой и эпической. Может выпасть одежда.' },
   { id: 3, name: 'Пак «Завязка»', price: 200, clothing_chance: 0, card_slot: 'setup' },
   { id: 4, name: 'Пак «Развитие»', price: 200, clothing_chance: 0, card_slot: 'development' },

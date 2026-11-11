@@ -36,7 +36,7 @@ function flowScore(cards: Record<string, unknown>[]) {
 }
 
 // Панч — из свойств карточки в слоте «панч»: базово по редкости, +0,5 за пункт бонуса.
-const RARITY_PUNCH: Record<string, number> = { common: 5, rare: 7, epic: 9 }
+const RARITY_PUNCH: Record<string, number> = { common: 5, rare: 7, epic: 9, legendary: 10 }
 function punchScore(cards: Record<string, unknown>[]) {
   const punch = cards[3]
   const base = RARITY_PUNCH[String(punch.rarity || 'common')] ?? 5

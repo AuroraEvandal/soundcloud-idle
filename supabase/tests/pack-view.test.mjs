@@ -10,11 +10,11 @@ const cards = ['setup', 'development', 'boost', 'punch'].flatMap(slot =>
 
 test('pack odds include the clothing roll, local overrides and player ownership', () => {
   const view = packView(basic, balance, cards, true)
-  assert.deepEqual(view.drop_chances, { common: 65.1, rare: 22.32, epic: 5.58, clothing: 7 })
+  assert.deepEqual(view.drop_chances, { common: 65.1, rare: 22.32, epic: 5.58, legendary: 0, clothing: 7 })
   assert.deepEqual(packView(basic, balance, cards, false).drop_chances,
-    { common: 70, rare: 24, epic: 6, clothing: 0 })
+    { common: 70, rare: 24, epic: 6, legendary: 0, clothing: 0 })
   assert.deepEqual(packView({ ...basic, id: 2, price: 500, common_weight: '40', rare_weight: '40', epic_weight: '20' }, balance, cards, true).drop_chances,
-    { common: 37.2, rare: 37.2, epic: 18.6, clothing: 7 })
+    { common: 37.2, rare: 37.2, epic: 18.6, legendary: 0, clothing: 7 })
   assert.ok(view.description.length > 0)
   assert.deepEqual(Object.keys(view), ['id', 'name', 'price', 'description', 'drop_chances'])
 })
@@ -23,11 +23,24 @@ test('slot odds match available categories and never show clothing', () => {
   for (const [index, slot] of ['setup', 'development', 'boost', 'punch'].entries()) {
     const pack = { ...basic, id: index + 3, card_slot: slot, clothing_chance: 0 }
     assert.deepEqual(packView(pack, balance, cards, true).drop_chances,
-      { common: 70, rare: 24, epic: 6, clothing: 0 })
+      { common: 70, rare: 24, epic: 6, legendary: 0, clothing: 0 })
     const filtered = cards.filter(c => c.slot !== slot || c.rarity === 'rare')
     assert.deepEqual(packView(pack, balance, filtered, true).drop_chances,
-      { common: 0, rare: 100, epic: 0, clothing: 0 })
+      { common: 0, rare: 100, epic: 0, legendary: 0, clothing: 0 })
     assert.match(packView(pack, balance, cards, true).description, /Без одежды/)
     assert.equal(packView(pack, balance, cards.filter(c => c.slot !== slot), true).drop_chances, null)
   }
+})
+
+
+test('legendary odds use an additional weight of one and respect slot availability', () => {
+  const pool = [...cards, { slot: 'setup', rarity: 'legendary' }]
+  const all = packView(basic, balance, pool, true).drop_chances
+  assert.match(packView(basic, balance, pool, true).description, /легендарная/);
+  assert.doesNotMatch(packView({ ...basic, card_slot: 'development' }, balance, pool, true).description, /легендарная/);
+  assert.equal(all.legendary, Number((93 / 101).toFixed(8)))
+  assert.ok(Math.abs(Object.values(all).reduce((a, b) => a + b, 0) - 100) < 1e-6)
+  const slot = packView({ ...basic, card_slot: 'punch', clothing_chance: 0 }, balance, pool, true).drop_chances
+  assert.equal(slot.legendary, 0)
+  assert.equal(slot.common, 70)
 })

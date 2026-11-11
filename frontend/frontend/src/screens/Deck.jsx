@@ -89,7 +89,7 @@ function PackOdds({ pack, onClose }) {
         {pack.drop_chances ? (
           <>
             <dl className="pack-odds-list">
-              {[['common', 'Обычная карточка'], ['rare', 'Редкая карточка'], ['epic', 'Эпическая карточка'], ['clothing', 'Одежда']].map(([key, label]) => (
+              {[['common', 'Обычная карточка'], ['rare', 'Редкая карточка'], ['epic', 'Эпическая карточка'], ['legendary', 'Легендарная карточка'], ['clothing', 'Одежда']].map(([key, label]) => (
                 <div key={key}><dt>{label}</dt><dd>{percent.format(pack.drop_chances[key])}%</dd></div>
               ))}
             </dl>
