@@ -4,7 +4,7 @@ import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createServer } from 'vite'
 
-let vite, context, home, battle, profile, telegram
+let vite, context, home, battle, profile, telegram, arena, opponentArt
 const player = { id: 'ui-player', coins: 2450, level: 7, streams: 12800, popularity: 340, xp: 420, xp_to_next: 650, skills: { rhyme: 12, flow: 10, punch: 9, charisma: 8 } }
 const ctx = {
   nick: 'Тестовый артист', player,
@@ -19,6 +19,8 @@ before(async () => {
   context = (await vite.ssrLoadModule('/src/GameContext.jsx')).GameContext
   home = (await vite.ssrLoadModule('/src/screens/Home.jsx')).default
   battle = (await vite.ssrLoadModule('/src/screens/Battle.jsx')).default
+  arena = (await vite.ssrLoadModule('/src/components/Arena.jsx')).default
+  opponentArt = (await vite.ssrLoadModule('/src/opponentArt.js')).opponentArt
   profile = (await vite.ssrLoadModule('/src/screens/Profile.jsx')).default
   telegram = (await vite.ssrLoadModule('/src/screens/Telegram.jsx')).default
 })
@@ -31,10 +33,30 @@ test('home shows actual player resources and all eight app launchers', () => {
   for (const name of ['SoundWave', 'Студия', 'Колода', 'ТГ', 'Профиль', 'Магазин', 'Казик', 'Концерт']) assert.ok(html.includes(`aria-label="${name}"`))
 })
 
-test('opponent selection uses the original opponent sprite and display name', () => {
+test('opponent selection uses the supplied photograph and display name', () => {
   const html = render(battle)
   assert.match(html, /3гот2010/)
-  assert.match(html, /\/opponents\/3got2010.png/)
+  assert.match(html, /\/opponents\/3got2010-cutout\.png/)
+  assert.match(html, /Начать батл/)
+})
+
+test('the arena uses the original player, equipped clothing and opponent sprites', () => {
+  const html = render(arena, { playerName: ctx.nick, opponentName: '3гот2010', opponentImage: opponentArt(1), playerLook: { hat: '/clothes/cap1.png' } })
+  assert.match(html, /\/player\/freshman\.png/)
+  assert.match(html, /\/clothes\/cap1\.png/)
+  assert.match(html, /\/opponents\/3got2010\.png/)
+})
+
+test('the final opponent image and name appear only after the server unlocks it', () => {
+  const saved = ctx.profile
+  const boss = { id: 5, name: 'DOOM RUSHA', location: 'Фестиваль', unlocked: false }
+  ctx.profile = { ...saved, opponents: [...saved.opponents, boss] }
+  try {
+    assert.doesNotMatch(render(battle), /final-emblem|DOOM RUSHA/)
+    boss.unlocked = true
+    assert.match(render(battle), /\/opponents\/final-emblem\.jpg/)
+    assert.match(render(battle), /DOOM RUSHA/)
+  } finally { ctx.profile = saved }
 })
 
 test('a server-locked opponent shows both requirements even with enough fans', () => {
@@ -50,7 +72,7 @@ test('a server-locked opponent shows both requirements even with enough fans', (
 
 test('profile retains original player and pet art, progression and companion actions', () => {
   const html = render(profile)
-  assert.match(html, /\/player\/freshman.png/)
+  assert.match(html, /\/player\/freshman\.png/)
   assert.match(html, /\/pets\/scalevillity\/idle.png/)
   assert.match(html, /Скейлвиллити/)
   assert.match(html, /420/)

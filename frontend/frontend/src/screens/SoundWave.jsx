@@ -17,7 +17,7 @@ export default function SoundWave({ onClose }) {
       <Tabs
         tabs={[
           ['feed', 'Лента'],
-          ['battle', 'Батл'],
+          ['battle', 'Батлы'],
         ]}
         value={tab}
         onChange={setTab}

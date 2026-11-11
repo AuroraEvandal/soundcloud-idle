@@ -569,46 +569,35 @@ button:disabled {
 
 /* ---------- SoundWave: батл ---------- */
 .opp {
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 112px;
-  padding: 16px;
+  width: 100%;
+  min-height: 76px;
+  gap: 12px;
+  padding: 12px 14px;
   background: var(--card);
-  border-radius: 26px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
   text-align: left;
-  overflow: hidden;
 }
-.opp.locked {
-  opacity: 0.7;
-}
+.opp > svg { flex: none; color: var(--text2); }
 .opp-lvl {
   flex: none;
-  width: 24px;
-  height: 24px;
   display: grid;
   place-items: center;
-  background: var(--bar);
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  background: var(--bar);
   font-size: 11px;
   font-weight: 700;
 }
-.opp-main {
-  flex: 1;
-  min-width: 0;
-}
+.opp-main { display: grid; gap: 4px; flex: 1; min-width: 0; }
 .opp-name {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -.025em;
   overflow-wrap: anywhere;
-}
-.opp-lock {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text2);
 }
 .chapter-announcement {
   width: 100%;
@@ -645,7 +634,6 @@ button:disabled {
   height: 70%;
 }
 .crowd {
-  filter: blur(3px); /* размыта только толпа на фоне, не панели интерфейса */
   opacity: 0.9;
 }
 .light {
@@ -1604,15 +1592,71 @@ button:disabled { cursor: default; }
 .section-heading { font-size: 22px; font-weight: 700; letter-spacing: -.035em; margin: 24px 0 12px; }
 .scroll { scrollbar-width: thin; scrollbar-color: #3a3a3d transparent; }
 .cover { border-radius: 18px; }
-.opp-portrait { position: relative; flex: none; width: 72px; height: 88px; border-radius: 22px; background: #ffffff05; }
-.opp-portrait img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; image-rendering: pixelated; }
-.opp-portrait .opp-lvl { position: absolute; bottom: -3px; right: -3px; background: var(--bar); }
-.opp .btn svg, .chat-item > svg { transform: rotate(180deg); flex: none; }
-.opp.locked .opp-portrait img { filter: brightness(0); opacity: .45; }
-.opp-lock { font-size: 12px; }
-.chapter-announcement { min-height: 88px; border-color: var(--line); }
+.opp-portrait {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--bar);
+  color: var(--text2);
+}
+.opp-portrait img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.opp-portrait[data-opponent="5"] img { mix-blend-mode: screen; }
+.opp .btn svg, .opp:not(.locked) > svg, .chat-item > svg { transform: rotate(180deg); }
 .chapter-announcement .opp-name { font-size: 16px; }
 .opponent-selection { padding-bottom: 24px; }
+.opponent-selection > .h2 { font-size: clamp(24px, 7.4vw, 32px); }
+.opponent-group { overflow: hidden; border: 1px solid var(--line); border-radius: 22px; }
+.opponent-group .opp { border: 0; border-radius: 0; }
+.opponent-group .opp + .opp { border-top: 1px solid var(--line); }
+.opponent-group .opp:focus-visible { outline-offset: -3px; }
+.opponent-list .section-heading { margin-top: 4px; }
+.opponent-hint { margin: 0; text-align: center; }
+.opp-featured {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, 39%);
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px;
+}
+.opp-featured .opp-main { grid-column: 1; grid-row: 1; align-content: center; gap: 8px; }
+.opp-featured .opp-name { font-size: clamp(20px, 6.1vw, 28px); line-height: 1.05; }
+.opp-featured .opp-portrait {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 144px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.opp-featured > .btn { grid-column: 1 / -1; }
+.opp-status {
+  justify-self: start;
+  padding: 5px 9px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #180900;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.opp-rewards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.opp-rewards > span { display: grid; gap: 2px; color: var(--text2); font-size: 10px; }
+.opp-rewards > span + span { border-left: 1px solid var(--line); padding-left: 8px; }
+.opp-rewards b { color: var(--text); font-size: 13px; white-space: nowrap; }
 .deck-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .deck-grid .card { min-height: 180px; margin: 0; padding: 16px; justify-content: space-between; border-radius: 24px; background: linear-gradient(145deg, #28282b, #1c1c1e); }
 .deck-grid .card-text { font-size: 18px; font-weight: 650; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
@@ -1653,8 +1697,6 @@ button:disabled { cursor: default; }
   .appbar-title { font-size: 30px; }
   .opp { gap: 10px; padding: 12px; }
   .opp-name { font-size: 16px; }
-  .opp-portrait { width: 56px; height: 76px; }
-  .opp .btn.small { padding-inline: 10px; }
   .deck-grid { gap: 8px; }
   .deck-grid .card { padding: 12px; }
   .deck-grid .card-text { font-size: 16px; }
@@ -1673,17 +1715,6 @@ button:disabled { cursor: default; }
   .home-resources strong { font-size: 26px; }
   .grid { margin-top: 20px; row-gap: 18px; }
   .dock { padding-block: 12px; }
-}
-
-.opponent-list > .opp:first-child { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 14px; padding: 20px; background: linear-gradient(130deg, #292323, #1c1c1e); }
-.opponent-list > .opp:first-child .opp-portrait { grid-column: 2; grid-row: 1; width: 112px; height: 152px; background: none; }
-.opponent-list > .opp:first-child .opp-main { grid-column: 1; grid-row: 1; }
-.opponent-list > .opp:first-child .opp-name { font-size: 26px; margin-bottom: 10px; }
-.opponent-list > .opp:first-child > .btn { grid-column: 1 / -1; font-size: 15px; }
-@media (max-width: 350px) {
-  .opponent-list > .opp:first-child { grid-template-columns: minmax(0, 1fr) 90px; padding: 18px; }
-  .opponent-list > .opp:first-child .opp-portrait { width: 90px; height: 136px; }
-  .opponent-list > .opp:first-child .opp-name { font-size: 23px; }
 }
 
 /* Во время батла оставляем больше места для выбора карточек. */

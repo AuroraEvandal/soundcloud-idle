@@ -10,7 +10,7 @@ import ErrorBox from '../components/ErrorBox'
 import Icon from '../components/Icon'
 import InterRoundMiniGame from '../components/InterRoundMiniGame'
 import { opponentDisplayName } from '../displayNames'
-import { opponentArt } from '../opponentArt'
+import { opponentArt, opponentPortrait } from '../opponentArt'
 import { victoryTelegramMessages } from '../telegramMessages'
 
 const EMPTY = { setup: null, development: null, boost: null, punch: null }
@@ -262,40 +262,55 @@ export default function Battle() {
 
   // ---------- Выбор соперника ----------
   if (phase === 'list') {
+    const [featured, ...others] = profile?.opponents || []
+    const renderOpponent = (o, main = false) => {
+      const image = opponentPortrait(o.id, o.unlocked)
+      return (
+        <button
+          key={o.id}
+          type="button"
+          className={'opp' + (o.unlocked ? '' : ' locked') + (main ? ' opp-featured' : '')}
+          onClick={() => begin(o)}
+          disabled={busy || restoring}
+        >
+          <span className="opp-portrait" data-opponent={o.id}>
+            {image ? <img src={image} alt="" /> : <Icon name="lock" size={22} />}
+          </span>
+          <span className="opp-main">
+            {main && o.unlocked && <span className="opp-status">Доступен</span>}
+            <span className="opp-name">{opponentDisplayName(o, o.unlocked)}</span>
+            <span className="muted small-t">{o.location}{!main && o.unlocked ? ' · Открыт' : ''}</span>
+            {!o.unlocked && <span className="muted small-t">Нужно {o.required_popularity} фанатов и победа над предыдущим соперником</span>}
+            {main && o.unlocked && (
+              <span className="opp-rewards" aria-label="За победу">
+                <span><b>+25</b> опыта</span><span><b>+15</b> фанатов</span><span><b>от 50 ₽</b> монет</span>
+              </span>
+            )}
+          </span>
+          {main && o.unlocked ? <span className="btn">Начать батл <Icon name="back" size={18} /></span>
+            : o.unlocked ? <Icon name="back" size={18} /> : <Icon name="lock" size={18} />}
+        </button>
+      )
+    }
     return (
       <div className="pad scroll opponent-selection">
         <h2 className="h2">Выбери соперника</h2>
         <div className="muted small-t">
           Открыто: {unlocked} из {profile?.opponents?.length || 0}
         </div>
-        {profile?.stats?.battles_played === 0 && <div className="story-battle-note"><b>ГЛАВА 01 / ПЕРВЫЙ ВЫЗОВ</b><span>3гот2010 увидел твой TikTok. Пора ответить строчками — выбери его ниже.</span></div>}
         {note && <div className="note">{note}</div>}
         {restoring && <div className="note">Восстанавливаю незавершённый батл…</div>}
         <ErrorBox message={error?.message} onRetry={error?.retry} onHome={() => setError(null)} />
         <div className="list opponent-list">
-          {(profile?.opponents || []).map((o) => (
-            <button
-              key={o.id}
-              className={'opp' + (o.unlocked ? '' : ' locked')}
-              onClick={() => begin(o)}
-              disabled={busy || restoring}
-            >
-              <div className="opp-portrait">{opponentArt(o.id) && <img src={opponentArt(o.id)} alt="" />}<span className="opp-lvl">{o.level}</span></div>
-              <div className="opp-main">
-                <div className="opp-name">{opponentDisplayName(o, o.unlocked)}</div>
-                <div className="muted small-t">{o.location}</div>
-                {!o.unlocked && <div className="muted small-t">Нужно {o.required_popularity} фанатов и победа над предыдущим соперником</div>}
-              </div>
-              {o.unlocked ? (
-                <span className="btn small">В бой <Icon name="back" size={16} /></span>
-              ) : (
-                <span className="opp-lock">
-                  <Icon name="lock" size={18} />
-                  <span>{o.required_popularity}</span>
-                </span>
-              )}
-            </button>
-          ))}
+          {featured && renderOpponent(featured, true)}
+          {others.length > 0 && (
+            <section>
+              <h3 className="section-heading">Следующие соперники</h3>
+              <div className="opponent-group">{others.map((o) => renderOpponent(o))}</div>
+            </section>
+          )}
+          {featured && <p className="opponent-hint muted small-t">Собери строчку из четырёх карточек</p>}
+          {profile?.stats?.battles_played === 0 && <div className="story-battle-note"><b>ГЛАВА 01 / ПЕРВЫЙ ВЫЗОВ</b><span>3гот2010 увидел твой TikTok. Пора ответить строчками — выбери его ниже.</span></div>}
           <button
             className="opp chapter-announcement"
             type="button"

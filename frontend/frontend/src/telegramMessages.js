@@ -40,13 +40,13 @@ export function victoryTelegramMessages({ nick, opponent, nextOpponent, playerLo
     }
   }
 
-  const nextName = opponentDisplayName(nextOpponent)
+  const nextName = opponentDisplayName(nextOpponent, Boolean(nextOpponent?.unlocked))
   return {
     adam: [{ text: `Йо, ${nick}! Ты забрал баттл у ${defeated}. Красиво сделал. Следующий на очереди — ${nextName}. Давай готовиться, скоро объявим дату.` }],
     topor: [{
       text: `НОВОСТИ: ${nick} врывается на новый уровень! Следующий баттл — против ${nextName}. Афиша уже здесь.`,
       poster: {
-        image: opponentArt(nextOpponent?.id),
+        image: nextOpponent?.id === 5 && !nextOpponent.unlocked ? null : opponentArt(nextOpponent?.id),
         playerLook,
         playerName: nick,
         eyebrow: 'СЛЕДУЮЩИЙ БАТТЛ',
