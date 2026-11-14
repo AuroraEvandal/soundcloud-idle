@@ -15,7 +15,12 @@ const TABLE = {
   INVALID_CARDS: ['Собери строчку из 4 карточек', 'stay'],
   CARD_NOT_OWNED: ['Такой карточки у тебя нет', 'resync'],
   CARD_BURNED: ['Карточка сгорела: лимит боёв исчерпан', 'resync'],
+<<<<<<< Updated upstream
   OPPONENT_LOCKED: ['Набери нужное число фанатов и победи предыдущего соперника', 'stay'],
+=======
+  OPPONENT_LOCKED: ['Соперник откроется при N популярности', 'stay'],
+  DAILY_LIMIT: ['Лимит оценок на сегодня исчерпан. Возвращайся завтра', 'home'],
+>>>>>>> Stashed changes
   IDEMPOTENCY_CONFLICT: ['Запрос уже использован для другого действия. Обнови игру', 'home'],
   CARD_POOL_TOO_SMALL: ['Для батла пока не хватает карточек в одном из слотов', 'home'],
   MINI_GAME_REQUIRED: ['Сначала пройди проверку концентрации', 'resync'],

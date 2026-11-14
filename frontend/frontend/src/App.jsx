@@ -26,8 +26,11 @@ const SCREENS = {
   tg: Telegram,
   profile: Profile,
   store: Store,
+<<<<<<< Updated upstream
   casino: Casino,
   concert: Concert,
+=======
+>>>>>>> Stashed changes
 }
 
 export default function App() {
@@ -35,8 +38,11 @@ export default function App() {
   const [nick, setNick] = useState('')
   const [player, setPlayer] = useState(null)
   const [profile, setProfile] = useState(null)
+<<<<<<< Updated upstream
   const [petCollection, setPetCollection] = useState(null)
   const [petsError, setPetsError] = useState(null)
+=======
+>>>>>>> Stashed changes
   const [status, setStatus] = useState('loading') // loading | ready | error | stop
   const [error, setError] = useState('')
   const [screen, setScreen] = useState('home')
@@ -45,7 +51,10 @@ export default function App() {
   const [unread, setUnread] = useState(0)
   const [telegramMessages, setTelegramMessages] = useState({ adam: [], topor: [] })
   const islandTimer = useRef(null)
+<<<<<<< Updated upstream
   const deliveredTelegramEvents = useRef(new Set())
+=======
+>>>>>>> Stashed changes
 
   const notify = useCallback((text) => {
     setIsland(text)
@@ -81,6 +90,7 @@ export default function App() {
         const res = await login()
         setPlayer(res.player)
         setNick(res.player.username)
+<<<<<<< Updated upstream
         if (shouldShowIntro(res.is_new, readIntro(res.player.id))) {
           saveIntro(res.player.id, 'started')
           setIntro('new')
@@ -88,6 +98,8 @@ export default function App() {
         setTelegramMessages((current) => current.adam.length ? current : initialTelegramMessages(res.player.username))
         // The optional pet collection must not hold the game's loading screen.
         refreshPets().catch(() => {})
+=======
+>>>>>>> Stashed changes
         await refreshProfile()
         setStatus('ready')
         if (res.is_new) {
@@ -115,6 +127,7 @@ export default function App() {
 
   const relogin = useCallback(() => boot(), [boot])
 
+<<<<<<< Updated upstream
   const addTelegramMessages = useCallback((incoming, eventId) => {
     if (eventId && deliveredTelegramEvents.current.has(eventId)) return
     if (eventId) deliveredTelegramEvents.current.add(eventId)
@@ -128,6 +141,9 @@ export default function App() {
 
   const activePet = petCollection?.pets.find((pet) => pet.id === petCollection.active_pet_id && pet.owned) || null
   const ctx = { nick, player, setPlayer, profile, refreshProfile, petCollection, setPetCollection, activePet, petsError, refreshPets, notify, relogin, unread, setUnread, telegramMessages, setTelegramMessages, addTelegramMessages }
+=======
+  const ctx = { nick, player, setPlayer, profile, refreshProfile, notify, relogin, unread, setUnread }
+>>>>>>> Stashed changes
   const Screen = SCREENS[screen]
 
   let body

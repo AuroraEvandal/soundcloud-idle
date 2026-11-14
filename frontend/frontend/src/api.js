@@ -96,7 +96,11 @@ async function call(name, body) {
 // ---------------------------------------------------------------------------
 
 // Ник берётся из Telegram (docs/api.md): сервер сам создаёт игрока и обновляет
+<<<<<<< Updated upstream
 // username при каждом входе. Ник с фронта не отправляется.
+=======
+// username при каждом входе. Ни.nickname с фронта не отправляется.
+>>>>>>> Stashed changes
 const tgName = () => {
   const u = window.Telegram?.WebApp?.initDataUnsafe?.user
   return u?.username || u?.first_name || 'player'
@@ -578,7 +582,11 @@ const mock = {
     if (!db.player) throw new ApiError('PLAYER_NOT_FOUND')
     const opp = OPPONENTS.find((o) => o.id === opponentId)
     if (!opp) throw new ApiError('INTERNAL')
+<<<<<<< Updated upstream
     if (!mockOpponentUnlocked(opp)) throw new ApiError('OPPONENT_LOCKED')
+=======
+    if (db.player.popularity < opp.required) throw new ApiError('OPPONENT_LOCKED')
+>>>>>>> Stashed changes
     // как сервер: для старта батла нужно минимум 4 рабочие карточки на каждый слот
     for (const slot of SLOT_CODES) {
       const usable = POOL.filter(
@@ -668,7 +676,11 @@ const mock = {
     if (!done) {
       b.round += 1
       b.hand = makeHand(b.used)
+<<<<<<< Updated upstream
       b.last_result = {
+=======
+      return {
+>>>>>>> Stashed changes
         round,
         battle: { status: 'active', player_rounds_won: b.pw, opponent_rounds_won: b.ow },
         next_round: { number: b.round, theme: b.themes[b.round - 1] },
@@ -955,7 +967,11 @@ const mock2 = {
       const pick = cand[rndInt(0, cand.length - 1)]
       const duplicate = st.cards.has(pick.card.id)
       const refund = duplicate ? DUP_REFUND[pick.card.rarity] : 0
+<<<<<<< Updated upstream
       st.uses[pick.card.id] = 3
+=======
+      if (!duplicate) st.uses[pick.card.id] = 3
+>>>>>>> Stashed changes
       st.cards.add(pick.card.id)
       db.player.coins += refund
       drop = { type: 'card', card: { ...withUses(pick.card), slot: pick.slot }, duplicate, refund }

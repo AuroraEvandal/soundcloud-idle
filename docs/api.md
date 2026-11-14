@@ -184,7 +184,12 @@ ALREADY_OWNED. Таблицы/RPC закрыты от anon/authenticated; Edge �
 | `INVALID_CARDS` | Не 4 карточки или слоты в неправильном порядке |
 | `CARD_NOT_OWNED` | У игрока нет такой карточки |
 | `CARD_BURNED` | Карточка сгорела: лимит боёв (3) исчерпан |
+<<<<<<< Updated upstream
 | `OPPONENT_LOCKED` | Мало популярности или нет победы над предыдущим соперником |
+=======
+| `OPPONENT_LOCKED` | Соперник ещё не открыт (мало популярности) |
+| `DAILY_LIMIT` | Исчерпан дневной лимит ИИ-оценок |
+>>>>>>> Stashed changes
 | `IDEMPOTENCY_CONFLICT` | `requestId` уже использован с другим содержимым запроса |
 | `BATTLE_IN_PROGRESS` | У игрока уже есть активный батл с другим соперником |
 | `CARD_POOL_TOO_SMALL` | Для одного из слотов у игрока меньше 4 доступных карточек |
@@ -289,7 +294,11 @@ ALREADY_OWNED. Таблицы/RPC закрыты от anon/authenticated; Edge �
   "last_result": null,
   "cards": {
     "setup": [
+<<<<<<< Updated upstream
       { "id": 140, "text": "Ты в бою как нищий — пустой кошелёк", "theme": "деньги", "themes": ["деньги"], "rarity": "common", "syllables": 11, "uses_left": 3 }
+=======
+      { "id": 140, "text": "Ты в бою как нищий — пустой кошелёк", "theme": "деньги", "rarity": "common", "syllables": 11, "uses_left": 3 }
+>>>>>>> Stashed changes
     ],
     "development": [
       { "id": 141, "text": "А я на сцене — ты просто игрок", "theme": "деньги", "rarity": "common", "syllables": 10, "uses_left": 2 }
@@ -413,6 +422,7 @@ ALREADY_OWNED. Таблицы/RPC закрыты от anon/authenticated; Edge �
 }
 ```
 
+<<<<<<< Updated upstream
 Ошибки: `BATTLE_NOT_FOUND`, `BATTLE_FINISHED`, `ROUND_ALREADY_SUBMITTED`, `INVALID_ROUND`, `INVALID_CARDS`, `CARD_NOT_OWNED`, `CARD_BURNED`, `IDEMPOTENCY_CONFLICT`.
 
 ---
@@ -603,6 +613,9 @@ Beatmaker — простой двухтактовый секвенсор: бар
 ## 16. `get-deck`
 
 Ответ: `{ "cards": [{ "id": 140, "slot": "setup", "text": "...", "theme": "...", "rarity": "common", "syllables": 11, "uses_left": 2 }] }` — все карточки игрока, включая сгоревшие (`uses_left: 0`).
+=======
+Ошибки: `BATTLE_NOT_FOUND`, `BATTLE_FINISHED`, `ROUND_ALREADY_SUBMITTED`, `INVALID_ROUND`, `INVALID_CARDS`, `CARD_NOT_OWNED`, `CARD_BURNED`, `DAILY_LIMIT`, `IDEMPOTENCY_CONFLICT`, `JUDGE_UNAVAILABLE`.
+>>>>>>> Stashed changes
 
 ---
 
@@ -657,8 +670,11 @@ export async function submitRound(battleId, roundNumber, cardIds) {
 
 ## Принятые решения
 
+<<<<<<< Updated upstream
 - **ИИ-судьи в MVP нет.** Все четыре критерия (рифма, флоу, панч, смысл) считает код на сервере; панч — из свойств карточки-панча, смысл — из таблицы связей тем `theme_relations`. Дневной лимит оценок отменён.
 - **Поле `ai_requests_left` устарело и удалено из ответов.** Фронт должен перестать показывать счётчик «оценок осталось». (Код ИИ-судьи сохранён в `supabase/functions/_shared/scoring.ts` выключенным — на случай возврата ИИ после MVP.)
+=======
+>>>>>>> Stashed changes
 - **Рука:** ровно 4 карточки на каждый слот, выбираются случайно из карточек игрока. Карточка не может оказаться в двух слотах (каждая карточка создана под свой слот).
 - **Лимит карточки:** 3 боя. Каждый батл, в котором карточка прошла хотя бы в одном раунде, списывает с неё одно использование. Когда использования кончаются, карточка «сгорает»: остаётся в колоде игрока (видна как сгоревшая), но больше не выдаётся в руку. Восстановления пока нет — новые карточки добавляются контентом (стартовый набор / будущие паки).
 - **Нехватка карточек:** если при старте баттла на какой-то слот меньше 4 рабочих карточек — `CARD_POOL_TOO_SMALL`. В середине баттла рука может быть короче 4, но не меньше 1 (софт-лок внутри баттла исключён).

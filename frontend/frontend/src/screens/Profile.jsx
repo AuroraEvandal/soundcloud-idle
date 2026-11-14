@@ -10,6 +10,7 @@ import ProgressBar from '../components/ProgressBar'
 import { SKILLS } from '../constants'
 import { isBossUnlocked, opponentDisplayName } from '../displayNames'
 
+<<<<<<< Updated upstream
 export default function Profile({ onClose, onReplayIntro }) {
   const { nick, player, profile, petCollection, setPetCollection, petsError, refreshPets } = useGame()
   const [petBusy, setPetBusy] = useState(false)
@@ -22,6 +23,10 @@ export default function Profile({ onClose, onReplayIntro }) {
     catch (e) { setPetError(errorInfo(e)) }
     finally { setPetBusy(false) }
   }
+=======
+export default function Profile({ onClose }) {
+  const { nick, player, profile } = useGame()
+>>>>>>> Stashed changes
   if (!player) return null
   const unlocked = (profile?.opponents || []).filter((o) => o.unlocked)
   const location = unlocked.length ? unlocked[unlocked.length - 1].location : 'Двор'

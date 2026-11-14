@@ -69,6 +69,7 @@ Deno.serve((req) => handle(req, async (body) => {
   const cards = cardIds.map((id, i) => cardsById.get(id) as Record<string, unknown> | undefined)
   if (cards.some((card, i) => !card || card.slot !== expectedSlots[i])) throw new GameError('INVALID_CARDS')
 
+<<<<<<< Updated upstream
   if (owned.error) throw owned.error
   if (owned.data.length !== 4) throw new GameError('CARD_NOT_OWNED', 403)
   if (owned.data.some((row: any) => Number(row.uses_left) <= 0)) throw new GameError('CARD_BURNED', 403)
@@ -78,6 +79,13 @@ Deno.serve((req) => handle(req, async (body) => {
   for (const row of relationsQuery) {
     relations[`${row.theme_a}|${row.theme_b}`] = Number(row.strength)
   }
+=======
+  const owned = await db.from('player_cards').select('card_id,uses_left').eq('player_id', player.id).in('card_id', cardIds)
+  if (owned.error) throw owned.error
+  if (owned.data.length !== 4) throw new GameError('CARD_NOT_OWNED', 403)
+  if (owned.data.some((row: any) => Number(row.uses_left) <= 0)) throw new GameError('CARD_BURNED', 403)
+  if (Number(player.ai_requests_today) >= 20) throw new GameError('DAILY_LIMIT', 429)
+>>>>>>> Stashed changes
 
   const theme = battle.themes[roundNumber - 1]
   if (balance.error) throw balance.error
