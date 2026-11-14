@@ -1,0 +1,1 @@
+import{c as t,j as e,C as n}from"./styles-DsjpekDv.js";const o=window.Telegram?.WebApp;o?.ready();o?.expand();t.createRoot(document.getElementById("root")).render(e.jsx("div",{className:"ct-standalone",children:e.jsx(n,{onClose:()=>{window.location.href="/"}})}));
