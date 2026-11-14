@@ -1,0 +1,106 @@
+[     480ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[     480ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[     481ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[     481ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[     481ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[     481ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    2709ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[    2709ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[    2709ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[    2709ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[    2709ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    2709ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    2985ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[    2992ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[    2993ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[   85165ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[   85165ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[   85165ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[   85165ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[   85165ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   85165ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   85199ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[   85204ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[   85204ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[   86576ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[   86576ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[   86577ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[   86577ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[   86577ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   86577ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   86614ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[   86620ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[   86620ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  104048ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  104048ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  104048ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  104049ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  104049ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  104049ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  104082ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[  104086ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  104086ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  399112ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  399112ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  399113ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  399113ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  399113ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  399113ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  399146ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[  399150ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  399151ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  400468ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  400468ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  400468ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  400468ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  400468ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  400468ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  400503ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[  400508ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  400508ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  417907ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  417907ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  417908ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  417908ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  417908ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  417908ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  417937ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[  417942ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  417942ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  551925ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  551925ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  551925ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  551925ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  551925ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  551925ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  552000ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[  552004ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  552004ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  661075ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  661075ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  661075ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  661075ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  661076ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  661076ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  661156ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[  661160ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  661160ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  664888ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://127.0.0.1:54329/functions/v1/concert?forceFunctionRegion=ap-southeast-2:0
+[  665313ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  665313ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  665313ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  665313ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  665313ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  665313ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  665390ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=50342ff7:22164
+[  665394ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  665394ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041883ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041883ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041884ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041884ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041884ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041884ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041922ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[ 1041922ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[ 1050170ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://xjjkmurqmbvbordbhyhk.supabase.co/functions/v1/concert?forceFunctionRegion=ap-southeast-2:0
