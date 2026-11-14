@@ -1,0 +1,89 @@
+[functions.login]
+verify_jwt = false
+
+[functions.get-profile]
+verify_jwt = false
+
+[functions.get-hand]
+verify_jwt = false
+
+[functions.start-battle]
+verify_jwt = false
+
+[functions.submit-round]
+verify_jwt = false
+
+[functions.start-mini-game]
+verify_jwt = false
+
+[functions.finish-mini-game]
+verify_jwt = false
+
+[functions.get-studio]
+verify_jwt = false
+
+[functions.record-snippet]
+verify_jwt = false
+
+[functions.select-beat]
+verify_jwt = false
+
+[functions.buy-beat]
+verify_jwt = false
+
+[functions.get-beatmaker]
+verify_jwt = false
+
+[functions.record-beat]
+verify_jwt = false
+
+[functions.sell-beat]
+verify_jwt = false
+
+[functions.release-beat]
+verify_jwt = false
+
+[functions.collect-beat]
+verify_jwt = false
+
+[functions.get-shop]
+verify_jwt = false
+
+[functions.buy-item]
+verify_jwt = false
+
+[functions.get-wardrobe]
+verify_jwt = false
+
+[functions.equip-item]
+verify_jwt = false
+
+[functions.open-pack]
+verify_jwt = false
+
+[functions.get-deck]
+verify_jwt = false
+
+[functions.get-pets]
+verify_jwt = false
+
+[functions.equip-pet]
+verify_jwt = false
+
+[functions.get-cases]
+verify_jwt = false
+
+[functions.open-case]
+verify_jwt = false
+
+[functions.create-case-invoice]
+verify_jwt = false
+
+[functions.get-case-order]
+verify_jwt = false
+
+[functions.telegram-payments-webhook]
+verify_jwt = false
+
+[functions.concert]
+verify_jwt = false

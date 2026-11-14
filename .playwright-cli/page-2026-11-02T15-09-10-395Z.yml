@@ -1,0 +1,7 @@
+- region "Концентрация перед раундом 2" [active] [ref=e5]:
+  - generic [ref=e6]: КОНЦЕНТРАЦИЯ / 1 → 2
+  - generic [ref=e7]:
+    - heading "Лови ритм" [level=2] [ref=e8]
+    - generic [ref=e9]: SW / LIVE
+  - status [ref=e10]: Готовим следующую проверку…
+  - generic [ref=e11]: ОДНА ПОПЫТКА · БЕЗ БОНУСОВ

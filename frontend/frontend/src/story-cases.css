@@ -1,0 +1,50 @@
+/* Фрешмен: общая модель и портрет. PNG одежды сохраняют исходные координаты. */
+.player-body { object-fit: fill; image-rendering: pixelated; pointer-events: none; }
+.fig-layer { transform-origin: 50% 0; }
+.player-layer-hoodie { transform: translateY(5%) scale(.76, .72); }
+.player-layer-pants { transform: translateY(-11%) scale(1.12, 1.04); }
+.player-layer-shoe { transform: translateY(-4%) scaleX(1.22); }
+.player-layer-hat { transform: translateY(2%) scaleX(.86); }
+.player-layer-chain { transform: translateY(9%) scale(.8, .7); }
+.player-avatar { position: relative; overflow: hidden; border: 1px solid #34342c; }
+.player-avatar img { position: absolute; width: 180%; max-width: none; height: auto; top: -19%; left: -40%; image-rendering: pixelated; }
+.unknown-fighter { display: grid; place-items: center; height: 100%; color: #666; font-size: 72px; }
+
+.story-replay { display: flex; width: 100%; flex-direction: column; gap: 6px; padding: 18px; margin: 0 0 16px; text-align: left; border: 1px solid var(--line); border-radius: 24px; background: var(--card); color: var(--text); font-size: 15px; font-weight: 600; }
+.story-replay span { color: var(--text2); font-size: 12px; font-weight: 400; }
+.story-battle-note { display: grid; gap: 8px; margin: 16px 0; padding: 18px; border-radius: 24px; background: #ff550012; font-size: 13px; line-height: 1.5; }
+.story-battle-note b { color: var(--accent); font-size: 11px; letter-spacing: .03em; }
+
+/* Витрина использует оригинальные кейсы и спрайты спутников. */
+.casino-body { padding: 0 16px 28px; }
+.casino-heading p { margin: 0 4px 20px; color: var(--text2); font-size: 14px; }
+.case-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 16px; padding: 6px; border-radius: 24px; background: var(--card); }
+.case-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 90px; padding: 8px 4px; border-radius: 20px; color: var(--text2); }
+.case-tabs button[aria-pressed=true] { background: var(--bar); color: var(--accent); box-shadow: inset 0 0 0 1px #ff550050; }
+.case-tabs img { width: 40px; height: 32px; object-fit: contain; image-rendering: pixelated; }
+.case-tabs span { font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }
+.case-tabs small { display: block; font-size: 11px; font-weight: 400; margin-top: 4px; color: var(--text2); }
+.case-preview { padding: 20px; border-radius: 30px; background: var(--card); }
+.case-hero { text-align: center; }
+.case-kicker { color: var(--accent); font-size: 10px; font-weight: 650; letter-spacing: .06em; }
+.case-art { margin: 12px auto; width: 230px; max-width: 100%; height: 180px; }
+.case-art img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.case-hero h2 { font-size: 27px; font-weight: 750; letter-spacing: -.04em; margin: 12px 0 8px; }
+.case-hero > p { color: var(--text2); font-size: 13px; line-height: 1.5; margin: 0; }
+.case-price { margin: 20px 0; font-size: 26px; font-weight: 700; letter-spacing: -.03em; }
+.case-price > small { display: block; font-size: 12px; font-weight: 400; color: var(--text2); margin-top: 6px; letter-spacing: 0; }
+.case-help { font-size: 12px; line-height: 1.6; color: var(--text2); margin: 16px 0; }
+.case-pets { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+.case-pets > div { flex: 1; min-width: 0; text-align: center; font-size: 10px; color: var(--text2); overflow-wrap: anywhere; }
+.case-pets .pet-art { display: block; width: 80px; max-width: 100%; height: 80px; margin: 0 auto 8px; border-radius: 50%; background: #ffffff04; }
+.case-open { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 14px 18px; border-radius: 26px; background: var(--accent); color: #180900; font-size: 13px; font-weight: 700; letter-spacing: -.02em; }
+.case-open:disabled { background: var(--bar); color: var(--text2); }
+.case-open > span { font-size: 22px; }
+.case-rules { margin-top: 20px; border-top: 1px solid var(--line); color: var(--text2); font-size: 12px; line-height: 1.6; }
+.case-rules summary { min-height: 48px; padding: 16px 0; cursor: pointer; color: var(--text); font-size: 14px; }
+.case-rules p { margin: 0 0 12px; }
+.case-result { display: grid; gap: 10px; padding: 24px 0 12px; text-align: center; }
+.case-result small { color: var(--accent); font-size: 11px; font-weight: 600; }
+.case-result strong { font-size: 24px; letter-spacing: -.03em; }
+.case-result span { color: var(--text2); font-size: 12px; line-height: 1.6; }
+.case-result .pet-art { margin: auto; width: 140px; height: 140px; }

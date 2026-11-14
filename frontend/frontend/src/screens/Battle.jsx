@@ -1,0 +1,459 @@
+import { useEffect, useRef, useState } from 'react'
+import { useGame } from '../GameContext'
+import { startBattle, submitRound, getHand, getWardrobe } from '../api'
+import { SLOTS, CRITERIA } from '../constants'
+import { errorInfo } from '../errors'
+import { readBattleId, saveBattleId, clearBattleId } from '../storage'
+import Arena from '../components/Arena'
+import CardView from '../components/CardView'
+import ErrorBox from '../components/ErrorBox'
+import Icon from '../components/Icon'
+import InterRoundMiniGame from '../components/InterRoundMiniGame'
+import { opponentDisplayName } from '../displayNames'
+import { opponentArt, opponentPortrait } from '../opponentArt'
+import { victoryTelegramMessages } from '../telegramMessages'
+
+const EMPTY = { setup: null, development: null, boost: null, punch: null }
+
+// Слот -> путь к PNG-слою. Игрок: из гардероба (надетое). Соперник: из ответа start-battle.
+const playerLook = (w) =>
+  Object.fromEntries(
+    Object.entries(w?.outfit || {})
+      .map(([slot, id]) => [slot, w.items.find((i) => i.id === id)?.image])
+      .filter(([, img]) => img),
+  )
+const fmt1 = (n) => Number(n).toFixed(1)
+
+function Lines({ title, side }) {
+  return (
+    <div className="res-side">
+      <div className="res-title">{title}</div>
+      <div className="res-lines">
+        {side.lines.map((l, i) => (
+          <div key={i}>{l}</div>
+        ))}
+      </div>
+      <div className="res-scores">
+        {CRITERIA.map(([k, label]) => (
+          <div key={k} className="res-score">
+            <span>{label}</span>
+            <b>{fmt1(side.scores[k])}</b>
+          </div>
+        ))}
+      </div>
+      <div className="res-points">{side.points} очков</div>
+      {side.penalty_points > 0 && <div className="battle-penalty">{side.base_points} − {side.penalty_points} за мини-игру</div>}
+    </div>
+  )
+}
+
+export default function Battle() {
+  const { nick, player, profile, refreshProfile, refreshPets, relogin, addTelegramMessages } = useGame()
+  // list | build | judging | result | mini | final
+  const [phase, setPhase] = useState('list')
+  const [battle, setBattle] = useState(null)
+  const [round, setRound] = useState(null)
+  const [hand, setHand] = useState(null)
+  const [picks, setPicks] = useState(EMPTY)
+  const [active, setActive] = useState('setup')
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [restoring, setRestoring] = useState(false)
+  const [note, setNote] = useState('')
+  const [chapterOpen, setChapterOpen] = useState(false)
+  const [look, setLook] = useState({})
+  const [penalty, setPenalty] = useState(0)
+  const busyRef = useRef(false)
+  const announcedWins = useRef(new Set())
+
+  async function restoreBattle(id) {
+    setRestoring(true)
+    setError(null)
+    try {
+      const [state, wardrobe] = await Promise.all([getHand(id), getWardrobe().catch(() => null)])
+      // Не подменяем состояние, если игрок уже успел начать другой батл.
+      if (readBattleId() !== id) return
+      if (!state.battle) {
+        clearBattleId()
+        setNote('Незавершённый батл не удалось восстановить. Начни новый')
+        return
+      }
+      setBattle(state.battle)
+      setHand(state.cards)
+      setLook(playerLook(wardrobe))
+      if (state.last_result) {
+        setRound(state.last_result.round)
+        setResult(state.last_result)
+        setPhase('result')
+      } else {
+        setRound(state.round)
+        setResult(null)
+        setPhase('build')
+      }
+    } catch (e) {
+      if (readBattleId() !== id) return
+      const info = errorInfo(e)
+      if (info.code === 'BATTLE_NOT_FOUND') {
+        clearBattleId()
+        setNote('Незавершённый батл не найден. Начни новый')
+      } else {
+        setError({ ...info, retry: () => restoreBattle(id) })
+      }
+    } finally {
+      setRestoring(false)
+    }
+  }
+
+  useEffect(() => {
+    const id = readBattleId()
+    if (id) restoreBattle(id)
+    // Восстановление запускается один раз при создании экрана.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (phase === 'result' && result?.battle?.status === 'finished') refreshPets().catch(() => {})
+  }, [phase, result, refreshPets])
+
+  useEffect(() => {
+    if (phase !== 'result' || result?.next_round || result?.battle?.result !== 'win') return
+    const battleId = result.battle.id || battle?.id
+    if (!battleId || announcedWins.current.has(battleId)) return
+    announcedWins.current.add(battleId)
+
+    const announce = async () => {
+      const latestProfile = await refreshProfile().catch(() => profile)
+      const opponent = battle?.opponent || { id: result.battle.opponent_id, name: result.battle.opponent_name }
+      const nextOpponent = opponent?.id === 5
+        ? null
+        : (latestProfile?.opponents || []).find((candidate) => candidate.id > (opponent?.id || 0))
+      addTelegramMessages(victoryTelegramMessages({ nick, opponent, nextOpponent, playerLook: look }), `battle-win:${battleId}`)
+    }
+    announce()
+  }, [phase, result, battle?.id, battle?.opponent?.id, nick, look, profile, refreshProfile, addTelegramMessages])
+
+  const unlocked = (profile?.opponents || []).filter((o) => o.unlocked).length
+
+  function toList() {
+    clearBattleId()
+    setPhase('list')
+    setBattle(null)
+    setResult(null)
+    setError(null)
+    refreshProfile().catch(() => {})
+  }
+
+  function fail(err, retry, extra) {
+    const info = errorInfo(err, extra)
+    if (info.action === 'relogin') {
+      relogin()
+      return
+    }
+    setError({ ...info, retry: info.action === 'retry' ? retry : null })
+    if (info.action === 'resync' && battle) {
+      const resync = async () => {
+        try {
+          const r = await getHand(battle.id)
+          if (r.battle) setBattle(r.battle)
+          if (r.last_result) {
+            setRound(r.last_result.round)
+            setResult(r.last_result)
+            setHand(r.cards)
+            setPhase('result')
+            setError(null)
+            return
+          }
+          setRound(r.round)
+          setHand(r.cards)
+          setPicks(EMPTY)
+          setError(null)
+        } catch (e) {
+          const recoveryError = errorInfo(e)
+          setError({ ...recoveryError, retry: resync })
+        }
+      }
+      resync()
+    }
+  }
+
+  async function begin(opp) {
+    if (busyRef.current) return
+    if (!opp.unlocked) {
+      fail({ code: 'OPPONENT_LOCKED' }, null, { required: opp.required_popularity })
+      return
+    }
+    busyRef.current = true
+    setBusy(true)
+    setError(null)
+    setNote('')
+    try {
+      // Одежда на бойце: берём то, что надето в гардеробе прямо сейчас. Если не загрузилась, рисуем без неё.
+      const [r, w] = await Promise.all([startBattle(opp.id), getWardrobe().catch(() => null)])
+      setLook(playerLook(w))
+      saveBattleId(r.battle.id)
+      setBattle(r.battle)
+      setRound(r.round)
+      setHand(r.hand)
+      setPicks(EMPTY)
+      setActive('setup')
+      setResult(null)
+      setPenalty(0)
+      if (r.last_result) {
+        setRound(r.last_result.round)
+        setResult(r.last_result)
+        setPhase('result')
+      } else {
+        setPhase('build')
+      }
+    } catch (e) {
+      fail(e, () => begin(opp), { required: opp.required_popularity })
+    } finally {
+      busyRef.current = false
+      setBusy(false)
+    }
+  }
+
+  function pick(slot, card) {
+    setPicks((p) => ({ ...p, [slot]: p[slot]?.id === card.id ? null : card }))
+    // автопереход к следующему пустому слоту
+    const idx = SLOTS.findIndex(([s]) => s === slot)
+    const next = SLOTS.slice(idx + 1).find(([s]) => !picks[s])
+    if (next && picks[slot]?.id !== card.id) setActive(next[0])
+  }
+
+  const full = SLOTS.every(([s]) => picks[s])
+
+  async function send() {
+    if (!full || busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
+    setError(null)
+    setPhase('judging')
+    try {
+      const ids = SLOTS.map(([s]) => picks[s].id) // строго по порядку слотов
+      const r = await submitRound(battle.id, round.number, ids)
+      setResult(r)
+      setPhase('result')
+    } catch (e) {
+      setPhase('build')
+      fail(e, send)
+    } finally {
+      busyRef.current = false
+      setBusy(false)
+    }
+  }
+
+  function next() {
+    setBattle((b) => ({ ...b, ...result.battle }))
+    if (result.next_round) {
+      setRound(result.next_round)
+      setHand(result.hand)
+      setPicks(EMPTY)
+      setActive('setup')
+      setResult(null)
+      setPhase('mini')
+    } else {
+      clearBattleId()
+      setPhase('final')
+      refreshProfile().catch(() => {})
+    }
+  }
+
+  // ---------- Выбор соперника ----------
+  if (phase === 'list') {
+    const [featured, ...others] = profile?.opponents || []
+    const renderOpponent = (o, main = false) => {
+      const image = opponentPortrait(o.id, o.unlocked)
+      return (
+        <button
+          key={o.id}
+          type="button"
+          className={'opp' + (o.unlocked ? '' : ' locked') + (main ? ' opp-featured' : '')}
+          onClick={() => begin(o)}
+          disabled={busy || restoring}
+        >
+          <span className="opp-portrait" data-opponent={o.id}>
+            {image ? <img src={image} alt="" /> : <Icon name="lock" size={22} />}
+          </span>
+          <span className="opp-main">
+            {main && o.unlocked && <span className="opp-status">Доступен</span>}
+            <span className="opp-name">{opponentDisplayName(o, o.unlocked)}</span>
+            <span className="muted small-t">{o.location}{!main && o.unlocked ? ' · Открыт' : ''}</span>
+            {!o.unlocked && <span className="muted small-t">Нужно {o.required_popularity} фанатов и победа над предыдущим соперником</span>}
+            {main && o.unlocked && (
+              <span className="opp-rewards" aria-label="За победу">
+                <span><b>+25</b> опыта</span><span><b>+15</b> фанатов</span><span><b>от 50 ₽</b> монет</span>
+              </span>
+            )}
+          </span>
+          {main && o.unlocked ? <span className="btn">Начать батл <Icon name="back" size={18} /></span>
+            : o.unlocked ? <Icon name="back" size={18} /> : <Icon name="lock" size={18} />}
+        </button>
+      )
+    }
+    return (
+      <div className="pad scroll opponent-selection">
+        <h2 className="h2">Выбери соперника</h2>
+        <div className="muted small-t">
+          Открыто: {unlocked} из {profile?.opponents?.length || 0}
+        </div>
+        {note && <div className="note">{note}</div>}
+        {restoring && <div className="note">Восстанавливаю незавершённый батл…</div>}
+        <ErrorBox message={error?.message} onRetry={error?.retry} onHome={() => setError(null)} />
+        <div className="list opponent-list">
+          {featured && renderOpponent(featured, true)}
+          {others.length > 0 && (
+            <section>
+              <h3 className="section-heading">Следующие соперники</h3>
+              <div className="opponent-group">{others.map((o) => renderOpponent(o))}</div>
+            </section>
+          )}
+          {featured && <p className="opponent-hint muted small-t">Собери строчку из четырёх карточек</p>}
+          {profile?.stats?.battles_played === 0 && <div className="story-battle-note"><b>ГЛАВА 01 / ПЕРВЫЙ ВЫЗОВ</b><span>3гот2010 увидел твой TikTok. Пора ответить строчками — выбери его ниже.</span></div>}
+          <button
+            className="opp chapter-announcement"
+            type="button"
+            aria-expanded={chapterOpen}
+            onClick={() => setChapterOpen((open) => !open)}
+          >
+            <div className="opp-lvl">II</div>
+            <div className="opp-main">
+              <div className="opp-name">Анонс второй главы</div>
+              <div className="muted small-t">{chapterOpen ? 'Скрыть' : 'Нажми, чтобы открыть'}</div>
+            </div>
+          </button>
+          {chapterOpen && (
+            <div className="chapter-message" role="status">
+              СПАСИБО ЗА ПРОХОЖДЕНИЕ 1 ГЛАВЫ!!11!! Мы выходим на ЗАПАДНУЮ UG сцену. soon........
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ---------- Сам батл ----------
+  const lastWinner = result?.round?.winner
+  const finalWin = result?.battle?.result === 'win'
+  const pState = phase === 'result' || phase === 'final' ? (lastWinner === 'opponent' || (phase === 'final' && !finalWin) ? 'hit' : 'win') : ''
+  const oState = phase === 'result' || phase === 'final' ? (lastWinner === 'player' || (phase === 'final' && finalWin) ? 'hit' : 'win') : ''
+  const shake = phase === 'result' && lastWinner && lastWinner !== 'draw'
+
+  const sb = phase === 'result' || phase === 'final' ? result?.battle : battle
+  const score = { p: sb?.player_rounds_won ?? 0, o: sb?.opponent_rounds_won ?? 0 }
+
+  return (
+    <div className={`battle${phase === 'mini' ? ' battle-mini' : ''}`}>
+      <Arena
+        playerName={nick}
+        opponentName={opponentDisplayName(battle?.opponent)}
+        playerLook={look}
+        opponentImage={opponentArt(battle?.opponent?.id)}
+        playerState={pState}
+        opponentState={oState}
+        shake={shake}
+        key={phase === 'result' ? 'r' + result?.round?.number : 'a'}
+      />
+      <div className="controls">
+        <div className="bar-info">
+          <span>
+            Раунд {round?.number ?? result?.round?.number}/3 · «{round?.theme ?? result?.round?.theme}»
+          </span>
+          <span className="score">
+            {score.p} : {score.o}
+          </span>
+        </div>
+
+        {phase === 'mini' && <InterRoundMiniGame key={`${battle.id}:${round.number}`}
+          battleId={battle.id} roundNumber={round.number}
+          onRecover={(info) => {
+            if (info.code === 'INVALID_INIT_DATA' || info.action === 'relogin') relogin()
+            else if (info.code === 'BATTLE_NOT_FOUND') toList()
+            else restoreBattle(battle.id)
+          }}
+          onComplete={(penaltyPoints) => { setPenalty(penaltyPoints); setPhase('build') }} />}
+
+        {(phase === 'build' || phase === 'judging') && (
+          <>
+            {penalty > 0 && <div className="battle-penalty">Концентрация потеряна: −{penalty} к очкам этого раунда</div>}
+            <div className="slots">
+              {SLOTS.map(([s, label]) => (
+                <button
+                  key={s}
+                  className={'slot' + (active === s ? ' active' : '') + (picks[s] ? ' filled' : '')}
+                  onClick={() => setActive(s)}
+                  disabled={phase === 'judging'}
+                >
+                  <span className="slot-label">{label}</span>
+                  <span className="slot-text">{picks[s] ? picks[s].text : '—'}</span>
+                </button>
+              ))}
+            </div>
+            <ErrorBox
+              message={error?.message}
+              onRetry={error?.retry}
+              onHome={error?.action === 'home' ? toList : () => setError(null)}
+              retryLabel="Повторить"
+            />
+            {phase === 'judging' ? (
+              <div className="judging">
+                <div className="loader" />
+                <div>Судья думает…</div>
+              </div>
+            ) : (
+              <div className="hand scroll">
+                {(hand?.[active] || []).map((c) => (
+                  <CardView key={c.id} card={c} selected={picks[active]?.id === c.id} onClick={() => pick(active, c)} />
+                ))}
+              </div>
+            )}
+            <button className="btn cta" onClick={send} disabled={!full || busy || phase === 'judging'}>
+              ЗАЧИТАТЬ
+            </button>
+          </>
+        )}
+
+        {phase === 'result' && result && (
+          <div className="result scroll">
+            <div className={'verdict ' + result.round.winner}>
+              {result.round.winner === 'player' && 'Раунд за тобой'}
+              {result.round.winner === 'opponent' && 'Раунд за соперником'}
+              {result.round.winner === 'draw' && 'Ничья в раунде'}
+            </div>
+            <Lines title={nick} side={result.round.player} />
+            {result.round.mini_game && <div className="battle-penalty" role="log">{result.round.mini_game.message}</div>}
+            {result.round.player.comment && <div className="comment">Судья: {result.round.player.comment}</div>}
+            <Lines title={opponentDisplayName(battle?.opponent)} side={result.round.opponent} />
+            <button className="btn cta" onClick={next}>
+              {result.next_round ? 'СЛЕДУЮЩИЙ РАУНД' : 'ИТОГИ БАТЛА'}
+            </button>
+          </div>
+        )}
+
+        {phase === 'final' && result && (
+          <div className="result final">
+            <div className={'verdict big ' + (finalWin ? 'player' : 'opponent')}>{finalWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ'}</div>
+            <div className="muted">
+              Счёт по раундам {result.battle.player_rounds_won} : {result.battle.opponent_rounds_won}
+            </div>
+            <div className="rewards">
+              <div>
+                <b>{result.rewards.xp_change > 0 ? '+' : ''}{result.rewards.xp_change}</b>
+                <span>опыта</span>
+              </div>
+              <div>
+                <b>{result.rewards.popularity_change > 0 ? '+' : ''}{result.rewards.popularity_change}</b>
+                <span>популярности</span>
+              </div>
+            </div>
+            {result.rewards.level_up && <div className="levelup">Новый уровень: {result.rewards.new_level}</div>}
+            <button className="btn cta" onClick={toList}>
+              НА ГЛАВНУЮ
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

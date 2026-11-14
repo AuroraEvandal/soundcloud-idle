@@ -1,0 +1,9 @@
+[    1402ms] The requested module '/node_modules/.vite/deps/react-dom_client.js' does not provide an export named 'createRoot'
+[    1406ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5487/favicon.ico:0
+[   58378ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5487/node_modules/.vite/deps/react-dom_client.js?v=5f969e76:22164
+[   58449ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:54329/functions/v1/start-mini-game:0
+[   61370ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5487/node_modules/.vite/deps/react-dom_client.js?v=5f969e76:22164
+[   63939ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5487/node_modules/.vite/deps/react-dom_client.js?v=5f969e76:22164
+[   65326ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://127.0.0.1:54329/functions/v1/finish-mini-game:0
+[   65580ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5487/node_modules/.vite/deps/react-dom_client.js?v=5f969e76:22164
+[   70545ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5487/node_modules/.vite/deps/react-dom_client.js?v=5f969e76:22164
