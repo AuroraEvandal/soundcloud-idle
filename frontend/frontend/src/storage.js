@@ -1,11 +1,9 @@
 // В localStorage лежит только:
 //  - sw_battle_id: ID активного батла (разрешено frontend-AGENTS.md, раздел 10)
-<<<<<<< Updated upstream
 //  - sw_intro_v1:<playerId>: started/done, отметка просмотра вступления.
 //  - sw_studio_queue:<playerId>: UUID пачки и неотправленные тапы (studioRecorder.js).
 //  - sw_request_v1:<scope>:<action>:<IDs>: ID неподтверждённой операции (operationIds.js).
-=======
->>>>>>> Stashed changes
+//  - sw_day_pending_v1:<playerId>: ID дня/прохождения и UUID неподтверждённой ночи.
 // Ник игрока не хранится: он приходит с сервера из Telegram при каждом входе.
 const safe = (fn) => {
   try {

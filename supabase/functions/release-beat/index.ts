@@ -9,5 +9,6 @@ Deno.serve((req) => handle(req, async (body) => {
   })
   rpcError(error)
   return { player: playerView(data.player), beat: data.beat, viral_tier: data.viral_tier,
-    max_tier: data.max_tier, max_streams: data.max_streams, duration_hours: data.duration_hours }
+    max_tier: data.max_tier, max_streams: data.max_streams, duration_days: data.duration_days,
+    installment: data.installment, streams_earned: data.streams_earned, coins_earned: data.coins_earned }
 }))

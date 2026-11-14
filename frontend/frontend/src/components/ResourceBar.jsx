@@ -22,6 +22,7 @@ export default function ResourceBar({ expanded = false }) {
       <span>{short(player.streams || 0)} Strms</span>
       <i />
       <span>{fmt(player.popularity)} Fans</span>
+      {player.game_day != null && <><i /><span>Д{player.game_day} · ⚡{player.energy}</span></>}
     </div>
   )
 }

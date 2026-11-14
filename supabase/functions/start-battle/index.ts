@@ -1,8 +1,8 @@
-import { authPlayer, db, handle, requestId, rpcError } from '../_shared/common.ts'
+import { authPlayer, db, handle, playerForTelegram, playerView, requestId, rpcError } from '../_shared/common.ts'
 import { randomOpponentOutfit, readBattle } from '../_shared/battle.ts'
 
 Deno.serve((req) => handle(req, async (body) => {
-  const { player } = await authPlayer(body)
+  const { player, user } = await authPlayer(body)
   const opponentId = Number(body.opponentId)
   if (!Number.isSafeInteger(opponentId) || opponentId <= 0) throw new Error('OPPONENT_NOT_FOUND')
   const request_id = requestId(body.requestId)
@@ -26,6 +26,8 @@ Deno.serve((req) => handle(req, async (body) => {
 
   const state = await readBattle(player.id, created.data)
   return {
+    player: playerView(await playerForTelegram(user.id)),
+    energy_cost: 80,
     battle: state.battle,
     round: state.round,
     hand: state.cards,

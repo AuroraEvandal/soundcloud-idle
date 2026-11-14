@@ -27,6 +27,6 @@ Deno.serve((req) => {
     p_request_id: action === 'get' ? null : requestId(body.requestId),
   })
   rpcError(error)
-  return { ...data, player: playerView(data.player), server_processing_ms: Date.now() - receivedAt }
+  return { ...data, player: playerView(data.player), energy_cost: 80, server_processing_ms: Date.now() - receivedAt }
  })
 })

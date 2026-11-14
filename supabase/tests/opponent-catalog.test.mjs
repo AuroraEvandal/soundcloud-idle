@@ -15,7 +15,7 @@ before(async () => {
     await db.exec(await readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8'))
   }
   await db.exec(await readFile(new URL('../../backend/seed.sql', import.meta.url), 'utf8'))
-  await db.query('insert into players(id,telegram_id,coins) values($1,71,321)', [player])
+  await db.query('insert into players(id,telegram_id,coins,energy) values($1,71,321,10000)', [player])
   await db.query('insert into player_cards(player_id,card_id) select $1,id from cards', [player])
 })
 
@@ -23,7 +23,7 @@ after(() => db.close())
 
 test('fans alone, a loss, a draw, an active win and another player win do not unlock the next opponent', async () => {
   const newcomer = '00000000-0000-4000-8000-000000000072'
-  await db.query('insert into players(id,telegram_id,popularity) values($1,72,1000)', [newcomer])
+  await db.query('insert into players(id,telegram_id,popularity,energy) values($1,72,1000,1000)', [newcomer])
   await db.query('insert into player_cards(player_id,card_id) select $1,id from cards', [newcomer])
   const unlocks = async () => (await db.query('select * from opponent_unlocks($1)', [newcomer])).rows
   assert.deepEqual(await unlocks(), [1, 2, 3, 4, 5].map(id => ({ opponent_id: id, unlocked: id === 1 })))

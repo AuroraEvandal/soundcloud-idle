@@ -87,3 +87,9 @@ verify_jwt = false
 
 [functions.concert]
 verify_jwt = false
+
+[functions.end-day]
+verify_jwt = false
+
+[functions.buy-consumable]
+verify_jwt = false

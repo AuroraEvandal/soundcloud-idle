@@ -28,6 +28,26 @@ after(async () => {
   await vite?.close()
 })
 
+test('day transitions and drinks send IDs only, and a lost night response can recover after login', async () => {
+  const calls=[]
+  let lose=true
+  invoke=async(name,{body})=>{
+    calls.push({name,body})
+    if(name==='end-day' && lose) {lose=false; throw new Error('offline')}
+    return {data:{player:{game_day:4},report:{next_day:4}}}
+  }
+  await assert.rejects(api.endDay('days-test',3,1))
+  const recovered=await api.recoverDay('days-test')
+  assert.equal(recovered.report.next_day,4)
+  assert.deepEqual(calls[0],calls[1])
+  assert.deepEqual(Object.keys(calls[0].body).sort(),['dayId','initData','requestId','runId'])
+  await api.buyConsumable('energy_drink')
+  assert.equal(calls[2].name,'buy-consumable')
+  assert.equal(calls[2].body.itemId,'energy_drink')
+  assert.deepEqual(Object.keys(calls[2].body).sort(),['initData','itemId','requestId'])
+  assert.equal(await api.recoverDay('days-test'),null)
+})
+
 test('login and mini-games send the documented IDs and initData without client scores', async () => {
   const calls = []
   invoke = async (name, { body }) => { calls.push({ name, body }); return { data: { penalty_points: null } } }

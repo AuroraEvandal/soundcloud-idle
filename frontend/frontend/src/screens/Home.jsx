@@ -1,6 +1,7 @@
 import Icon from '../components/Icon'
 import { useGame } from '../GameContext'
 import ResourceBar from '../components/ResourceBar'
+import DayPanel from '../components/DayPanel'
 
 export const APPS = [
   { id: 'soundwave', label: 'SoundWave', icon: 'cloud', accent: true },
@@ -37,6 +38,7 @@ export default function Home({ onOpen, unread }) {
     <div className="home scroll">
       <div className="home-hello"><h1>Привет, {nick}</h1><p>Твоя сцена начинается здесь</p></div>
       <ResourceBar expanded />
+      <DayPanel />
       <div className="grid">
         {APPS.map((a) => (
           <AppIcon key={a.id} app={a} onOpen={onOpen} badge={a.id === 'tg' ? unread : 0} />

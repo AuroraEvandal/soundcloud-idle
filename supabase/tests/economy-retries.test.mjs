@@ -202,12 +202,13 @@ test('Beatmaker rewards quality with the shared fan multiplier and keeps release
       const releaseId = id()
       const released = await rpc('select release_recorded_beat_atomic($1,$2,$3) result', [other, await draft(), releaseId])
       assert.equal(released.max_streams, Math.round((200 + quality * 10) * (1 + Math.floor(fans / 100) / 100) * 2 ** released.viral_tier))
-      assert.equal(released.duration_hours, 24)
+      assert.equal(released.duration_days, 3)
       assert.ok(released.viral_tier >= 0 && released.viral_tier <= released.max_tier)
       assert.deepEqual(await rpc('select release_recorded_beat_atomic($1,$2,$3) result', [other, released.beat.id, releaseId]), released)
       await db.query("update player_recorded_beats set released_at=clock_timestamp()-interval '24 hours' where id=$1", [released.beat.id])
       const collected = await rpc('select collect_recorded_beat_atomic($1,$2,$3) result', [other, released.beat.id, id()])
-      assert.equal(collected.coins_earned, Math.floor(released.max_streams / 10))
+      assert.equal(released.coins_earned, Math.floor(released.max_streams / 10))
+      assert.equal(collected.coins_earned, 0) // The first instalment was paid at release.
     }
   }
   for (const fn of ['sell_recorded_beat_atomic(uuid,uuid,uuid)', 'release_recorded_beat_atomic(uuid,uuid,uuid)']) {

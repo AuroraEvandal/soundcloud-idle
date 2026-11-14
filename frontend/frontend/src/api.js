@@ -8,6 +8,7 @@ import { supabase } from './supabase'
 import { timingDuration, timingPosition, timingPath } from './timingGame'
 import { BEATS, EQUIPMENT, CLOTHING, PACKS, START_CARD_IDS, START_COINS } from './mockCatalog'
 import { operationIds } from './operationIds'
+import { createDayDelivery } from './dayDelivery'
 
 export const MOCK = {
   login: false,
@@ -96,11 +97,7 @@ async function call(name, body) {
 // ---------------------------------------------------------------------------
 
 // Ник берётся из Telegram (docs/api.md): сервер сам создаёт игрока и обновляет
-<<<<<<< Updated upstream
 // username при каждом входе. Ник с фронта не отправляется.
-=======
-// username при каждом входе. Ни.nickname с фронта не отправляется.
->>>>>>> Stashed changes
 const tgName = () => {
   const u = window.Telegram?.WebApp?.initDataUnsafe?.user
   return u?.username || u?.first_name || 'player'
@@ -218,6 +215,10 @@ export const recordBeat = (composition) => callIdempotent('record-beat', composi
 export const sellBeat = (beatId) => callIdempotent('sell-beat', { beatId })
 export const releaseBeat = (beatId) => callIdempotent('release-beat', { beatId })
 export const collectBeat = (beatId) => callIdempotent('collect-beat', { beatId })
+const dayDelivery = createDayDelivery(body => call('end-day', body))
+export const endDay = (playerId, dayId, runId) => dayDelivery.run(playerId, dayId, runId)
+export const recoverDay = (playerId) => dayDelivery.pending(playerId) ? dayDelivery.run(playerId) : Promise.resolve(null)
+export const buyConsumable = (itemId) => callIdempotent('buy-consumable', { itemId })
 
 // ===========================================================================
 // МОК-СЕРВЕР. Здесь (и только здесь) живёт игровая логика на время разработки.
@@ -582,11 +583,7 @@ const mock = {
     if (!db.player) throw new ApiError('PLAYER_NOT_FOUND')
     const opp = OPPONENTS.find((o) => o.id === opponentId)
     if (!opp) throw new ApiError('INTERNAL')
-<<<<<<< Updated upstream
     if (!mockOpponentUnlocked(opp)) throw new ApiError('OPPONENT_LOCKED')
-=======
-    if (db.player.popularity < opp.required) throw new ApiError('OPPONENT_LOCKED')
->>>>>>> Stashed changes
     // как сервер: для старта батла нужно минимум 4 рабочие карточки на каждый слот
     for (const slot of SLOT_CODES) {
       const usable = POOL.filter(
@@ -676,11 +673,7 @@ const mock = {
     if (!done) {
       b.round += 1
       b.hand = makeHand(b.used)
-<<<<<<< Updated upstream
       b.last_result = {
-=======
-      return {
->>>>>>> Stashed changes
         round,
         battle: { status: 'active', player_rounds_won: b.pw, opponent_rounds_won: b.ow },
         next_round: { number: b.round, theme: b.themes[b.round - 1] },
@@ -746,7 +739,6 @@ function applyRewards(win) {
 // ---------------------------------------------------------------------------
 const ENERGY_MAX = 100
 const HYPE_MAX = 20
-const REGEN_MS = 3000
 const MAX_TAPS_PER_REQUEST = 200
 const RARITY_W = { common: 70, rare: 24, epic: 6, legendary: 1 }
 const DUP_REFUND = { common: 20, rare: 60, epic: 150, legendary: 300 }
@@ -761,17 +753,7 @@ function pctOf(type) {
 }
 
 function regen() {
-  const st = db.studio
-  const now = Date.now()
-  if (st.energy >= ENERGY_MAX) {
-    st.ts = now
-    return
-  }
-  const gain = Math.floor((now - st.ts) / REGEN_MS)
-  if (gain > 0) {
-    st.energy = Math.min(ENERGY_MAX, st.energy + gain)
-    st.ts += gain * REGEN_MS
-  }
+  // Legacy development preview: real time never restores energy.
 }
 
 const eqView = (e) => ({ id: e.id, name: e.name, price: e.price, bonus: e.bonus, owned: db.studio.equipment.includes(e.id) })
@@ -967,11 +949,7 @@ const mock2 = {
       const pick = cand[rndInt(0, cand.length - 1)]
       const duplicate = st.cards.has(pick.card.id)
       const refund = duplicate ? DUP_REFUND[pick.card.rarity] : 0
-<<<<<<< Updated upstream
       st.uses[pick.card.id] = 3
-=======
-      if (!duplicate) st.uses[pick.card.id] = 3
->>>>>>> Stashed changes
       st.cards.add(pick.card.id)
       db.player.coins += refund
       drop = { type: 'card', card: { ...withUses(pick.card), slot: pick.slot }, duplicate, refund }

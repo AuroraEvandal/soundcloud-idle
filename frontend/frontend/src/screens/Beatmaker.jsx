@@ -91,8 +91,8 @@ export default function Beatmaker({ onEnergyChange }) {
       setPlayer(response.player)
       if (!mounted.current) return
       if (response.beat) setResult(response.beat)
-      if (response.coins_earned != null) notify(`Бит: +${response.coins_earned} монет`)
-      if (response.max_streams != null) notify(`Бит выпущен: до ${response.max_streams} стримов за 24 часа`)
+      if (response.duration_days) notify(`Бит выпущен: первая часть +${response.coins_earned} ₽. Ещё две выплаты в следующие дни`)
+      else if (response.coins_earned != null) notify(`Бит: +${response.coins_earned} ₽`)
       await load(); onEnergyChange?.()
     } catch(e) { if(mounted.current) setError(errorInfo(e)) }
     finally { busyRef.current=false; if(mounted.current) setBusy(false) }
@@ -120,14 +120,17 @@ export default function Beatmaker({ onEnergyChange }) {
         <div className="bm-scores">{CRITERIA.map(([key,label,max])=><div key={key}><span>{label}<b>{beat.score_breakdown[key]} <small>/ {max}</small></b></span><div className="bm-score-track"><i style={{width:`${beat.score_breakdown[key]/max*100}%`}} /></div></div>)}</div>
       </details>
     </div>
-    {beat.stream_cap != null && <div className="bm-streams"><div><span>Доступно сейчас</span><b>{beat.collectable_coins || 0} монет <small>· {beat.collectable_streams || 0} стримов</small></b></div><p>Собрано {beat.streams_paid} из {beat.stream_cap} стримов</p></div>}
+    {beat.release_day != null ? <div className="bm-streams"><div><span>Начислено частей: {beat.installments_paid}/3</span><b>{beat.streams_paid} стримов</b></div>
+      {(beat.daily_payouts || []).map(item => <p key={item.installment}>День {beat.release_day + item.installment - 1}: +{item.streams} стримов · +{item.coins} ₽</p>)}
+      {beat.status==='streaming' && <p>Следующая часть придёт автоматически в день {beat.release_day + beat.installments_paid}.</p>}
+    </div> : beat.stream_cap != null && <div className="bm-streams"><div><span>Старый выпуск · доход начислен</span><b>{beat.streams_paid} стримов</b></div></div>}
     {beat.status==='sold' && <p className="bm-sale"><Icon name="check" size={18} />Получено <b>{beat.sale_coins} монет</b></p>}
     {beat.status==='draft' && <div className="bm-decisions">
       <button className="bm-choice" disabled={busy} onClick={()=>act(()=>sellBeat(beat.id))}><span><b>Продать сейчас</b><small>Гарантированные монеты</small></span>{beat.instant_sale_coins!=null && <span className="bm-choice-value">{beat.instant_sale_coins}<small>монет</small></span>}</button>
-      <button className="bm-choice" disabled={busy} onClick={()=>act(()=>releaseBeat(beat.id))}><span><b>Выпустить на стриминг</b><small>Стримы за 24 часа · случайный лимит</small></span><Icon name="cloud" size={24} /></button>
+      <button className="bm-choice" disabled={busy} onClick={()=>act(()=>releaseBeat(beat.id))}><span><b>Выпустить на стриминг</b><small>3 дня · независимый случайный доход каждый день</small></span><Icon name="cloud" size={24} /></button>
       <p className="bm-caption">Продажу или выпуск нельзя отменить.</p>
     </div>}
-    {['streaming','complete'].includes(beat.status) && <button className="bm-button bm-collect" disabled={busy} onClick={()=>act(()=>collectBeat(beat.id))}>Собрать стримы<Icon name="back" size={16} /></button>}
+    {beat.release_day == null && (beat.collectable_streams || 0)>0 && <button className="bm-button bm-collect" disabled={busy} onClick={()=>act(()=>collectBeat(beat.id))}>Собрать стримы<Icon name="back" size={16} /></button>}
   </article>
   return <div className="bm">
     <header className="bm-heading"><div className="bm-eyebrow">BEAT LAB <span>2 такта · 5 дорожек</span></div><h2>Собери бит</h2><p>Добавь звуки на пустые дорожки, послушай свой рисунок и запиши готовый бит.</p></header>
@@ -170,15 +173,15 @@ export default function Beatmaker({ onEnergyChange }) {
       </section>
       <div className="bm-transport">
         {!viewingSaved && <label className="bm-name">Название бита<input type="text" maxLength={60} placeholder="Без названия" value={composition.name || ''} onChange={e=>edit({...composition,name:e.target.value})}/></label>}
-        <div className="bm-energy"><span>Энергия <b>{data?.energy ?? '…'} <small>/ 100</small></b></span><button className="bm-link" onClick={()=>load()}>Обновить</button></div>
+        <div className="bm-energy"><span>Энергия <b>{data?.energy ?? '…'}</b></span><button className="bm-link" onClick={()=>load()}>Обновить</button></div>
         <div className="bm-transport-buttons"><button className="bm-button bm-play" disabled={!hasPattern} aria-pressed={playing || loadingAudio} onClick={()=>playing || loadingAudio?stop():preview(displayed,viewingSaved?playback.id:null)}><span aria-hidden="true">{playing || loadingAudio?'■':'▶'}</span><span>{playing || loadingAudio?'Стоп':'Слушать'}<small>{loadingAudio?'Загрузка…':'Бесплатно'}</small></span></button><button className="bm-record" disabled={viewingSaved || !hasPattern || !data || data.energy<data.energy_cost} onClick={()=>act(()=>recordBeat(composition))}><Icon name="mic" size={20}/><span>{busy?'Сохраняем…':'Записать бит'}<small>{data?.energy_cost ?? 50} энергии</small></span></button></div>
-        {data && data.energy<data.energy_cost && <p className="bm-energy-hint" role="status">Нужно {data.energy_cost} энергии. Дождись восстановления и нажми «Обновить».</p>}
+        {data && data.energy<data.energy_cost && <p className="bm-energy-hint" role="status">Нужно {data.energy_cost} энергии. Заверши день на главном экране или купи энергетик в магазине.</p>}
       </div>
     </fieldset>
     {result && <section className="bm-result" aria-label="Результат записи"><div className="bm-section-heading"><Icon name="check" size={20}/><h3>Последняя запись</h3></div>{beatCard(data?.beats.find(b=>b.id===result.id)||result)}</section>}
     <section className="bm-library" aria-labelledby="bm-library-title">
       <div className="bm-section-heading"><span className="bm-section-index">03</span><h3 id="bm-library-title">Мои биты</h3><button className="bm-link" disabled={busy} onClick={()=>load()}>Обновить</button></div>
-      <p className="bm-description">После записи ты получишь оценку. Затем реши: монеты сразу или стримы в течение 24 часов.</p>
+      <p className="bm-description">После записи ты получишь оценку. Затем реши: рубли за продажу сразу или три независимые выплаты от стримов. Первая — сразу, ещё две — в следующие игровые дни.</p>
       {!data && !error && <div className="bm-empty" role="status">Загружаем записи…</div>}
       {data?.beats.length===0 && <div className="bm-empty"><Icon name="compose" size={28}/><b>Здесь будет твой первый бит</b><p>Послушай рисунок и нажми «Записать бит».<br/>Появятся оценка и варианты заработка.</p></div>}
       {data?.beats.filter(b=>b.id!==result?.id).map(beatCard)}

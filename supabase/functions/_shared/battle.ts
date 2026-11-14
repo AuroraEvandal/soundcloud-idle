@@ -61,7 +61,6 @@ export async function readBattle(playerId: string, battleId: string) {
   if (error) throw error
   if (!battle) throw new GameError('BATTLE_NOT_FOUND', 404)
 
-<<<<<<< Updated upstream
   // These reads only need the loaded battle row, so execute them together.
   const [roundsResult, cards] = await Promise.all([
     db.from('rounds').select('round_number,result_payload')
@@ -73,19 +72,6 @@ export async function readBattle(playerId: string, battleId: string) {
       : Promise.resolve({ data: [], error: null } as any),
   ])
   if (roundsResult.error) throw roundsResult.error
-=======
-  const { data: rounds, error: roundsError } = await db.from('rounds')
-    .select('round_number,result_payload')
-    .eq('battle_id', battle.id).order('round_number', { ascending: false }).limit(1)
-  if (roundsError) throw roundsError
-
-  // uses_left лежит в player_cards, поэтому читаем руку через неё
-  const cards = battle.status === 'active' && battle.current_hand?.length
-    ? await db.from('player_cards')
-      .select('uses_left, card:cards(id,text,slot,theme,rarity,syllables,bonus_type,bonus_value)')
-      .eq('player_id', playerId).in('card_id', battle.current_hand)
-    : { data: [], error: null }
->>>>>>> Stashed changes
   if (cards.error) throw cards.error
   const byId = new Map((cards.data || []).map((row: any) => [row.card.id, { ...row.card, uses_left: row.uses_left }]))
   const hand: Record<string, unknown[]> = { setup: [], development: [], boost: [], punch: [] }

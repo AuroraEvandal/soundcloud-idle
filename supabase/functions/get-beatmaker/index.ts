@@ -5,7 +5,7 @@ Deno.serve((req) => handle(req, async (body) => {
   const { player } = await authPlayer(body)
   const fresh = await refreshEnergy(player)
   let query = db.from('player_recorded_beats').select(
-    'id,name,genre,bpm,musical_key,scale,pattern,quality_score,score_breakdown,status,sale_coins,stream_cap,streams_paid,released_at,created_at',
+    'id,name,genre,bpm,musical_key,scale,pattern,quality_score,score_breakdown,status,sale_coins,stream_cap,streams_paid,released_at,created_at,release_day,release_run,release_popularity,installments_paid,daily_payouts',
   ).eq('player_id', player.id).order('created_at', { ascending: false }).order('id', { ascending: false }).limit(101)
   if (body.before != null) {
     const cursor = body.before as { created_at?: unknown; id?: unknown }
@@ -21,7 +21,7 @@ Deno.serve((req) => handle(req, async (body) => {
   const last = page[page.length - 1]
   const beats = page.map((beat: any) => {
     const instant_sale_coins = Math.round((20 + Math.round(beat.quality_score * 0.8)) * (1 + Math.floor(Math.max(fresh.popularity, 0) / 100) / 100))
-    if (!beat.stream_cap || !beat.released_at || !['streaming', 'complete'].includes(beat.status)) {
+    if (beat.release_day != null || !beat.stream_cap || !beat.released_at || !['streaming', 'complete'].includes(beat.status)) {
       return { ...beat, instant_sale_coins, collectable_streams: 0, collectable_coins: 0 }
     }
     const elapsed = Math.max(0, (now - Date.parse(beat.released_at)) / 1000)

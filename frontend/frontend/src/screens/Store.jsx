@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGame } from '../GameContext'
-import { getShop, getWardrobe, buyItem, equipItem } from '../api'
+import { getShop, getWardrobe, buyItem, equipItem, buyConsumable } from '../api'
 import { errorInfo } from '../errors'
 import { bonusText } from '../bonus'
 import { RARITY } from '../constants'
@@ -88,6 +88,11 @@ export default function Store({ onClose }) {
       await load()
     })
 
+  const drink = (id) => act(async () => {
+    const response = await buyConsumable(id)
+    setPlayer(response.player)
+  })
+
   const byId = (id) => wardrobe?.items.find((i) => i.id === id)
   const owned = (wardrobe?.items || []).filter((i) => i.slot === slot)
 
@@ -147,6 +152,12 @@ export default function Store({ onClose }) {
 
         {shop && tab === 'catalog' && (
           <div className="catalog-grid">
+            {(shop.consumables || []).map((item) => <div className="row bar" key={item.id}>
+              <Icon name="gift" size={28} />
+              <div className="row-main">{item.name}<div className="muted small-t">+{item.energy} энергии · выпить сразу · можно выше 100</div></div>
+              <span className="price">{item.price} ₽</span>
+              <button className="btn small" disabled={busy || (player?.coins ?? 0) < item.price} onClick={() => drink(item.id)}>Купить и выпить</button>
+            </div>)}
             {shop.clothing.map((it) => (
               <ItemRow key={it.id} item={it}>
                 {it.owned ? (

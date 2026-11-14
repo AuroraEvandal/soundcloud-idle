@@ -21,14 +21,14 @@ export default function Studio({ onClose }) {
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState(null)
   const busyRef = useRef(false)
-  const recorder = useMemo(() => studioRecorderFor(player.id, {
+  const recorder = useMemo(() => studioRecorderFor(`${player.id}:${player.game_run}:${player.game_day}`, {
     send: recordSnippet,
     fetchStudio: getStudio,
     onResult: (r) => {
       setPlayer(r.player)
       if (r.released?.length) refreshPets().catch(() => {})
     },
-  }), [player.id, setPlayer, refreshPets])
+  }), [player.id, player.game_run, player.game_day, setPlayer, refreshPets])
   const [recording, setRecording] = useState(recorder.snapshot)
   const { studio, releases, releasing } = recording
   const error = actionError || (recording.error ? errorInfo(recording.error) : null)
@@ -37,10 +37,6 @@ export default function Studio({ onClose }) {
 
   useEffect(() => recorder.subscribe(setRecording), [recorder])
   useEffect(() => { recorder.load() }, [recorder])
-  useEffect(() => {
-    const timer = setInterval(() => recorder.tick(), 3000)
-    return () => clearInterval(timer)
-  }, [recorder])
 
   function onTap() {
     if (!busyRef.current) recorder.tap()
@@ -111,15 +107,15 @@ export default function Studio({ onClose }) {
               onPointerUp={() => setTap(false)}
               onPointerLeave={() => setTap(false)}
               disabled={!recording.canTap || busy}
-              aria-label="Микрофон: тапай, чтобы набрать хайп"
+              aria-label="Микрофон: тапай, чтобы записать сниппет"
             >
               <Icon name="mic" size={84} stroke={1.8} />
             </button>
-            <div className="studio-sub" role="status">{releasing ? 'Выпускаем сниппет…' : 'Тапай, чтобы набрать хайп'}</div>
+            <div className="studio-sub" role="status">{releasing ? 'Выпускаем сниппет…' : 'Тапай, чтобы записать сниппет'}</div>
             <PetCompanion pose={tap ? 'music' : studio.energy <= 0 ? 'sleep' : releases.length ? 'happy' : 'idle'} />
             <div className="meter">
               <div className="row-between small-t">
-                <span>Хайп</span>
+                <span>Прогресс записи</span>
                 <span className="muted">
                   {studio.hype} / {studio.hype_max}
                 </span>
@@ -128,11 +124,12 @@ export default function Studio({ onClose }) {
               <div className="row-between small-t mt">
                 <span>Энергия</span>
                 <span className="muted">
-                  {studio.energy} / {studio.energy_max}
+                  {studio.energy}
                 </span>
               </div>
               <ProgressBar value={studio.energy} max={studio.energy_max} color="#fff" />
             </div>
+            <p className="muted small-t">Энергия пополняется ночью до 100. Энергетик в магазине даёт +50 сверх лимита.</p>
             <div className="muted small-t">
               Доход от сниппетов: +{studio.income_pct}% · Популярность {player?.popularity}
             </div>
@@ -196,7 +193,7 @@ export default function Studio({ onClose }) {
             </div>
             <div className="release-kicker">{releases.length ? 'НОВЫЙ РЕЛИЗ' : 'ЗАПИСЬ ГОТОВА'}</div>
             <h2 id="release-title">{releases.length ? 'Сниппет вышел!' : 'Выпускаем сниппет…'}</h2>
-            <p className="muted release-copy">{releases.length ? 'Трек уже слушают. Продолжай записывать — следующая запись не за горами.' : 'Хайп собран. Сохраняем запись и ждём результат.'}</p>
+            <p className="muted release-copy">{releases.length ? 'Трек уже слушают. Продолжай записывать — следующая запись не за горами.' : 'Сниппет записан. Сохраняем запись и ждём результат.'}</p>
             {releases.length > 0 ? <>
             <div className="release-stats" aria-live="polite">
               <div><b>+{releases[0].streams}</b><span>прослушиваний</span></div>

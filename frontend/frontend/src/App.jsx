@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { GameContext } from './GameContext'
-import { login, getProfile, getPets } from './api'
+import { login, getProfile, getPets, endDay, recoverDay, recordSnippet, getStudio } from './api'
 import { errorInfo } from './errors'
 import StatusBar from './components/StatusBar'
 import ResourceBar from './components/ResourceBar'
@@ -16,8 +16,10 @@ import Casino from './screens/Casino'
 import Concert from './concert/Concert'
 import StoryIntro from './components/StoryIntro'
 import { initialTelegramMessages } from './telegramMessages'
-import { readIntro, saveIntro } from './storage'
+import { readIntro, saveIntro, clearBattleId } from './storage'
+import { settleStudioRecorders, studioRecorderFor } from './studioRecorder'
 import { shouldShowIntro } from './story'
+import { acceptPlayerSnapshot } from './playerSnapshot'
 
 const SCREENS = {
   soundwave: SoundWave,
@@ -26,23 +28,19 @@ const SCREENS = {
   tg: Telegram,
   profile: Profile,
   store: Store,
-<<<<<<< Updated upstream
   casino: Casino,
   concert: Concert,
-=======
->>>>>>> Stashed changes
 }
 
 export default function App() {
   // Ник не спрашиваем у игрока: он приходит с сервера из Telegram (docs/api.md, login)
   const [nick, setNick] = useState('')
-  const [player, setPlayer] = useState(null)
+  const [player, setPlayerState] = useState(null)
+  const setPlayer = useCallback(incoming => setPlayerState(current => acceptPlayerSnapshot(current, incoming)), [])
   const [profile, setProfile] = useState(null)
-<<<<<<< Updated upstream
+  const [dayReport, setDayReport] = useState(null)
   const [petCollection, setPetCollection] = useState(null)
   const [petsError, setPetsError] = useState(null)
-=======
->>>>>>> Stashed changes
   const [status, setStatus] = useState('loading') // loading | ready | error | stop
   const [error, setError] = useState('')
   const [screen, setScreen] = useState('home')
@@ -51,10 +49,7 @@ export default function App() {
   const [unread, setUnread] = useState(0)
   const [telegramMessages, setTelegramMessages] = useState({ adam: [], topor: [] })
   const islandTimer = useRef(null)
-<<<<<<< Updated upstream
   const deliveredTelegramEvents = useRef(new Set())
-=======
->>>>>>> Stashed changes
 
   const notify = useCallback((text) => {
     setIsland(text)
@@ -88,9 +83,10 @@ export default function App() {
       setError('')
       try {
         const res = await login()
-        setPlayer(res.player)
+        const recovered = await recoverDay(res.player.id)
+        setPlayer(recovered?.player || res.player)
+        if (recovered) setDayReport(recovered.report)
         setNick(res.player.username)
-<<<<<<< Updated upstream
         if (shouldShowIntro(res.is_new, readIntro(res.player.id))) {
           saveIntro(res.player.id, 'started')
           setIntro('new')
@@ -98,8 +94,6 @@ export default function App() {
         setTelegramMessages((current) => current.adam.length ? current : initialTelegramMessages(res.player.username))
         // The optional pet collection must not hold the game's loading screen.
         refreshPets().catch(() => {})
-=======
->>>>>>> Stashed changes
         await refreshProfile()
         setStatus('ready')
         if (res.is_new) {
@@ -127,7 +121,26 @@ export default function App() {
 
   const relogin = useCallback(() => boot(), [boot])
 
-<<<<<<< Updated upstream
+  const finishDay = useCallback(async () => {
+    // Also recover an unsent batch saved before a reload directly to Home.
+    studioRecorderFor(`${player.id}:${player.game_run}:${player.game_day}`, {
+      send: recordSnippet, fetchStudio: getStudio, onResult: result => setPlayer(result.player),
+    })
+    await settleStudioRecorders(player.id)
+    const result = await endDay(player.id, player.game_day, player.game_run)
+    setPlayer(result.player)
+    setDayReport(result.report)
+    if (result.report.reset) {
+      clearBattleId()
+      setProfile(null)
+      setPetCollection(null)
+      setTelegramMessages(initialTelegramMessages(result.player.username))
+      deliveredTelegramEvents.current.clear()
+    }
+    await Promise.allSettled([refreshProfile(), refreshPets()])
+    return result
+  }, [player, refreshProfile, refreshPets])
+
   const addTelegramMessages = useCallback((incoming, eventId) => {
     if (eventId && deliveredTelegramEvents.current.has(eventId)) return
     if (eventId) deliveredTelegramEvents.current.add(eventId)
@@ -140,10 +153,7 @@ export default function App() {
   }, [])
 
   const activePet = petCollection?.pets.find((pet) => pet.id === petCollection.active_pet_id && pet.owned) || null
-  const ctx = { nick, player, setPlayer, profile, refreshProfile, petCollection, setPetCollection, activePet, petsError, refreshPets, notify, relogin, unread, setUnread, telegramMessages, setTelegramMessages, addTelegramMessages }
-=======
-  const ctx = { nick, player, setPlayer, profile, refreshProfile, notify, relogin, unread, setUnread }
->>>>>>> Stashed changes
+  const ctx = { nick, player, setPlayer, profile, refreshProfile, petCollection, setPetCollection, activePet, petsError, refreshPets, notify, relogin, unread, setUnread, telegramMessages, setTelegramMessages, addTelegramMessages, finishDay, dayReport, setDayReport }
   const Screen = SCREENS[screen]
 
   let body
@@ -183,7 +193,7 @@ export default function App() {
           {screen === 'home' ? (
             <Home onOpen={setScreen} unread={unread} />
           ) : (
-            <Screen onClose={() => setScreen('home')} onOpen={setScreen} onReplayIntro={() => setIntro('replay')} />
+            <Screen key={`${player.game_run}:${player.game_day}`} onClose={() => setScreen('home')} onOpen={setScreen} onReplayIntro={() => setIntro('replay')} />
           )}
         </div>
         {screen === 'home' && <Dock onOpen={setScreen} unread={unread} />}

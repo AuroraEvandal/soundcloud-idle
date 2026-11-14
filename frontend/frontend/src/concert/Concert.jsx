@@ -101,7 +101,7 @@ export default function Concert({ onClose }) {
     anchor.current = { at: performance.now(), ...concertClock(response) }
     setTime(anchor.current.elapsed); setSceneTime(anchor.current.scene)
     setPaused(Boolean(next?.paused) || pauseIntent.current); setLoadError('')
-    if (response.player && game?.player && ['coins', 'xp', 'level'].some(key => response.player[key] !== game.player[key])) game.setPlayer(response.player)
+    if (response.player && game?.player && ['coins', 'xp', 'level', 'energy'].some(key => response.player[key] !== game.player[key])) game.setPlayer(response.player)
     if (next?.status === 'active') setEpisode(next.episode)
     if (next?.status === 'finished' && mode.current === 'live') {
       pauseIntent.current = false
@@ -240,7 +240,7 @@ export default function Concert({ onClose }) {
       <div className="ct-hub-heading"><span className="ct-eyebrow">ИНТЕРАКТИВНАЯ МУЗЫКАЛЬНАЯ ИСТОРИЯ</span><h1>Спаси<br /><em>концерт.</em></h1><p>Они выходят на сцену.<br />Ты делаешь так, чтобы их услышали.</p></div>
       <div className="ct-poster"><Stage episode={episode} /><div className="ct-poster-caption"><span>ГЛАВА 01 / ПОСЛЕДНИЙ СЕЗОН</span><strong>Пока здесь<br />есть звук.</strong><div><span><Icon name="mic" size={14} />6 выступлений</span><span>{show?.status === 'active' ? `${total} сцен в текущей попытке` : '18 сцен / концерт'}</span></div></div></div>
       <div className="ct-wallet"><div><span>Твой баланс</span><b>{career.coins.toLocaleString('ru-RU')} <small>₽</small></b></div><div><span>Репутация</span><b>{career.reputation} <small>REP</small></b></div><Icon name="headphones" size={30} /></div>
-      <div className="ct-save-label">ПРОГРЕСС СОХРАНЯЕТСЯ · ОБЩИЙ КОШЕЛЁК ИГРОКА</div>
+      <div className="ct-save-label">НОВОЕ ВЫСТУПЛЕНИЕ — 80 ЭНЕРГИИ · ПРОГРЕСС СОХРАНЯЕТСЯ</div>
       {show?.status === 'finished' && result && <button className="ct-last-result" onClick={() => { setEpisode(show.episode); setChoice(show.choice); setScreen('result') }}>
         <span>Последний концерт</span><b>{result.rank} · {wins}/{total} зачтено</b>
       </button>}

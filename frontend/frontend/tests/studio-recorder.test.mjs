@@ -76,14 +76,31 @@ test('a read that began before a write cannot restore old hype and balance', asy
   queue.dispose(); recorder.dispose()
 })
 
-test('energy display recovers with elapsed time without granting a client reward', async () => {
+test('real time never recovers energy or unlocks taps in the daily game', async () => {
   let now = 0
   const { recorder } = setup({ now: () => now, fetchStudio: async () => ({ ...result(0), studio: { ...result().studio, energy: 0 } }) })
   await recorder.load()
   assert.equal(recorder.snapshot().canTap, false)
   now = 3000; recorder.tick()
-  assert.equal(recorder.snapshot().studio.energy, 1)
-  assert.equal(recorder.snapshot().canTap, true)
+  assert.equal(recorder.snapshot().studio.energy, 0)
+  assert.equal(recorder.snapshot().canTap, false)
   assert.deepEqual(recorder.snapshot().releases, [])
+  recorder.dispose()
+})
+
+test('settling before night awaits an in-flight batch and all queued taps', async () => {
+  const first=deferred(), calls=[]
+  const {recorder}=setup({fetchStudio:async()=>result(0),send:async taps=>{
+    calls.push(taps)
+    return calls.length===1 ? first.promise : result(2)
+  }})
+  await recorder.load(); recorder.tap()
+  const flushing=recorder.flush()
+  recorder.tap()
+  let settled=false
+  const night=recorder.settle().then(()=>{settled=true})
+  await Promise.resolve(); assert.equal(settled,false)
+  first.resolve(result(1)); await flushing; await night
+  assert.deepEqual(calls,[1,1]); assert.equal(settled,true)
   recorder.dispose()
 })

@@ -22,8 +22,7 @@ export async function bonusPct(playerId: string) {
   return { income_pct: sum('income_pct') + Number(pet.data), popularity_pct: sum('popularity_pct'), charisma: sum('charisma') }
 }
 
-// Энергия восстанавливается временем на сервере (+1 за 3 с, максимум 100).
-// Пока запас полон, «перелив» не копим — просто фиксируем момент.
+// Только читает запас под блокировкой. Энергия добавляется ночью или энергетиком.
 export async function refreshEnergy(player: Record<string, any>) {
   const { data, error } = await db.rpc('refresh_studio_energy', { p_player_id: player.id })
   rpcError(error)

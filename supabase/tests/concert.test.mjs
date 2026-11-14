@@ -32,6 +32,8 @@ test('career starts with real player money; show restarts restore the same attem
 })
 
 const start = async (episode = 0, owner = player, choice = 'artist') => {
+  // QTE tests provision a fresh attempt; admission costs are covered in game-days.test.mjs.
+  await db.query('update players set energy=100 where id=$1',[owner])
   const current = await act('get',{},null,owner)
   if (current.show?.status === 'active') await act('abandon',{showId:current.show.id},id(),owner)
   return act('start',{episodeId:episode,choiceId:choice},id(),owner)

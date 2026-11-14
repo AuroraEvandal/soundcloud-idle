@@ -48,7 +48,7 @@ function Lines({ title, side }) {
 }
 
 export default function Battle() {
-  const { nick, player, profile, refreshProfile, refreshPets, relogin, addTelegramMessages } = useGame()
+  const { nick, player, setPlayer, profile, refreshProfile, refreshPets, relogin, addTelegramMessages } = useGame()
   // list | build | judging | result | mini | final
   const [phase, setPhase] = useState('list')
   const [battle, setBattle] = useState(null)
@@ -190,6 +190,7 @@ export default function Battle() {
     try {
       // Одежда на бойце: берём то, что надето в гардеробе прямо сейчас. Если не загрузилась, рисуем без неё.
       const [r, w] = await Promise.all([startBattle(opp.id), getWardrobe().catch(() => null)])
+      if (r.player) setPlayer(r.player)
       setLook(playerLook(w))
       saveBattleId(r.battle.id)
       setBattle(r.battle)
@@ -295,6 +296,7 @@ export default function Battle() {
     return (
       <div className="pad scroll opponent-selection">
         <h2 className="h2">Выбери соперника</h2>
+        <p className="muted small-t">Начало баттла: 80 энергии · на весь бой</p>
         <div className="muted small-t">
           Открыто: {unlocked} из {profile?.opponents?.length || 0}
         </div>

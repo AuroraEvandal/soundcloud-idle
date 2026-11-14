@@ -20,6 +20,7 @@ Deno.serve((req) => handle(req, async (body) => {
   const clOwned = new Set((ownedCl.data || []).map((r: any) => r.clothing_id))
   return {
     player: playerView(player),
+    consumables: [{ id: 'energy_drink', name: 'Энергетик', price: 100, energy: 50 }],
     equipment: (equipment.data || []).map((e: any) => ({
       id: e.id,
       name: e.name,

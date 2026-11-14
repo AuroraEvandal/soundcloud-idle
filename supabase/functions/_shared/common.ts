@@ -70,6 +70,9 @@ export async function playerForTelegram(telegramId: string) {
 
 export function playerView(p: Record<string, unknown>) {
   const level = Number(p.level || 1)
+  const remaining = Number(p.debt_remaining ?? 1000)
+  const overdue = Number(p.debt_overdue || 0)
+  const day = Number(p.game_day || 1)
   return {
     id: p.id,
     username: p.username,
@@ -80,6 +83,16 @@ export function playerView(p: Record<string, unknown>) {
     popularity: p.popularity,
     coins: p.coins,
     streams: Number(p.streams || 0),
+    energy: Number(p.energy ?? 100),
+    energy_max: 100,
+    game_day: day,
+    game_run: Number(p.game_run || 1),
+    debt: {
+      remaining, overdue, missed_payments: Number(p.debt_misses || 0),
+      payment_due: remaining > 0 ? Math.min(100, remaining - Number(p.debt_overdue_principal || 0)) + overdue : 0,
+      due_tonight: day >= 3 && remaining > 0,
+      reminder: day === 2 && remaining > 0,
+    },
     skills: { rhyme: p.skill_rhyme, flow: p.skill_flow, punch: p.skill_punch, charisma: p.skill_charisma },
   }
 }
@@ -109,14 +122,12 @@ export async function handle(req: Request, action: (body: Record<string, unknown
       'CARD_BURNED', 'OPPONENT_LOCKED', 'DAILY_LIMIT', 'IDEMPOTENCY_CONFLICT',
       'CARD_POOL_TOO_SMALL', 'JUDGE_UNAVAILABLE', 'INVALID_REQUEST_ID', 'INVALID_REQUEST',
       'OPPONENT_NOT_FOUND', 'THEMES_NOT_CONFIGURED', 'INVALID_ROUND_RESULT', 'BATTLE_IN_PROGRESS',
-<<<<<<< Updated upstream
       'NOT_ENOUGH_COINS', 'ALREADY_OWNED', 'ITEM_NOT_FOUND', 'NOT_OWNED', 'NO_ENERGY',
       'MINI_GAME_REQUIRED', 'MINI_GAME_NOT_STARTED', 'INVALID_MINI_GAME_ACTION',
       'CASE_COOLDOWN', 'PAYMENT_UNAVAILABLE', 'ORDER_NOT_FOUND',
       'INVALID_BEAT', 'INVALID_BEAT_NAME', 'DUPLICATE_BEAT', 'INVALID_PATTERN', 'BEAT_NOT_FOUND', 'BEAT_ALREADY_PROCESSED', 'BEAT_NOT_STREAMING',
       'CONCERT_NOT_FOUND', 'CONCERT_LOCKED', 'CONCERT_INVALID_ACTION', 'CONCERT_SCENE_ACTIVE', 'CONCERT_PAUSED',
-=======
->>>>>>> Stashed changes
+      'DAY_CHANGED', 'ACTIVITY_IN_PROGRESS',
     ])
     const safeCode = known.has(code) ? code : 'INTERNAL'
     const status = error instanceof GameError ? error.status : safeCode === 'INTERNAL' ? 500 : 400
