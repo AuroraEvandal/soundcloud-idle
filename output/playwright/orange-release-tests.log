@@ -1,0 +1,51 @@
+✔ login and mini-games send the documented IDs and initData without client scores (894.2935ms)
+✔ HTTP errors keep their game code instead of becoming a network error (12.6166ms)
+✔ a failed finish can retry the same action and read the final server result (0.8088ms)
+✔ pet and case routes send IDs only and use real server responses (5.2589ms)
+✔ free case, invoice, and recording retries preserve their request ID after a lost response (2.8643ms)
+✔ recording accepts a UUID tied to the batch, so equal-sized new batches stay distinct (1.0427ms)
+✔ pack retries reuse the request ID and a confirmed new opening gets another ID (2.2568ms)
+✔ HTTP 5xx leaves an operation ambiguous and retains its ID until success (1.7738ms)
+✔ database-heavy game functions are routed to the database region (0.4802ms)
+✔ Beatmaker sends compositions for server scoring and stable IDs for mutations (1.1527ms)
+✔ a new composition starts empty; no ready-made money-generating beat is supplied (1.8998ms)
+✔ iPhone playback selects a music session synchronously before resuming audio (2.5975ms)
+✔ a suspended context reports an error instead of animating silent playback (1.9635ms)
+✔ real samples load lazily once and stop/replay reuses the unlocked context (1.567ms)
+✔ stopping during sample loading cannot start an old beat later (2.1509ms)
+✔ sample errors remain retryable and older browsers unlock media inside the tap (1.6367ms)
+✔ all three recorded sound kits fit the audio budget and contain non-silent PCM WAVs (217.809ms)
+✔ new players and invalid/unavailable storage start with empty lanes (3.8516ms)
+✔ only the untouched old automatic pattern is removed, preserving its sound settings (0.6047ms)
+✔ existing authored drafts and their notes survive the migration (0.5371ms)
+✔ new drafts take precedence and are never mistaken for an automatic preset (0.5344ms)
+✔ delivery IDs survive reloads, are scoped to the player/action and clear after confirmation (7.8075ms)
+✔ blocked storage still permits retries in memory (1.2307ms)
+WebSocket server error: Port 24678 is already in use
+✔ pets and cases never fall back to mock ownership, money, or invoices without Supabase (913.2298ms)
+✔ check-minis.js only intercepts mini-games and removes its handler after failure (57.6008ms)
+✔ check-timing-v2.js only intercepts mini-games and removes its handler after failure (36.5918ms)
+WebSocket server error: Port 24678 is already in use
+✔ production never substitutes mock progress when Supabase is missing (901.7195ms)
+✔ intro shows for new players and interrupted viewers, never completed viewers (4.9739ms)
+✔ intro markers are isolated per player and tolerate unavailable storage (1.0078ms)
+✔ case display metadata keeps all three server IDs and never generates rewards or payment prices (3.9881ms)
+✔ the final tap sends immediately and holds the full meter until a slow server confirms the reward (22.013ms)
+✔ taps queued behind an earlier request do not roll back or cross the next release (2.5868ms)
+✔ an ambiguous response survives a full reload and replays precisely the saved batch ID (1.2929ms)
+✔ a read that began before a write cannot restore old hype and balance (0.5502ms)
+✔ energy display recovers with elapsed time without granting a client reward (0.4814ms)
+✔ server processing cannot move the timing animation ahead of the real cursor (1.389ms)
+WebSocket server error: Port 24678 is already in use
+✔ home shows actual player resources and all seven app launchers (2578.1698ms)
+✔ opponent selection uses the original opponent sprite and display name (7.2692ms)
+✔ profile retains original player and pet art, progression and companion actions (7.1072ms)
+✔ messenger starts with contacts and existing previews, without a fabricated conversation (2.6903ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4545.2442

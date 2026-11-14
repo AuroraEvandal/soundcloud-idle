@@ -1,0 +1,27 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - button "Назад" [ref=e137] [cursor=pointer]
+    - generic [ref=e12]:
+      - text: SOUNDWAVE
+      - generic [ref=e13]: BACKSTAGE
+    - button "Настроить задержку звука" [ref=e14] [cursor=pointer]
+  - main [ref=e138]:
+    - generic [ref=e139]: СМЕНА 01 / 06
+    - heading "Пока горит свет" [level=1] [ref=e140]
+    - 'generic "Сцена: ЛЕВЫЙ БЕРЕГ" [ref=e141]':
+      - generic [ref=e146]:
+        - generic [ref=e147]: КЛУБ
+        - strong [ref=e148]: КОНТУР
+        - generic [ref=e149]: МЕСТО, ГДЕ ТЕБЯ СЛЫШАТ
+      - generic [ref=e171]:
+        - generic [ref=e172]: СЕЗОН 01
+        - generic [ref=e173]: 38 в зале
+    - paragraph [ref=e174]: Тридцать восемь человек. Для кого-то — пустой зал. Для него — первый настоящий концерт.
+    - generic [ref=e175]:
+      - generic [ref=e176]: И
+      - generic [ref=e177]:
+        - text: Ирина · владелица
+        - paragraph [ref=e178]: "В понедельник нам отключат электричество. Сегодня нужно показать, что этот подвал ещё кому-то нужен. И не включай чайник: он на одной линии с басом."
+    - button "Выйти к сцене ↗" [ref=e179] [cursor=pointer]:
+      - text: Выйти к сцене
+      - generic [ref=e180]: ↗

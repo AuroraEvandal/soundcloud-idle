@@ -1,0 +1,17 @@
+
+> soundwave-frontend@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 554 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                    0.70 kB │ gzip:  0.36 kB
+dist/concert.html                  0.92 kB │ gzip:  0.57 kB
+dist/assets/main-BNd0RYtS.css     28.50 kB │ gzip:  6.76 kB
+dist/assets/styles-BhYZMbrX.css   66.27 kB │ gzip: 15.00 kB
+dist/assets/concert-jkN21EVR.js    0.27 kB │ gzip:  0.23 kB
+dist/assets/main-Dy05Ax5p.js     226.97 kB │ gzip: 76.97 kB
+dist/assets/styles-DsjpekDv.js   293.20 kB │ gzip: 93.82 kB
+✓ built in 2.66s

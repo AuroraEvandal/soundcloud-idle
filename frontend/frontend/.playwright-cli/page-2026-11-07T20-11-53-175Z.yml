@@ -1,0 +1,88 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - button "Закрыть концерт" [ref=e6] [cursor=pointer]
+    - generic [ref=e12]:
+      - text: SOUNDWAVE
+      - generic [ref=e13]: BACKSTAGE
+    - button "Настроить задержку звука" [ref=e14] [cursor=pointer]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - generic [ref=e19]: ИНТЕРАКТИВНАЯ МУЗЫКАЛЬНАЯ ИСТОРИЯ
+      - heading [level=1] [ref=e20]:
+        - text: Спаси
+        - emphasis [ref=e21]: концерт.
+      - paragraph [ref=e22]: Они выходят на сцену.Ты делаешь так, чтобы их услышали.
+      - text: "01"
+    - generic [ref=e23]:
+      - 'generic "Сцена: ЛЕВЫЙ БЕРЕГ" [ref=e24]':
+        - generic [ref=e29]:
+          - generic [ref=e30]: КЛУБ
+          - strong [ref=e31]: КОНТУР
+          - generic [ref=e32]: МЕСТО, ГДЕ ТЕБЯ СЛЫШАТ
+        - generic [ref=e54]:
+          - generic [ref=e55]: СЕЗОН 01
+          - generic [ref=e56]: 38 в зале
+      - generic [ref=e57]:
+        - text: ГЛАВА 01 / ПОСЛЕДНИЙ СЕЗОН
+        - strong [ref=e58]: Пока здесьесть звук.
+        - generic [ref=e59]:
+          - generic [ref=e60]: 6 выступлений
+          - generic [ref=e63]: 3 мин / концерт
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]: Бюджет команды
+        - generic [ref=e67]: 200 ₽
+      - generic [ref=e68]:
+        - generic [ref=e69]: Репутация
+        - generic [ref=e70]: 0 REP
+    - generic [ref=e73]: ПРОТОТИП · демобаланс до перезагрузки
+    - navigation "Разделы концерта" [ref=e74]:
+      - button "Выступления 06" [ref=e75] [cursor=pointer]
+      - button "Твой пульт 0/5" [ref=e76] [cursor=pointer]:
+        - text: Твой пульт
+        - generic [ref=e77]: 0/5
+    - region "Сюжетные концерты" [ref=e78]:
+      - button "01 Пока горит свет Клуб «Контур» · 38 человек" [ref=e79] [cursor=pointer]:
+        - generic [ref=e80]: "01"
+        - generic [ref=e81]:
+          - generic [ref=e82]: Пока горит свет
+          - generic [ref=e83]: Клуб «Контур» · 38 человек
+      - button "02 Человек за стеной Клуб «Контур» · 64 человек" [disabled] [ref=e86]:
+        - generic [ref=e87]: "02"
+        - generic [ref=e88]:
+          - generic [ref=e89]: Человек за стеной
+          - generic [ref=e90]: Клуб «Контур» · 64 человек
+      - button "03 Не по бумажке Бар «Нижний» · 110 человек" [disabled] [ref=e93]:
+        - generic [ref=e94]: "03"
+        - generic [ref=e95]:
+          - generic [ref=e96]: Не по бумажке
+          - generic [ref=e97]: Бар «Нижний» · 110 человек
+      - button "04 Места закончились Клуб «Контур» · 180 человек" [disabled] [ref=e100]:
+        - generic [ref=e101]: "04"
+        - generic [ref=e102]:
+          - generic [ref=e103]: Места закончились
+          - generic [ref=e104]: Клуб «Контур» · 180 человек
+      - button "05 Один человек в зале Сцена «Цех» · 320 человек" [disabled] [ref=e107]:
+        - generic [ref=e108]: "05"
+        - generic [ref=e109]:
+          - generic [ref=e110]: Один человек в зале
+          - generic [ref=e111]: Сцена «Цех» · 320 человек
+      - button "06 Последний сезон Городской фестиваль · 1200 человек" [disabled] [ref=e114]:
+        - generic [ref=e115]: "06"
+        - generic [ref=e116]:
+          - generic [ref=e117]: Последний сезон
+          - generic [ref=e118]: Городской фестиваль · 1200 человек
+    - generic [ref=e121]:
+      - paragraph [ref=e122]: Лучше в наушниках. Каждый жест меняет звук.
+      - button "Заступить на смену ↗" [ref=e125] [cursor=pointer]:
+        - generic [ref=e126]: Заступить на смену
+        - generic [ref=e127]: ↗
+      - generic [ref=e128]: Вход свободный. Даже после плохого вечера.
+    - generic [ref=e129]:
+      - generic [ref=e130]: ТВОЯ КОМАНДА
+      - generic [ref=e131]:
+        - generic [ref=e132]: Левый Берег
+        - generic [ref=e133]: Доверие 0
+      - generic [ref=e134]:
+        - generic [ref=e135]: Ирина
+        - generic [ref=e136]: Надёжность 0
